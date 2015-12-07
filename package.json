@@ -1,0 +1,31 @@
+{
+	"name": "nativescript-vscode-extension",
+	"displayName": "nativescript-vscode-extension",
+	"description": "A Visual Studio Code extension for NativeScript",
+	"version": "0.0.1",
+	"publisher": "Telerik",
+	"engines": {
+		"vscode": "^0.10.1"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:extension.sayHello"
+	],
+	"main": "./out/src/extension",
+	"contributes": {
+		"commands": [{
+			"command": "extension.sayHello",
+			"title": "Hello World"
+		}]
+	},
+	"scripts": {
+		"vscode:prepublish": "node ./node_modules/vscode/bin/compile",
+		"compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
+	},
+	"devDependencies": {
+		"typescript": "^1.6.2",
+		"vscode": "0.10.x"
+	}
+}
