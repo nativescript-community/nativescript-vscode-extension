@@ -1,3 +1,6 @@
 .DS_Store
-node_modules/
 out/
+node_modules/
+
+nativescript-vscode-extension*.vsix
+
