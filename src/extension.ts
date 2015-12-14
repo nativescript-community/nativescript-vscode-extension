@@ -28,30 +28,30 @@ export function activate(context: vscode.ExtensionContext) {
         // Display a message box to the user
         vscode.window.showInformationMessage('A project must get created here and VSCode relaunched!');
 
-        var childProcess = require("child_process");
-        var tnsPath = "node_modules/nativescript/bin/tns";
+        var shell = require("shelljs");
 
-        try {
-            var fs = require("fs");
-            try {
-                fs.statSync(tnsPath);
-            } catch(ex1) {
-                console.log("no tns found at that path!");
+        var projectName = "ALABALA";
+        var command = `./node_modules/nativescript/bin/tns create ${projectName}`;
+
+        var creation = shell.exec(command, {async: true}, function(code, output) {
+            if (code) {
+                console.log(`Creation errored. Command output: ${output}`);
+            } else {
+                console.log(`Project successfully created! The output was: ${output}`);
             }
-
-            var result = childProcess.spawnSync(tnsPath, ["create", "ALABALA"]);
-            result.stdout.on("end", function() {
-                vscode.window.showInformationMessage("The command ended successfully");
-            });
-
-            result.stderr.on("end", function() {
-                vscode.window.showInformationMessage("The command erred");
-            });
-        } catch (ex) {
-            vscode.window.showInformationMessage("The call was crappy");
-        }
-        vscode.window.showInformationMessage("AAAAA???");
-
+        });
+        creation.stdout.on("data", function(data) {
+            console.log("CREATION: " + data);
+        });
+        creation.stderr.on("data", function(data) {
+            console.log("CREATION ERROR: " + data);
+        });
+        creation.stderr.on("error", function(data) {
+            console.log("CREATION STDERR ERROR: " + data);
+        });
+        creation.stderr.on("end", function(data) {
+            console.log("CREATION STDERR END: " + data);
+        });
     });
 
     context.subscriptions.push(disposable);
