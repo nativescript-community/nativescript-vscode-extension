@@ -1,4 +1,3 @@
-out
-node_modules
-
-nativescript-vscode-extension*.vsix
+.DS_Store
+node_modules/
+out/

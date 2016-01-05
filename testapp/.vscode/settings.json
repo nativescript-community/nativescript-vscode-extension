@@ -4,7 +4,7 @@
     "files.exclude": {
         ".git": true,
         "bin": true,
-        "node_modules": false
+        "node_modules": true
     },
     "search.exclude": {
         ".git": true,

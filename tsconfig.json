@@ -1,12 +1,14 @@
 {
-	"compilerOptions": {
-		"module": "commonjs",
-		"target": "ES5",
-		"outDir": "out",
-		"noLib": true,
-		"sourceMap": true
-	},
-	"exclude": [
-		"node_modules"
-	]
+    "compilerOptions": {
+        "module": "commonjs",
+        "noImplicitAny": false,
+        "removeComments": false,
+        "target": "ES5",
+        "sourceMap": true,
+        "outDir": "out"
+    },
+    "exclude": [
+        "node_modules",
+        "testapp/node_modules"
+    ]
 }
