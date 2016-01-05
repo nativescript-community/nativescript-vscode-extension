@@ -1,6 +1,7 @@
 .DS_Store
 out/
 node_modules/
+typings/
 
 nativescript-vscode-extension*.vsix
 
