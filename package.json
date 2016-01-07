@@ -50,10 +50,6 @@
         "category": "NativeScript"
       },
       {
-          "command": "extension.createProject",
-          "title": "NativeScript: Create a new project"
-      },
-      {
         "command": "nativescript.build",
         "title": "Build",
         "category": "NativeScript"
