@@ -40,8 +40,7 @@
     "onCommand:nativescript.create",
     "onCommand:nativescript.build",
     "onCommand:nativescript.run",
-    "onCommand:nativescript.livesync",
-    "onCommand:nativescript.createProject"
+    "onCommand:nativescript.livesync"
   ],
   "contributes": {
     "commands": [
