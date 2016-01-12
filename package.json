@@ -1,9 +1,9 @@
 {
-  "name": "debugger-for-nativescript",
-  "displayName": "Debugger for NativeScript",
+  "name": "nativescript-vscode-extension",
+  "displayName": "NativeScript",
   "version": "0.0.1",
   "icon": "images/icon.png",
-  "description": "Debug your NativeScript application.",
+  "description": "A Visual Studio Code extension for NativeScript",
   "repository": {
     "type": "git",
     "url": "https://github.com/NativeScript/vscode-chrome-debug"
@@ -16,7 +16,9 @@
   "categories": ["Debuggers"],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "source-map": "^0.5.3"
+    "source-map": "^0.5.3",
+    "nativescript": "^1.5.1",
+    "shelljs": "0.5.3"
   },
   "devDependencies": {
     "gulp": "^3.9.0",

@@ -5,17 +5,29 @@
   "path": "typings",
   "bundle": "typings/tsd.d.ts",
   "installed": {
-    "node/node.d.ts": {
-      "commit": "4ba73ef59f93e38a70573cfc46375de37b004635"
-    },
     "es6-promise/es6-promise.d.ts": {
-      "commit": "5109e1269d6ab8e8e73b1a5e85d8ceb836d3099f"
+      "commit": "81b951f1ac437d1eb5ff5171a0bfa6c467634b13"
     },
     "es6-collections/es6-collections.d.ts": {
-      "commit": "5109e1269d6ab8e8e73b1a5e85d8ceb836d3099f"
+      "commit": "81b951f1ac437d1eb5ff5171a0bfa6c467634b13"
     },
     "source-map/source-map.d.ts": {
       "commit": "bb45306d0fd8ce0852a8d24c023fd787f4151e65"
+    },
+    "shelljs/shelljs.d.ts": {
+      "commit": "8ea42cd8bb11863ed6f242d67c502288ebc45a7b"
+    },
+    "node/node.d.ts": {
+      "commit": "8ea42cd8bb11863ed6f242d67c502288ebc45a7b"
+    },
+    "mocha/mocha.d.ts": {
+      "commit": "81b951f1ac437d1eb5ff5171a0bfa6c467634b13"
+    },
+    "mockery/mockery.d.ts": {
+      "commit": "81b951f1ac437d1eb5ff5171a0bfa6c467634b13"
+    },
+    "sinon/sinon.d.ts": {
+      "commit": "81b951f1ac437d1eb5ff5171a0bfa6c467634b13"
     }
   }
 }

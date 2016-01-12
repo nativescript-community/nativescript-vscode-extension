@@ -15,6 +15,7 @@ var sources = [
     'common',
     //'test', test are not relevant in the context of NativeScript
     'typings',
+    'custom-typings',
     'webkit',
     'nativescript',
 ].map(function(tsFolder) { return tsFolder + '/**/*.ts'; });
