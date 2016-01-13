@@ -83,6 +83,7 @@
             "type": "nativescript",
             "platform": "ios",
             "request": "launch",
+            "webRoot": ".",
             "sourceMaps": true,
             "diagnosticLogging": false,
             "stopOnEntry": true,
@@ -93,7 +94,8 @@
             "type": "nativescript",
             "platform": "ios",
             "request": "attach",
-            "sourceMaps": false,
+            "webRoot": ".",
+            "sourceMaps": true,
             "diagnosticLogging": false,
             "emulator": true
           },
