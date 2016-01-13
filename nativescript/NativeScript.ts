@@ -36,6 +36,8 @@ export interface INSDebugConnection {
     page_setOverlayMessage(message: string): Promise<WebKitProtocol.Response>;
 
     page_clearOverlayMessage(): Promise<WebKitProtocol.Response>;
+
+    emit(event: string, ...args: any[]): boolean;
 }
 
 export interface INSProject {
@@ -43,7 +45,7 @@ export interface INSProject {
 
     projectPath(): string;
 
-    debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void>;
+    debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess>;
 
     createConnection() : Promise<INSDebugConnection>;
 
@@ -63,7 +65,7 @@ export abstract class NSProject implements INSProject {
 
     public abstract platform(): string;
 
-    public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void>;
+    public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess>;
 
     public abstract createConnection(): Promise<INSDebugConnection>;
 
@@ -81,32 +83,25 @@ export class IosProject extends NSProject {
         return 'ios';
     }
 
-    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
-        let command: string = new CommandBuilder()
-            .appendParam("debug")
-            .appendParam(this.platform())
-            .appendFlag("--emulator", args.emulator)
-            .appendFlag("--start", args.request === "attach")
-            .appendFlag("--debug-brk", args.request === "launch")
-            .appendFlag("--no-client", true)
-            .build();
+    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess> {
+        return new Promise<ChildProcess>((resolve, reject) => {
+            let command: string = new CommandBuilder()
+                .appendParam("debug")
+                .appendParam(this.platform())
+                .appendFlag("--emulator", args.emulator)
+                .appendFlag("--start", args.request === "attach")
+                .appendFlag("--debug-brk", args.request === "launch")
+                .appendFlag("--no-client", true)
+                .build();
 
-        // run NativeScript CLI command
-        return new Promise<void>((resolve, reject) => {
+            // run NativeScript CLI command
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
-            child.stdout.on('data', function(data) {
-                let strData: string = data.toString();
-                console.log(data.toString());
-                if (args.request === "launch" && strData.indexOf('NativeScript waiting for debugger.') > -1) {
-                    resolve();
-                }
-            });
-            child.stderr.on('data', function(data) {
-                console.error(data.toString());
-            });
-            child.on('close', function(code) {
-                reject(code);
-            });
+            if(child) {
+                resolve(child);
+            }
+            else {
+                reject('Unable to start CLI command.');
+            }
         });
     }
 
@@ -130,50 +125,37 @@ export class AndoridProject extends NSProject {
         return 'android';
     }
 
-    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess> {
         if (args.request === "attach")
         {
-            return Promise.resolve<void>();
+            return Promise.resolve<ChildProcess>(null);
         }
         else if (args.request === "launch")
         {
             //TODO: interaction with CLI here
             //throw new Error("Launch on Android not implemented");
 
-            let command: string = new CommandBuilder()
-                .appendParam("debug")
-                .appendParam(this.platform())
-                .appendFlag("--emulator", args.emulator)
-                .appendFlag("--debug-brk", true)
-                //.appendFlag("--start", !options.debugBrk)
-                //.appendFlag("--log trace", true)
-                .appendFlag("--no-client", true)
-                .build();
+            return new Promise<ChildProcess>((resolve, reject) => {
+                let command: string = new CommandBuilder()
+                    .appendParam("debug")
+                    .appendParam(this.platform())
+                    .appendFlag("--emulator", args.emulator)
+                    .appendFlag("--debug-brk", true)
+                    //.appendFlag("--start", !options.debugBrk)
+                    //.appendFlag("--log trace", true)
+                    .appendFlag("--no-client", true)
+                    .build();
 
-            // run NativeScript CLI command
-            return new Promise<void>((resolve, reject) => {
-                console.log("executing tns");
+                // run NativeScript CLI command
                 let newEnv = process.env;
-                let d;
                 //newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
                 let child: ChildProcess = exec(command, { cwd: this.projectPath() , env: newEnv });
-                console.log("executed tns");
-                child.stdout.on("data", function(data) {
-                    console.log(data.toString());
-
-                    // let strData: string = data.toString();
-                    // if (options.debugBrk && strData.indexOf("Using ") > -1) {
-                    //     console.log("resolving");
-                    //     resolve();
-                    // }
-                });
-                child.stderr.on("data", function(data) {
-                    console.error(data.toString());
-                });
-                child.on("close", function(code) {
-                    console.log("rejecting " + code);
-                    reject(code);
-                });
+                if(child) {
+                    resolve(child);
+                }
+                else {
+                    reject('Unable to start CLI command.');
+                }
             });
         }
     }

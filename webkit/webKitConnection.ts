@@ -68,6 +68,10 @@ class ResReqTcpSocket extends EventEmitter {
                     resolve(tcp);
                 });
 
+                tcp.on('error', (e) => {
+                    reject(e);
+                });
+
                 tcp.on('close', () => {
                     Logger.log('TCP socket closed');
                     this.emit('close');
@@ -152,7 +156,7 @@ export class WebKitConnection implements ns.INSDebugConnection {
      */
     public attach(port: number, host?: string): Promise<void> {
         Logger.log('Attempting to attach on port ' + port);
-        return utils.retryAsync(() => this._attach(port, host), 6000)
+        return this._attach(port, host)
             .then(() => this.sendMessage('Debugger.enable'))
             .then(() => this.sendMessage('Console.enable'))
             .then(() => { });
@@ -232,5 +236,10 @@ export class WebKitConnection implements ns.INSDebugConnection {
             method,
             params
         });
+    }
+
+    public emit(event: string, ...args: any[]): boolean {
+        args.unshift(event);
+        return this._socket.emit.apply(this._socket, args)
     }
 }

@@ -416,7 +416,7 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
 
     public attach(port: number, url?: string): Promise<void> {
         Logger.log('Attempting to attach on port ' + port);
-        return utils.retryAsync(() => this._attach(port, url), 6000);
+        return this._attach(port, url);
         //.then(() => this.sendMessage('Console.enable'))
     }
 
@@ -761,6 +761,11 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
     //         params
     //     });
     // }
+
+    public emit(event: string, ...args: any[]): boolean {
+        args.unshift(event);
+        return this._socket.emit.apply(this._socket, args)
+    }
 }
 
 /**

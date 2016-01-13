@@ -126,46 +126,118 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private _attach(args: IAttachRequestArgs | ILaunchRequestArgs, port: number, host?: string): Promise<void> {
-
         let thisAdapter: WebKitDebugAdapter = this;
-        // let debugOptions: INSDebugOptions = { emulator: args.emulator, debugBrk: args.debugBrk, launchClient: args.launchClient };
-        let thisProject = this.nsProject;
-        return this.nsProject.debug(args)
-            .then(_ => {
-                // ODP client is attaching - if not attached to the webkit target, create a connection and attach
-                console.log("creating debug connection");
-                thisAdapter._clientAttached = true;
-                if (!thisAdapter._webKitConnection) {
-                    return thisProject.createConnection().then(connection => {
-                        thisAdapter._webKitConnection = connection;
-                        return;
-                    });
+
+        // initialize connection
+        return Promise.all<any>([this.nsProject.createConnection(), this.nsProject.debug(args)])
+        .then(result => {
+            let connection: ns.INSDebugConnection = result[0];
+            let process: ChildProcess = result[1];
+
+            let tnsDebugProcess: any = (function() {
+                let state = {
+                    isStarted: (process !== null),
+                    isClosed: (process === null),
+                    output: '',
+                    setDataAction: null
+                };
+                let dataAction: (data) => void = null;
+
+                let dataHandler = (data) => {
+                    Logger.log(data);
+                    state.output += data;
+                    if(dataAction) {
+                        dataAction(data);
+                    }
                 }
+                if(state.isStarted) {
+                    process.stdout.on('data', dataHandler);
+                    process.stderr.on('data', dataHandler);
+                    process.on('close', returnCode => state.isClosed = true);
+                }
+                state.setDataAction = (action: (data) => void) => {
+                    dataAction = action;
+                    if(dataAction && state.output.length > 0) {
+                        dataAction(state.output);
+                    }
+                }
+                return state;
+            })();
 
-                return;
-            }).then(() => {
-                thisAdapter._webKitConnection.on('Debugger.paused', params => thisAdapter.onDebuggerPaused(params));
-                thisAdapter._webKitConnection.on('Debugger.resumed', () => thisAdapter.onDebuggerResumed());
-                thisAdapter._webKitConnection.on('Debugger.scriptParsed', params => thisAdapter.onScriptParsed(params));
-                thisAdapter._webKitConnection.on('Debugger.globalObjectCleared', () => thisAdapter.onGlobalObjectCleared());
-                thisAdapter._webKitConnection.on('Debugger.breakpointResolved', params => thisAdapter.onBreakpointResolved(params));
+            // redirect CLI output to client debugger console
+            tnsDebugProcess.setDataAction((message: string) => thisAdapter.logToClientDebugConsole(message, 'error'));
 
-                thisAdapter._webKitConnection.on('Console.messageAdded', params => thisAdapter.onConsoleMessage(params));
+            connection.on('Debugger.paused', params => thisAdapter.onDebuggerPaused(params));
+            connection.on('Debugger.resumed', () => thisAdapter.onDebuggerResumed());
+            connection.on('Debugger.scriptParsed', params => thisAdapter.onScriptParsed(params));
+            connection.on('Debugger.globalObjectCleared', () => thisAdapter.onGlobalObjectCleared());
+            connection.on('Debugger.breakpointResolved', params => thisAdapter.onBreakpointResolved(params));
+            connection.on('Console.messageAdded', params => thisAdapter.onConsoleMessage(params));
+            connection.on('Inspector.detached', () => thisAdapter.terminateSession());
+            thisAdapter._webKitConnection = connection;
 
-                thisAdapter._webKitConnection.on('Inspector.detached', () => thisAdapter.terminateSession());
-                thisAdapter._webKitConnection.on('close', () => thisAdapter.terminateSession());
-                thisAdapter._webKitConnection.on('error', () => thisAdapter.terminateSession());
+            // repeatedly try to attach to backend
+            function tryToConnectUntilSuccess(repeatingInterval: number, timeoutMs: number): Promise<void> {
+                let start = Date.now();
+                let previousTryIsReady = true;
+                return new Promise<void>((resolve, reject) => {
+                    var interval = setInterval(() => {
+                        if(previousTryIsReady) {
+                            previousTryIsReady = false;
+                            connection.attach(port, host)
+                            .then(() => {
+                                previousTryIsReady = true;
+                                clearInterval(interval);
+                                thisAdapter._clientAttached = true;
+                                connection.on('close', () => thisAdapter.terminateSession());
+                                connection.on('error', () => thisAdapter.terminateSession());
+                                tnsDebugProcess.setDataAction(null); // stop prinitng CLI output on client debugger console
+                                resolve();
+                            })
+                            .catch(e => {
+                                previousTryIsReady = true;
+                                let rejectionReason = null;
+                                if(tnsDebugProcess.isStarted && tnsDebugProcess.isClosed) {
+                                    rejectionReason = 'NativeScript CLI debug command exited unexpectedly.';
+                                }
+                                else if(e.errno !== 'ECONNREFUSED') {
+                                    rejectionReason = e;
+                                }
+                                else if(Date.now() - start > timeoutMs) {
+                                    rejectionReason = 'Connection timeout. Please try again.';
+                                }
+                                if(rejectionReason !== null) {
+                                    clearInterval(interval);
+                                    reject(rejectionReason);
+                                }
+                            });
+                        }
+                    }, repeatingInterval);
+                });
+            }
 
-                return thisAdapter._webKitConnection.attach(port, host)
-                    .then(() => thisAdapter.fireEvent(new InitializedEvent()),
-                    e => {
-                        thisAdapter.clearEverything();
-                        return utils.errP(e);
-                    });
+            return tryToConnectUntilSuccess(2000, 40000)
+            .then(() => {
+                thisAdapter.fireEvent(new InitializedEvent());
             })
-            .catch(function(error) {
-                console.error("Error: " + error.toString());
-            });
+        })
+        .catch((e) => {
+            thisAdapter.clearEverything();
+            return utils.errP(e);
+        });
+    }
+
+    private logToClientDebugConsole(message: string, level: string): void {
+        if(this._webKitConnection) {
+            let messageParams: WebKitProtocol.Console.MessageAddedParams = {
+                message: {
+                    level: level,
+                    type: 'log',
+                    text: message
+                }
+            };
+            this._webKitConnection.emit('Console.messageAdded', messageParams);
+        }
     }
 
     private fireEvent(event: DebugProtocol.Event): void {
