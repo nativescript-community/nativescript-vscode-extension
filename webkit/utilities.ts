@@ -197,13 +197,15 @@ export class Logger {
 function tryFindSourcePathInNSProject(nsProjectPath: string, additionalFileExtension: string, resorcePath: string) : string {
     let guesses = [];
     const pathParts = resorcePath.split(path.sep);
-    let isTnsModule: boolean = (pathParts.length >= 3 && pathParts[0] == '' && pathParts[1] == 'app' && pathParts[2] == 'tns_modules');
-    if(isTnsModule) {
+    let appIndex = pathParts.indexOf("app");
+    let isTnsModule = appIndex >= 0 && pathParts.length > appIndex + 1 && pathParts[appIndex + 1] === "tns_modules";
+    //let isTnsModule: boolean = (pathParts.length >= 3 && pathParts[0] == '' && pathParts[1] == 'app' && pathParts[2] == 'tns_modules');
+    if (isTnsModule) {
         // the file is part of a module, so we search it in '{ns-app}/node_modules/tns-core-modules/' and '{ns-app}/node_modules/'
         let nsNodeModulesPath: string = path.join(nsProjectPath, 'node_modules');
         let tnsCoreNodeModulesPath: string = path.join(nsNodeModulesPath, 'tns-core-modules');
 
-        let modulePath: string = path.join.apply(path, pathParts.slice(3));
+        let modulePath: string = path.join.apply(path, pathParts.slice(appIndex + 2));
         guesses.push(path.join(tnsCoreNodeModulesPath, modulePath));
         guesses.push(path.join(nsNodeModulesPath, modulePath));
     }
@@ -211,7 +213,7 @@ function tryFindSourcePathInNSProject(nsProjectPath: string, additionalFileExten
         guesses.push(path.join(nsProjectPath, resorcePath));
     }
 
-    for(var guessPath of guesses) {
+    for (var guessPath of guesses) {
         if (existsSync(guessPath)) {
             return canonicalizeUrl(guessPath);
         }
