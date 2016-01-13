@@ -279,13 +279,17 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
     private onConsoleMessage(params: WebKitProtocol.Console.MessageAddedParams): void {
         let localMessage = params.message;
+        let isClientPath = false;
         if (localMessage.url)
         {
             const clientPath = utils.webkitUrlToClientPath(this.webRoot, this.platform, localMessage.url);
-            localMessage.url = clientPath;
+            if (clientPath !== '') {
+                localMessage.url = clientPath;
+                isClientPath = true;
+            }
         }
 
-        const formattedMessage = formatConsoleMessage(localMessage);
+        const formattedMessage = formatConsoleMessage(localMessage, isClientPath);
         if (formattedMessage) {
             this.fireEvent(new OutputEvent(
                 formattedMessage.text + '\n',
@@ -323,7 +327,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 .then(responses => ({ breakpoints: this._webkitBreakpointResponsesToODPBreakpoints(targetScriptUrl, responses, args.lines) }));
 
             const inDebug = typeof (<any>global).v8debug === 'object';
-
+            console.log("InDebug: " + inDebug);
             const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, /*timeoutMs*/inDebug ? 2000000 : 2000, 'Set breakpoints request timed out');
 
             // Do just one setBreakpointsRequest at a time to avoid interleaving breakpoint removed/breakpoint added requests to Chrome.

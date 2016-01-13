@@ -415,7 +415,7 @@ export class AndroidDebugConnection implements INSDebugConnection {
 
     public attach(port: number, url?: string): Promise<void> {
         Logger.log('Attempting to attach on port ' + port);
-        return utils.retryAsync(() => this._attach(port, url), 6000)
+        return utils.retryAsync(() => this._attach(port, url), 6000);
         //.then(() => this.sendMessage('Console.enable'))
     }
 

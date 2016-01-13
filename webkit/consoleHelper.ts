@@ -5,17 +5,22 @@
 import * as url from 'url';
 import * as Utilities from './utilities';
 
-export function formatConsoleMessage(m: WebKitProtocol.Console.Message): { text: string, isError: boolean } {
+export function formatConsoleMessage(m: WebKitProtocol.Console.Message, isClientPath :boolean = false): { text: string, isError: boolean } {
     let outputText: string;
-    if (m.type === 'log') {
+    if (m.type === 'log' || m.type === 'error' || m.type === 'warning') {
         outputText = resolveParams(m);
         if (m.source === 'network') {
             outputText += ` (${m.url})`;
         }
-        else if (m.source === 'console-api') {
-            const fileName = url.parse(m.url).pathname;
+        else if (m.source === 'console-api' && m.url) {
+            let fileName = m.url;
+            if (!isClientPath) {
+                const fileName = url.parse(m.url).pathname;
+            }
+
             const output = `${fileName}:${m.line}:${m.column}`;
             outputText += ` (${output})`;
+            return { text: outputText, isError: m.type === 'error' };
         }
     } else if (m.type === 'assert') {
         outputText = 'Assertion failed';
