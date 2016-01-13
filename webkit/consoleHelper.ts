@@ -12,6 +12,11 @@ export function formatConsoleMessage(m: WebKitProtocol.Console.Message): { text:
         if (m.source === 'network') {
             outputText += ` (${m.url})`;
         }
+        else if (m.source === 'console-api') {
+            const fileName = url.parse(m.url).pathname;
+            const output = `${fileName}:${m.line}:${m.column}`;
+            outputText += ` (${output})`;
+        }
     } else if (m.type === 'assert') {
         outputText = 'Assertion failed';
         if (m.parameters && m.parameters.length) {

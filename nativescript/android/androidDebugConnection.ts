@@ -231,6 +231,10 @@ export class AndroidDebugConnection implements INSDebugConnection {
             //CallFramesProvider.fetchCallFrames
             that.handleBreakEvent(params);
         });
+
+         this._socket.on("messageAdded", function(params) {
+            that._socket.emit("Console.messageAdded", params.body);
+        });
     }
 
     private handleBreakEvent(params: any): Promise<any> {

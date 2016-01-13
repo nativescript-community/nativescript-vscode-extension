@@ -40,7 +40,8 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private _webKitConnection: INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
     private nsProject: INSProject;
-
+    private webRoot: string;
+    private platform: string;
 
     public constructor() {
         this._variableHandles = new Handles<IScopeVarHandle>();
@@ -76,15 +77,18 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
-        switch(args.platform) {
+        this.webRoot = utils.getWebRoot(args);
+        this.platform = args.platform;
+
+        switch(this.platform) {
             case 'android':
-                this.nsProject = new ns.AndoridProject(utils.getWebRoot(args));
+                this.nsProject = new ns.AndoridProject(this.webRoot);
                 break;
             case 'ios':
-                this.nsProject = new ns.IosProject(utils.getWebRoot(args));
+                this.nsProject = new ns.IosProject(this.webRoot);
                 break;
             default:
-                throw new Error(`Not supported platform: ${args.platform}.`);
+                throw new Error(`Not supported platform: ${this.platform}.`);
         }
 
         return this.nsProject.getDebugPort().then(debugPort => {
@@ -94,15 +98,18 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     public attach(args: IAttachRequestArgs): Promise<void> {
-        switch(args.platform) {
+        this.webRoot = utils.getWebRoot(args);
+        this.platform = args.platform;
+
+        switch(this.platform) {
             case 'android':
-                this.nsProject = new ns.AndoridProject(utils.getWebRoot(args));
+                this.nsProject = new ns.AndoridProject(this.webRoot);
                 break;
             case 'ios':
-                this.nsProject = new ns.IosProject(utils.getWebRoot(args));
+                this.nsProject = new ns.IosProject(this.webRoot);
                 break;
             default:
-                throw new Error(`Not supported platform: ${args.platform}.`);
+                throw new Error(`Not supported platform: ${this.platform}.`);
         }
 
         return this.nsProject.getDebugPort().then(debugPort => {
@@ -271,7 +278,14 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private onConsoleMessage(params: WebKitProtocol.Console.MessageAddedParams): void {
-        const formattedMessage = formatConsoleMessage(params.message);
+        let localMessage = params.message;
+        if (localMessage.url)
+        {
+            const clientPath = utils.webkitUrlToClientPath(this.webRoot, this.platform, localMessage.url);
+            localMessage.url = clientPath;
+        }
+
+        const formattedMessage = formatConsoleMessage(localMessage);
         if (formattedMessage) {
             this.fireEvent(new OutputEvent(
                 formattedMessage.text + '\n',
