@@ -62,7 +62,7 @@ class ResReqNetSocket extends EventEmitter {
             that.conn.setEncoding('utf8');
 
             setTimeout(() => {
-                reject('WebSocket connection timed out')
+                reject('Connection timed out')
             }, timeout);
 
             that.conn.on('error', reject);

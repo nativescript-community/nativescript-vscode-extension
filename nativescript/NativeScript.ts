@@ -85,44 +85,48 @@ export class AndoridProject extends NSProject {
     public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
         if (args.request === "attach")
         {
-            //TODO: interaction with CLI here
             return Promise.resolve<void>();
         }
         else if (args.request === "launch")
         {
-            throw new Error("Launch on Android not implemented");
-            // let command: string = new CommandBuilder()
-            //     .appendParam("debug")
-            //     .appendParam(this.platform())
-            //     .appendFlag("--emulator", options.emulator)
-            //     .appendFlag("--debug-brk", options.debugBrk)
-            //     .appendFlag("--start", !options.debugBrk)
-            //     .appendFlag("--log trace", true)
-            //     .build();
+            //TODO: interaction with CLI here
+            //throw new Error("Launch on Android not implemented");
 
-            // // run NativeScript CLI command
-            // return new Promise<void>((resolve, reject) => {
-            //     console.log("executing tns");
-            //     let newEnv = process.env;
-            //     newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
-            //     let child: ChildProcess = exec(command, { cwd: this.projectPath() , env: newEnv });
-            //     console.log("executed tns");
-            //     child.stdout.on("data", function(data) {
-            //         console.log(data.toString());
-            //         let strData: string = data.toString();
-            //         if (options.debugBrk && strData.indexOf("Using ") > -1) {
-            //             console.log("resolving");
-            //             resolve();
-            //         }
-            //     });
-            //     child.stderr.on("data", function(data) {
-            //         console.error(data.toString());
-            //     });
-            //     child.on("close", function(code) {
-            //         console.log("rejecting " + code);
-            //         reject(code);
-            //     });
-            // });
+            let command: string = new CommandBuilder()
+                .appendParam("debug")
+                .appendParam(this.platform())
+                .appendFlag("--emulator", args.emulator)
+                .appendFlag("--debug-brk", true)
+                //.appendFlag("--start", !options.debugBrk)
+                //.appendFlag("--log trace", true)
+                .appendFlag("--no-client", true)
+                .build();
+
+            // run NativeScript CLI command
+            return new Promise<void>((resolve, reject) => {
+                console.log("executing tns");
+                let newEnv = process.env;
+                let d;
+                //newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
+                let child: ChildProcess = exec(command, { cwd: this.projectPath() , env: newEnv });
+                console.log("executed tns");
+                child.stdout.on("data", function(data) {
+                    console.log(data.toString());
+
+                    // let strData: string = data.toString();
+                    // if (options.debugBrk && strData.indexOf("Using ") > -1) {
+                    //     console.log("resolving");
+                    //     resolve();
+                    // }
+                });
+                child.stderr.on("data", function(data) {
+                    console.error(data.toString());
+                });
+                child.on("close", function(code) {
+                    console.log("rejecting " + code);
+                    reject(code);
+                });
+            });
         }
     }
 
@@ -134,7 +138,48 @@ export class AndoridProject extends NSProject {
     public getDebugPort(): Promise<number>
     {
         //TODO: Call CLI to get the debug port
-        return Promise.resolve(40001);
+        //return Promise.resolve(40001);
+
+
+
+        let command: string = new CommandBuilder()
+            .appendParam("debug")
+            .appendParam(this.platform())
+            .appendFlag("--get-port", true)
+            .build();
+
+        // run NativeScript CLI command
+        return new Promise<number>((resolve, reject) => {
+            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+            child.stdout.on('data', function(data) {
+                console.log("text " + data.toString());
+                let regexp = new RegExp("([\\d]{5})", "g");
+
+                //for the new output
+                // var input = "device: 030b258308e6ce89 debug port: 40001";
+                // var regexp = new RegExp("(?:^device: )([\\S]+)(?: debug port: )([\\d]+)", "g");
+                // var match = regexp.exec(input);
+                // console.log(match);
+
+                let portNumberMatch = data.toString().match(regexp)
+                console.log("port number match " + portNumberMatch);
+                if (portNumberMatch)
+                {
+                    let portNumber = parseInt(portNumberMatch);
+                    if (portNumber)
+                    {
+                        console.log("port number " + portNumber);
+                        resolve(portNumber);
+                    }
+                }
+            });
+            child.stderr.on('data', function(data) {
+                console.error(data.toString());
+            });
+            child.on('close', function(code) {
+                reject(code);
+            });
+        });
     }
 }
 
