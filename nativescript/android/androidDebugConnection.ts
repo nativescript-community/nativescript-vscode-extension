@@ -3,6 +3,7 @@ import {EventEmitter} from 'events';
 import * as utils from '../../webkit/utilities';
 import {Logger} from '../../webkit/utilities';
 import * as Net from 'net';
+import * as ns from '../NativeScript'
 
 
 interface IMessageWithId {
@@ -202,7 +203,7 @@ class ResReqNetSocket extends EventEmitter {
 }
 
 
-export class AndroidDebugConnection implements INSDebugConnection {
+export class AndroidDebugConnection implements ns.INSDebugConnection {
     private _nextId = 1;
     //private _socket: ResReqWebSocket;
     //private _socket: ResReqHttpSocket;

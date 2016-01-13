@@ -9,8 +9,7 @@ import {WebKitConnection} from './webKitConnection';
 import * as utils from './utilities';
 import {Logger} from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
-import * as ns from '../NativeScript/NativeScript'
-
+import * as ns from '../NativeScript/NativeScript';
 import {spawn, ChildProcess} from 'child_process';
 import * as path from 'path';
 
@@ -37,9 +36,9 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private _setBreakpointsRequestQ: Promise<any>;
 
     private _chromeProc: ChildProcess;
-    private _webKitConnection: INSDebugConnection;
+    private _webKitConnection: ns.INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
-    private nsProject: INSProject;
+    private nsProject: ns.INSProject;
     private webRoot: string;
     private platform: string;
 

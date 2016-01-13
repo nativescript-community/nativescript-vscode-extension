@@ -7,6 +7,7 @@ import * as stream from 'stream';
 import {EventEmitter} from 'events';
 import * as utils from './utilities';
 import {Logger} from './utilities';
+import * as ns from '../nativescript/NativeScript';
 
 interface IMessageWithId {
     id: number;
@@ -134,7 +135,7 @@ class ResReqTcpSocket extends EventEmitter {
 /**
  * Connects to a target supporting the webkit protocol and sends and receives messages
  */
-export class WebKitConnection implements INSDebugConnection {
+export class WebKitConnection implements ns.INSDebugConnection {
     private _nextId = 1;
     private _socket: ResReqTcpSocket;
 
