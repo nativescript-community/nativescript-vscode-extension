@@ -85,6 +85,12 @@ export class IosProject extends NSProject {
 
     public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess> {
         return new Promise<ChildProcess>((resolve, reject) => {
+            let error: string = this.isNotSupported();
+            if(error !== null) {
+                reject(error);
+                return;
+            }
+
             let command: string = new CommandBuilder()
                 .appendParam("debug")
                 .appendParam(this.platform())
@@ -113,6 +119,13 @@ export class IosProject extends NSProject {
     public getDebugPort(): Promise<number>
     {
         return Promise.resolve(18181);
+    }
+
+    private isNotSupported(): string {
+        if(!/^darwin/.test(process.platform)) {
+            return 'iOS platform is supported only on Mac.';
+        }
+        return null;
     }
 }
 
