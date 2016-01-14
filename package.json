@@ -78,8 +78,29 @@
         "program": "./out/webkit/webkitDebug.js",
         "runtime": "node",
         "initialConfigurations": [
+            {
+            "name": "Launch on iOS Device",
+            "type": "nativescript",
+            "platform": "ios",
+            "request": "launch",
+            "webRoot": ".",
+            "sourceMaps": true,
+            "diagnosticLogging": false,
+            "stopOnEntry": true,
+            "emulator": false
+          },
           {
-            "name": "Launch on iOS",
+            "name": "Attach on iOS Device",
+            "type": "nativescript",
+            "platform": "ios",
+            "request": "attach",
+            "webRoot": ".",
+            "sourceMaps": true,
+            "diagnosticLogging": false,
+            "emulator": false
+          },
+          {
+            "name": "Launch on iOS Emulator",
             "type": "nativescript",
             "platform": "ios",
             "request": "launch",
@@ -90,7 +111,7 @@
             "emulator": true
           },
           {
-            "name": "Attach on iOS",
+            "name": "Attach on iOS Emulator",
             "type": "nativescript",
             "platform": "ios",
             "request": "attach",
