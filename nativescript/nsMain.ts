@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as child from 'child_process';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -54,7 +55,42 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     var runCommand = vscode.commands.registerCommand('nativescript.run', () => {
-        vscode.window.showInformationMessage('NativeScript Run!');
+        if (vscode.workspace.rootPath === undefined) {
+            vscode.window.showErrorMessage('No workspace opened.');
+            return;
+        }
+
+        vscode.window.showQuickPick(['android', 'ios'])
+        .then(platform => {
+            if (platform === undefined) {
+                return;
+            }
+
+            let runChannel: vscode.OutputChannel = vscode.window.createOutputChannel('NativeScript Run');
+            runChannel.clear();
+            runChannel.show(vscode.ViewColumn.Two);
+
+            let tnsProcess: child.ChildProcess = child.execFile('tns', ['run', platform, '--emulator'], { cwd: vscode.workspace.rootPath });
+            tnsProcess.stdout.on('data', (data) => {
+                runChannel.append(data);
+            });
+            tnsProcess.stderr.on('data', (data) => {
+                runChannel.append(data);
+            });
+
+            tnsProcess.on('exit', () => {
+                tnsProcess.stdout.removeAllListeners('data');
+                tnsProcess.stderr.removeAllListeners('data');
+                runChannel.hide();
+            });
+
+            vscode.window.showInformationMessage('NativeScript Run')
+            .then(item => {
+                if (item === undefined) {
+                    process.kill(tnsProcess.pid, 'SIGTERM');
+                }
+            });
+        });
     });
 
     var livesyncCommand = vscode.commands.registerCommand('nativescript.livesync', () => {

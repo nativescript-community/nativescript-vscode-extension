@@ -129,7 +129,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private _attach(args: IAttachRequestArgs | ILaunchRequestArgs, port: number, host?: string): Promise<void> {
 
         let thisAdapter: WebKitDebugAdapter = this;
-        // let debugOptions: INSDebugOptions = { emulator: args.emulator, debugBrk: args.debugBrk, launchClient: args.launchClient };
         let thisProject = this.nsProject;
         thisProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]))
         return this.nsProject.debug(args)
