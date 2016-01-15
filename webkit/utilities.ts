@@ -265,9 +265,21 @@ export function webkitUrlToClientPath(webRoot: string, additionalFileExtension: 
     if(nsProjectFile) {
         return nsProjectFile;
     }
-    const pathParts = pathName.split(path.sep);
+
+    let pathParts = pathName.split(path.sep);
     while (pathParts.length > 0) {
         const clientPath = path.join(webRoot, pathParts.join(path.sep));
+        if (existsSync(clientPath)) {
+            return canonicalizeUrl(clientPath);
+        }
+
+        pathParts.shift();
+    }
+
+    //check for {N} android internal files
+    pathParts = pathName.split(path.sep);
+    while (pathParts.length > 0) {
+        const clientPath = path.join(webRoot, "platforms/android/src/main/assets", pathParts.join(path.sep));
         if (existsSync(clientPath)) {
             return canonicalizeUrl(clientPath);
         }

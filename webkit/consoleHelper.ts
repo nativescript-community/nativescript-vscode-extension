@@ -7,7 +7,7 @@ import * as Utilities from './utilities';
 
 export function formatConsoleMessage(m: WebKitProtocol.Console.Message, isClientPath :boolean = false): { text: string, isError: boolean } {
     let outputText: string;
-    if (m.level === 'log') {
+    if (m.type === 'log') {
         outputText = resolveParams(m);
         if (m.source === 'network') {
             outputText += ` (${m.url})`;

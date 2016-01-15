@@ -593,7 +593,16 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
                     return;
                 }
 
-                var source = response.result.length > 0 ? response.result[0].source : undefined;
+                let source = undefined;
+                if (response.result)
+                {
+                    source = response.result[0].source;
+                }
+                else if (response.source) {
+                    source = response.source;
+                }
+
+
                 let result = <WebKitProtocol.Debugger.GetScriptSourceResponse>{
                     id: messageId,
                     result: {

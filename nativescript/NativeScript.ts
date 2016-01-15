@@ -199,7 +199,7 @@ export class AndoridProject extends NSProject {
         //TODO: Call CLI to get the debug port
         //return Promise.resolve(40001);
 
-        return Promise.resolve(40001);
+        //return Promise.resolve(40001);
 
         let command: string = new CommandBuilder()
             .appendParam("debug")
@@ -212,7 +212,7 @@ export class AndoridProject extends NSProject {
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
             child.stdout.on('data', function(data) {
                 console.log("text " + data.toString());
-                let regexp = new RegExp("([\\d]{5})", "g");
+                let regexp = new RegExp(" ([\\d]{5})", "g");
 
                 //for the new output
                 // var input = "device: 030b258308e6ce89 debug port: 40001";
