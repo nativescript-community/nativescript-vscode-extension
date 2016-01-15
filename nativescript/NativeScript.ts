@@ -1,6 +1,7 @@
 import {exec, ChildProcess} from 'child_process';
 import {WebKitConnection} from '../webkit/webKitConnection';
 import {AndroidDebugConnection} from './android/AndroidDebugConnection';
+import {EventEmitter} from 'events';
 
 export interface INSDebugConnection {
     on(eventName: string, handler: (msg: any) => void): void;
@@ -37,26 +38,26 @@ export interface INSDebugConnection {
 
     page_clearOverlayMessage(): Promise<WebKitProtocol.Response>;
 
-    emit(event: string, ...args: any[]): boolean;
 }
 
-export interface INSProject {
+export interface INSProject extends EventEmitter {
     platform(): string;
 
     projectPath(): string;
 
-    debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess>;
+    debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void>;
 
-    createConnection() : Promise<INSDebugConnection>;
+    createConnection(): Promise<INSDebugConnection>;
 
-    getDebugPort() :  Promise<number>;
+    getDebugPort(): Promise<number>;
 }
 
-export abstract class NSProject implements INSProject {
+export abstract class NSProject extends EventEmitter implements INSProject {
     private _projectPath: string;
 
     constructor(projectPath: string) {
         this._projectPath = projectPath;
+        super();
     }
 
     public projectPath(): string {
@@ -65,7 +66,7 @@ export abstract class NSProject implements INSProject {
 
     public abstract platform(): string;
 
-    public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess>;
+    public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void>;
 
     public abstract createConnection(): Promise<INSDebugConnection>;
 
@@ -83,14 +84,15 @@ export class IosProject extends NSProject {
         return 'ios';
     }
 
-    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess> {
-        return new Promise<ChildProcess>((resolve, reject) => {
+    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
             let error: string = this.isNotSupported();
-            if(error !== null) {
+            if (error !== null) {
                 reject(error);
                 return;
             }
 
+            let that = this;
             let command: string = new CommandBuilder()
                 .appendParam("debug")
                 .appendParam(this.platform())
@@ -102,27 +104,34 @@ export class IosProject extends NSProject {
 
             // run NativeScript CLI command
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
-            if(child) {
-                resolve(child);
-            }
-            else {
-                reject('Unable to start CLI command.');
-            }
+            child.stdout.on('data', function(data) {
+                let strData: string = data.toString();
+                console.log(data.toString());
+                that.emit('TNS.outputMessage', data.toString(), 'log');
+                if (args.request === "launch" && strData.indexOf('NativeScript waiting for debugger.') > -1) {
+                    resolve();
+                }
+            });
+            child.stderr.on('data', function(data) {
+                console.error(data.toString());
+                that.emit('TNS.outputMessage', data.toString(), 'error');
+            });
+            child.on('close', function(code) {
+                reject(code);
+            });
         });
     }
 
-    public createConnection() : Promise<INSDebugConnection>
-    {
+    public createConnection(): Promise<INSDebugConnection> {
         return Promise.resolve(new WebKitConnection());
     }
 
-    public getDebugPort(): Promise<number>
-    {
+    public getDebugPort(): Promise<number> {
         return Promise.resolve(18181);
     }
 
     private isNotSupported(): string {
-        if(!/^darwin/.test(process.platform)) {
+        if (!/^darwin/.test(process.platform)) {
             return 'iOS platform is supported only on Mac.';
         }
         return null;
@@ -138,52 +147,59 @@ export class AndoridProject extends NSProject {
         return 'android';
     }
 
-    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<ChildProcess> {
-        if (args.request === "attach")
-        {
-            return Promise.resolve<ChildProcess>(null);
+    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+        if (args.request === "attach") {
+            return Promise.resolve<void>();
         }
-        else if (args.request === "launch")
-        {
+        else if (args.request === "launch") {
             //TODO: interaction with CLI here
             //throw new Error("Launch on Android not implemented");
-
-            return new Promise<ChildProcess>((resolve, reject) => {
+            let that = this;
+            return new Promise<void>((resolve, reject) => {
                 let command: string = new CommandBuilder()
                     .appendParam("debug")
                     .appendParam(this.platform())
                     .appendFlag("--emulator", args.emulator)
                     .appendFlag("--debug-brk", true)
-                    //.appendFlag("--start", !options.debugBrk)
-                    //.appendFlag("--log trace", true)
+                //.appendFlag("--start", !options.debugBrk)
+                //.appendFlag("--log trace", true)
                     .appendFlag("--no-client", true)
                     .build();
 
                 // run NativeScript CLI command
                 let newEnv = process.env;
-                //newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
-                let child: ChildProcess = exec(command, { cwd: this.projectPath() , env: newEnv });
-                if(child) {
-                    resolve(child);
-                }
-                else {
-                    reject('Unable to start CLI command.');
-                }
+                newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
+                let child: ChildProcess = exec(command, { cwd: this.projectPath(), env: newEnv });
+                child.stdout.on('data', function(data) {
+                    let strData: string = data.toString();
+                    console.log(data.toString());
+                    that.emit('TNS.outputMessage', data.toString(), 'log');
+                    if (args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
+                        resolve();
+                    }
+                });
+
+                child.stderr.on('data', function(data) {
+                    console.error(data.toString());
+                    that.emit('TNS.outputMessage', data.toString(), 'error');
+
+                });
+                child.on('close', function(code) {
+                    reject(code);
+                });
             });
         }
     }
 
-    public createConnection() : Promise<INSDebugConnection>
-    {
+    public createConnection(): Promise<INSDebugConnection> {
         return Promise.resolve(new AndroidDebugConnection());
     }
 
-    public getDebugPort(): Promise<number>
-    {
+    public getDebugPort(): Promise<number> {
         //TODO: Call CLI to get the debug port
         //return Promise.resolve(40001);
 
-
+        return Promise.resolve(40001);
 
         let command: string = new CommandBuilder()
             .appendParam("debug")
@@ -206,11 +222,9 @@ export class AndoridProject extends NSProject {
 
                 let portNumberMatch = data.toString().match(regexp)
                 console.log("port number match " + portNumberMatch);
-                if (portNumberMatch)
-                {
+                if (portNumberMatch) {
                     let portNumber = parseInt(portNumberMatch);
-                    if (portNumber)
-                    {
+                    if (portNumber) {
                         console.log("port number " + portNumber);
                         resolve(portNumber);
                     }

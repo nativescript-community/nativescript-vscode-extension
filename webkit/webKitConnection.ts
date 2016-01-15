@@ -237,9 +237,4 @@ export class WebKitConnection implements ns.INSDebugConnection {
             params
         });
     }
-
-    public emit(event: string, ...args: any[]): boolean {
-        args.unshift(event);
-        return this._socket.emit.apply(this._socket, args)
-    }
 }

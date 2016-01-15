@@ -7,7 +7,7 @@ import * as Utilities from './utilities';
 
 export function formatConsoleMessage(m: WebKitProtocol.Console.Message, isClientPath :boolean = false): { text: string, isError: boolean } {
     let outputText: string;
-    if (m.type === 'log' || m.type === 'error' || m.type === 'warning') {
+    if (m.level === 'log') {
         outputText = resolveParams(m);
         if (m.source === 'network') {
             outputText += ` (${m.url})`;
@@ -20,7 +20,7 @@ export function formatConsoleMessage(m: WebKitProtocol.Console.Message, isClient
 
             const output = `${fileName}:${m.line}:${m.column}`;
             outputText += ` (${output})`;
-            return { text: outputText, isError: m.type === 'error' };
+            return { text: outputText, isError: m.level === 'error' };
         }
     } else if (m.type === 'assert') {
         outputText = 'Assertion failed';
