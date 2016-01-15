@@ -41,6 +41,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private nsProject: ns.INSProject;
     private webRoot: string;
     private platform: string;
+    private isAttached: boolean;
 
     public constructor() {
         this._variableHandles = new Handles<IScopeVarHandle>();
@@ -130,6 +131,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         let thisAdapter: WebKitDebugAdapter = this;
         // let debugOptions: INSDebugOptions = { emulator: args.emulator, debugBrk: args.debugBrk, launchClient: args.launchClient };
         let thisProject = this.nsProject;
+        thisProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]))
         return this.nsProject.debug(args)
             .then(_ => {
                 // ODP client is attaching - if not attached to the webkit target, create a connection and attach
@@ -150,7 +152,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 thisAdapter._webKitConnection.on('Debugger.globalObjectCleared', () => thisAdapter.onGlobalObjectCleared());
                 thisAdapter._webKitConnection.on('Debugger.breakpointResolved', params => thisAdapter.onBreakpointResolved(params));
 
-                thisProject.on('TNS.outputMessage', params => thisAdapter.onTnsOutputMessage.apply(thisAdapter, params))
                 thisAdapter._webKitConnection.on('Console.messageAdded', params => thisAdapter.onConsoleMessage(params));
 
 
@@ -161,7 +162,10 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 thisAdapter._webKitConnection.on('error', () => thisAdapter.terminateSession());
 
                 return thisAdapter._webKitConnection.attach(port, host)
-                    .then(() => thisAdapter.fireEvent(new InitializedEvent()),
+                    .then(() => {
+                        thisAdapter.isAttached = true;
+                        thisAdapter.fireEvent(new InitializedEvent());
+                    },
                     e => {
                         thisAdapter.clearEverything();
                         return utils.errP(e);
@@ -173,7 +177,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private onTnsOutputMessage(message: string, level: string): void {
-        if(this._webKitConnection) {
+        if (!this.isAttached) {
             let messageParams: WebKitProtocol.Console.MessageAddedParams = {
                 message: {
                     level: level,
@@ -206,6 +210,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private clearEverything(): void {
         this.clearClientContext();
         this.clearTargetContext();
+        this.isAttached = false;
         this._chromeProc = null;
 
         if (this._webKitConnection) {
