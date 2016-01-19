@@ -7,7 +7,6 @@ import {StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from '../c
 import {Handles} from '../common/handles';
 import {WebKitConnection} from './webKitConnection';
 import * as utils from './utilities';
-import {Logger} from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
 import * as ns from '../NativeScript/NativeScript';
 import {spawn, ChildProcess} from 'child_process';
@@ -116,7 +115,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
     private initDiagnosticLogging(name: string, args: IAttachRequestArgs | ILaunchRequestArgs): void {
         if (args.diagnosticLogging) {
-            Logger.enableDiagnosticLogging();
+            utils.Logger.enableDiagnosticLogging();
             utils.Logger.log(`initialize(${JSON.stringify(this._initArgs) })`);
             utils.Logger.log(`${name}(${JSON.stringify(args) })`);
         }
