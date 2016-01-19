@@ -53,13 +53,13 @@ class ResReqNetSocket extends EventEmitter {
     private callbacks: Callbacks;
     private isRunning: boolean;
 
-    public attach(port: number, timeout: number = 10000) {
+    public attach(port: number, url: string, timeout: number = 10000) {
         var that = this;
         this.callbacks = new Callbacks();
 
         return new Promise<void>((resolve, reject) => {
 
-            that.conn = Net.createConnection(port),
+            that.conn = Net.createConnection(port, url),
             that.conn.setEncoding('utf8');
 
             setTimeout(() => {
@@ -74,7 +74,7 @@ class ResReqNetSocket extends EventEmitter {
                 that.conn.removeListener('error', reject);
 
                 that.conn.on('error', e => {
-                    Logger.log('socket error: ' + e.toString());
+                    console.error('socket error: ' + e.toString());
 
                     if (e.code == 'ECONNREFUSED') {
                         e.helpString = 'Is node running with --debug port ' + port + '?';
@@ -86,7 +86,6 @@ class ResReqNetSocket extends EventEmitter {
                     if (e.helpString) {
                         that.lastError += '. ' + e.helpString;
                     }
-
 
                     that.emit('error', e);
                 });
@@ -138,7 +137,6 @@ class ResReqNetSocket extends EventEmitter {
                         this.callbacks.processResponse(obj.request_seq, [obj]);
                     }
                     else if (obj.type === 'event') {
-                        //debugProtocol('event: ' + msg.body);
                         console.log('event: ' + obj.event + " obj: " + JSON.stringify(obj));
                         this.emit(obj.event, obj);
                     }
@@ -228,8 +226,6 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
 
 
         this._socket.on("break", function(params) {
-            //send backtrace request and then populate the callstacks as in
-            //CallFramesProvider.fetchCallFrames
             that.handleBreakEvent(params);
         });
 
@@ -421,7 +417,7 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
     }
 
     private _attach(port: number, url?: string): Promise<void> {
-        return this._socket.attach(port);
+        return this._socket.attach(port, url);
     }
 
     public close(): void {

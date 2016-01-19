@@ -139,6 +139,8 @@ export class IosProject extends NSProject {
 }
 
 export class AndoridProject extends NSProject {
+    private child: ChildProcess;
+
     constructor(projectPath: string) {
         super(projectPath);
     }
@@ -155,36 +157,44 @@ export class AndoridProject extends NSProject {
             //TODO: interaction with CLI here
             //throw new Error("Launch on Android not implemented");
             let that = this;
+            let launched = false;
             return new Promise<void>((resolve, reject) => {
                 let command: string = new CommandBuilder()
                     .appendParam("debug")
                     .appendParam(this.platform())
                     .appendFlag("--emulator", args.emulator)
                     .appendFlag("--debug-brk", true)
-                //.appendFlag("--start", !options.debugBrk)
+                    //.appendFlag("--start", true)
                 //.appendFlag("--log trace", true)
-                    .appendFlag("--no-client", true)
+                    .appendParam("--no-client")
                     .build();
 
                 // run NativeScript CLI command
                 let newEnv = process.env;
                 newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
-                let child: ChildProcess = exec(command, { cwd: this.projectPath(), env: newEnv });
-                child.stdout.on('data', function(data) {
+                this.child = exec(command, { cwd: this.projectPath(), env: newEnv });
+                this.child.stdout.on('data', function(data) {
                     let strData: string = data.toString();
                     console.log(data.toString());
                     that.emit('TNS.outputMessage', data.toString(), 'log');
-                    if (args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
-                        resolve();
+                    if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
+                        that.child = null;
+                        launched = true;
+
+                        //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
+                        setTimeout(() => {
+                            resolve();
+                        }, 500);
                     }
                 });
 
-                child.stderr.on('data', function(data) {
+                this.child.stderr.on('data', function(data) {
                     console.error(data.toString());
                     that.emit('TNS.outputMessage', data.toString(), 'error');
 
                 });
-                child.on('close', function(code) {
+                this.child.on('close', function(code) {
+                    that.child = null;
                     reject(code);
                 });
             });
@@ -206,12 +216,13 @@ export class AndoridProject extends NSProject {
             .appendParam(this.platform())
             .appendFlag("--get-port", true)
             .build();
-
+        let that = this;
         // run NativeScript CLI command
         return new Promise<number>((resolve, reject) => {
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
             child.stdout.on('data', function(data) {
-                console.log("text " + data.toString());
+                that.emit('TNS.outputMessage', data.toString(), 'log');
+                console.log("getDebugPort: " + data.toString());
                 let regexp = new RegExp(" ([\\d]{5})", "g");
 
                 //for the new output
@@ -226,6 +237,7 @@ export class AndoridProject extends NSProject {
                     let portNumber = parseInt(portNumberMatch);
                     if (portNumber) {
                         console.log("port number " + portNumber);
+                        child.stdout.removeAllListeners('data');
                         resolve(portNumber);
                     }
                 }
