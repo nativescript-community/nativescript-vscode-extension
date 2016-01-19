@@ -174,10 +174,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                             thisAdapter.clearEverything();
                             return utils.errP(e);
                         });
-                })
-                .catch(function(error) {
-                    console.error("Error: " + error.toString());
-                });;
+                });
     }
 
     private onTnsOutputMessage(message: string, level: string = "log"): void {

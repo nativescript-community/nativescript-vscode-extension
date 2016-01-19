@@ -117,7 +117,7 @@ export class IosProject extends NSProject {
                 that.emit('TNS.outputMessage', data.toString(), 'error');
             });
             child.on('close', function(code) {
-                reject(code);
+                reject("The debug process exited unexpectedly");
             });
         });
     }
@@ -165,13 +165,13 @@ export class AndoridProject extends NSProject {
                     .appendFlag("--emulator", args.emulator)
                     .appendFlag("--debug-brk", true)
                     //.appendFlag("--start", true)
-                //.appendFlag("--log trace", true)
+                    //.appendFlag("--log trace", true)
                     .appendParam("--no-client")
                     .build();
 
                 // run NativeScript CLI command
                 let newEnv = process.env;
-                newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
+                //newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
                 this.child = exec(command, { cwd: this.projectPath(), env: newEnv });
                 this.child.stdout.on('data', function(data) {
                     let strData: string = data.toString();
@@ -195,7 +195,7 @@ export class AndoridProject extends NSProject {
                 });
                 this.child.on('close', function(code) {
                     that.child = null;
-                    reject(code);
+                    reject("The debug process exited unexpectedly");
                 });
             });
         }
