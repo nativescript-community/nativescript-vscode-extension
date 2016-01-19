@@ -99,7 +99,7 @@ export class IosProject extends NSProject {
                 .appendFlag("--emulator", args.emulator)
                 .appendFlag("--start", args.request === "attach")
                 .appendFlag("--debug-brk", args.request === "launch")
-                .appendFlag("--no-client", true)
+                .appendParam("--no-client")
                 .build();
 
             // run NativeScript CLI command

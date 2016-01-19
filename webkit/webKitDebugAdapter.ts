@@ -76,25 +76,18 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
-        this.webRoot = utils.getWebRoot(args);
-        this.platform = args.platform;
-
-        switch(this.platform) {
-            case 'android':
-                this.nsProject = new ns.AndoridProject(this.webRoot);
-                break;
-            case 'ios':
-                this.nsProject = new ns.IosProject(this.webRoot);
-                break;
-            default:
-                throw new Error(`Not supported platform: ${this.platform}.`);
-        }
-
         this.initDiagnosticLogging('launch', args);
+        this.init(args);
         return this._attach(args, 'localhost');
     }
 
     public attach(args: IAttachRequestArgs): Promise<void> {
+        this.initDiagnosticLogging("attach", args);
+        this.init(args);
+        return this._attach(args, 'localhost');
+    }
+
+    private init(args: IAttachRequestArgs | ILaunchRequestArgs) : void {
         this.webRoot = utils.getWebRoot(args);
         this.platform = args.platform;
 
@@ -108,9 +101,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
             default:
                 throw new Error(`Not supported platform: ${this.platform}.`);
         }
-
-        this.initDiagnosticLogging("attach", args);
-        return this._attach(args, 'localhost');
     }
 
     private initDiagnosticLogging(name: string, args: IAttachRequestArgs | ILaunchRequestArgs): void {
