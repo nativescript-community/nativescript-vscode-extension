@@ -128,7 +128,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                             thisAdapter._webKitConnection = connection;
                             return Promise.resolve<void>();
                         });
-
                     }
 
                     return Promise.resolve<void>();
@@ -146,9 +145,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
                     thisAdapter._webKitConnection.on('Console.messageAdded', params => thisAdapter.onConsoleMessage(params));
 
-
                     thisAdapter._webKitConnection.on('Inspector.detached', () => thisAdapter.terminateSession());
-
 
                     thisAdapter._webKitConnection.on('close', () => thisAdapter.terminateSession());
                     thisAdapter._webKitConnection.on('error', () => thisAdapter.terminateSession());

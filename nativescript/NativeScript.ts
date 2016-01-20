@@ -105,11 +105,13 @@ export class IosProject extends NSProject {
             // run NativeScript CLI command
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
             child.stdout.on('data', function(data) {
-                let strData: string = data.toString();
-                console.log(data.toString());
+                console.log(data);
                 that.emit('TNS.outputMessage', data.toString(), 'log');
-                if (args.request === "launch" && strData.indexOf('NativeScript waiting for debugger.') > -1) {
+                if (args.request === 'launch' && data.indexOf('NativeScript waiting for debugger.') > -1) {
                     resolve();
+                }
+                else if(args.request === 'attach' && data.indexOf('Supressing debugging client.') > -1) {
+                    setTimeout(resolve, 1500); //resolve after a 1500ms
                 }
             });
             child.stderr.on('data', function(data) {
