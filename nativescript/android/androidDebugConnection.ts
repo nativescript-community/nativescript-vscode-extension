@@ -229,6 +229,10 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
             that.handleBreakEvent(params);
         });
 
+         this._socket.on("exception", function(params) {
+            that.handleBreakEvent(params);
+        });
+
          this._socket.on("messageAdded", function(params) {
             that._socket.emit("Console.messageAdded", params.body);
         });
@@ -555,7 +559,7 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
         //return this.sendMessage('Debugger.setPauseOnExceptions', <WebKitProtocol.Debugger.SetPauseOnExceptionsParams>{ state });
 
         var requestParams = {
-            type: state,
+            type: state !== none ? state : "uncaught",
             enabled: state !== 'none'
         };
 
