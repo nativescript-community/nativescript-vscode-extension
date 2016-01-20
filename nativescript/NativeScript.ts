@@ -102,16 +102,31 @@ export class IosProject extends NSProject {
                 .appendParam("--no-client")
                 .build();
 
+            let proxyIsReadyPhrase: string = 'Press Ctrl + C to terminate, or disconnect.';
+            let cliIsReadyPhrase: string = 'Supressing debugging client.';
+            let backendIsReadyPhrase: string = 'NativeScript waiting for debugger.';
+            let proxyIsReady: boolean = false;
+            let cliIsReady: boolean = false;
+            let backendIsReady: boolean = false;
+            let resolved: boolean = false;
+
             // run NativeScript CLI command
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
             child.stdout.on('data', function(data) {
                 console.log(data);
                 that.emit('TNS.outputMessage', data.toString(), 'log');
-                if (args.request === 'launch' && data.indexOf('NativeScript waiting for debugger.') > -1) {
-                    resolve();
-                }
-                else if(args.request === 'attach' && data.indexOf('Supressing debugging client.') > -1) {
-                    setTimeout(resolve, 1500); //resolve after a 1500ms
+                if(!resolved) {
+                    proxyIsReady = proxyIsReady || data.indexOf(proxyIsReadyPhrase) > -1;
+                    cliIsReady = cliIsReady || data.indexOf(cliIsReadyPhrase) > -1;
+                    backendIsReady = backendIsReady || data.indexOf(backendIsReadyPhrase) > -1;
+                    if (args.request === 'launch' && proxyIsReady && cliIsReady && backendIsReady) {
+                        resolved = true;
+                        resolve();
+                    }
+                    else if(args.request === 'attach' && proxyIsReady && cliIsReady) {
+                        resolved = true;
+                        setTimeout(resolve, 1500); //resolve after a 1500ms
+                    }
                 }
             });
             child.stderr.on('data', function(data) {

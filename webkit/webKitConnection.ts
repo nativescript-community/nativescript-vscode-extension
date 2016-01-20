@@ -156,7 +156,7 @@ export class WebKitConnection implements ns.INSDebugConnection {
      */
     public attach(port: number, host?: string): Promise<void> {
         Logger.log('Attempting to attach on port ' + port);
-        return this._attach(port, host)
+        return utils.retryAsync(() => this._attach(port, host), 6000)
             .then(() => this.sendMessage('Debugger.enable'))
             .then(() => this.sendMessage('Console.enable'))
             .then(() => { });
