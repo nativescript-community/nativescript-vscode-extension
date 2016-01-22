@@ -77,7 +77,7 @@ export class SourceMaps implements ISourceMaps {
 		const map = this._findSourceToGeneratedMapping(pathToSource);
 		if (map) {
 			line += 1;	// source map impl is 1 based
-			const mr = map.generatedPositionFor(pathToSource, line, column);
+			const mr = map.generatedPositionFor(pathToSource, line, column, Bias.LEAST_UPPER_BOUND);
 			if (typeof mr.line === 'number') {
 				if (SourceMaps.TRACE) console.error(`${Path.basename(pathToSource)} ${line}:${column} -> ${mr.line}:${mr.column}`);
 				return { path: map.generatedPath(), line: mr.line-1, column: mr.column};

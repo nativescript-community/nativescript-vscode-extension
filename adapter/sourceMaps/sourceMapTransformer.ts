@@ -127,8 +127,8 @@ export class SourceMapTransformer implements IDebugTransformer {
                     // authoredPath is set, so the file was mapped to source.
                     // Remove breakpoints from files that map to the same file, and map back to source.
                     response.breakpoints = response.breakpoints.filter((_, i) => i < sourceBPLines.length);
-                    response.breakpoints.forEach(bp => {
-                        const mapped = this._sourceMaps.MapToSource(args.source.path, bp.line, bp.column);
+                    response.breakpoints.forEach((bp, i) => {
+                        const mapped = this._sourceMaps.MapToSource(args.source.path, args.lines[i], args.cols[i]);
                         if (mapped) {
                             utils.Logger.log(`SourceMaps.setBP: Mapped ${args.source.path}:${bp.line}:${bp.column} to ${mapped.path}:${mapped.line}`);
                             bp.line = mapped.line;

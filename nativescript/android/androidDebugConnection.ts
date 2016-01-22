@@ -559,7 +559,7 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
         //return this.sendMessage('Debugger.setPauseOnExceptions', <WebKitProtocol.Debugger.SetPauseOnExceptionsParams>{ state });
 
         var requestParams = {
-            type: state !== none ? state : "uncaught",
+            type: state !== 'none' ? state : "uncaught",
             enabled: state !== 'none'
         };
 
