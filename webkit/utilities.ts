@@ -241,12 +241,6 @@ export function webkitUrlToClientPath(webRoot: string, additionalFileExtension: 
 
     aUrl = decodeURI(aUrl);
 
-    // If the url is an absolute path to a file that exists, return it without file:///.
-    // A remote absolute url (cordova) will still need the logic below.
-    if (aUrl.startsWith('file:///') && existsSync(aUrl.replace(/^file:\/\/\//, ''))) {
-        return canonicalizeUrl(aUrl);
-    }
-
     // If we don't have the client workingDirectory for some reason, don't try to map the url to a client path
     if (!webRoot) {
         return '';
