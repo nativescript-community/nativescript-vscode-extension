@@ -40,19 +40,7 @@ export interface INSDebugConnection {
 
 }
 
-export interface INSProject extends EventEmitter {
-    platform(): string;
-
-    projectPath(): string;
-
-    debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void>;
-
-    createConnection(): Promise<INSDebugConnection>;
-
-    getDebugPort(): Promise<number>;
-}
-
-export abstract class NSProject extends EventEmitter implements INSProject {
+export abstract class NSProject extends EventEmitter {
     private _projectPath: string;
 
     constructor(projectPath: string) {
@@ -65,13 +53,6 @@ export abstract class NSProject extends EventEmitter implements INSProject {
     }
 
     public abstract platform(): string;
-
-    public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void>;
-
-    public abstract createConnection(): Promise<INSDebugConnection>;
-
-    public abstract getDebugPort(): Promise<number>;
-
 }
 
 export class IosProject extends NSProject {
@@ -137,14 +118,6 @@ export class IosProject extends NSProject {
                 reject("The debug process exited unexpectedly");
             });
         });
-    }
-
-    public createConnection(): Promise<INSDebugConnection> {
-        return Promise.resolve(new WebKitConnection());
-    }
-
-    public getDebugPort(): Promise<number> {
-        return Promise.resolve(18181);
     }
 
     private isNotSupported(): string {

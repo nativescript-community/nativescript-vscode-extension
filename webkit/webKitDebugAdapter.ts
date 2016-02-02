@@ -37,7 +37,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private _chromeProc: ChildProcess;
     private _webKitConnection: ns.INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
-    private nsProject: ns.INSProject;
     private webRoot: string;
     private platform: string;
     private isAttached: boolean;
@@ -45,7 +44,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     public constructor() {
         this._variableHandles = new Handles<IScopeVarHandle>();
         this._overlayHelper = new utils.DebounceHelper(/*timeoutMs=*/200);
-        this.nsProject = null;
 
         this.clearEverything();
     }
@@ -76,31 +74,11 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
-        this.initDiagnosticLogging('launch', args);
-        this.init(args);
-        return this._attach(args, 'localhost');
+        return this._attach(args);
     }
 
     public attach(args: IAttachRequestArgs): Promise<void> {
-        this.initDiagnosticLogging("attach", args);
-        this.init(args);
-        return this._attach(args, 'localhost');
-    }
-
-    private init(args: IAttachRequestArgs | ILaunchRequestArgs) : void {
-        this.webRoot = utils.getWebRoot(args);
-        this.platform = args.platform;
-
-        switch(this.platform) {
-            case 'android':
-                this.nsProject = new ns.AndoridProject(this.webRoot);
-                break;
-            case 'ios':
-                this.nsProject = new ns.IosProject(this.webRoot);
-                break;
-            default:
-                throw new Error(`Not supported platform: ${this.platform}.`);
-        }
+        return this._attach(args);
     }
 
     private initDiagnosticLogging(name: string, args: IAttachRequestArgs | ILaunchRequestArgs): void {
@@ -111,21 +89,46 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private _attach(args: IAttachRequestArgs | ILaunchRequestArgs, host?: string): Promise<void> {
-
-        let thisAdapter: WebKitDebugAdapter = this;
-        let thisProject = this.nsProject;
-        thisProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]))
+    private _attach(args: IAttachRequestArgs | ILaunchRequestArgs) {
+        this.initDiagnosticLogging(args.request, args);
+        this.webRoot = utils.getWebRoot(args);
+        this.platform = args.platform;
         this.isAttached = false;
+
+        return ((args.platform == 'ios') ? this._attachIos(args) : this._attachAndroid(args))
+            .then(() => {
+                this.isAttached = true;
+                this.fireEvent(new InitializedEvent());
+            },
+            e => {
+                this.clearEverything();
+                return utils.errP(e);
+            });
+    }
+
+    private _attachIos(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+        let iosProject : ns.IosProject = new ns.IosProject(this.webRoot);
+        iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
+        return iosProject.debug(args)
+        .then(() => {
+            return this.setConnection(new WebKitConnection()).attach(18181, 'localhost');
+        });
+    }
+
+    private _attachAndroid(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+        let androidProject: ns.AndoridProject = new ns.AndoridProject(this.webRoot);
+        let thisAdapter: WebKitDebugAdapter = this;
+
+        androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
         let port: number;
         this.onTnsOutputMessage("Getting debug port");
-        return this.nsProject.getDebugPort()
+        return androidProject.getDebugPort()
                 .then(debugPort => {
                     port = debugPort;
                     console.log("Creating debug connection");
                     if (!thisAdapter._webKitConnection) {
-                        return thisProject.createConnection().then(connection => {
-                            thisAdapter._webKitConnection = connection;
+                        return androidProject.createConnection().then(connection => {
+                            this.setConnection(connection);
                             return Promise.resolve<void>();
                         });
                     }
@@ -134,33 +137,26 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 })
                 .then(() => {
                     this.onTnsOutputMessage("Preparing for debug");
-                    return thisAdapter.nsProject.debug(args);
+                    return androidProject.debug(args);
                 })
                 .then(() => {
-                    thisAdapter._webKitConnection.on('Debugger.paused', params => thisAdapter.onDebuggerPaused(params));
-                    thisAdapter._webKitConnection.on('Debugger.resumed', () => thisAdapter.onDebuggerResumed());
-                    thisAdapter._webKitConnection.on('Debugger.scriptParsed', params => thisAdapter.onScriptParsed(params));
-                    thisAdapter._webKitConnection.on('Debugger.globalObjectCleared', () => thisAdapter.onGlobalObjectCleared());
-                    thisAdapter._webKitConnection.on('Debugger.breakpointResolved', params => thisAdapter.onBreakpointResolved(params));
-
-                    thisAdapter._webKitConnection.on('Console.messageAdded', params => thisAdapter.onConsoleMessage(params));
-
-                    thisAdapter._webKitConnection.on('Inspector.detached', () => thisAdapter.terminateSession());
-
-                    thisAdapter._webKitConnection.on('close', () => thisAdapter.terminateSession());
-                    thisAdapter._webKitConnection.on('error', () => thisAdapter.terminateSession());
-
                     this.onTnsOutputMessage("Attaching to debug application");
-                    return thisAdapter._webKitConnection.attach(port, host)
-                        .then(() => {
-                            thisAdapter.isAttached = true;
-                            thisAdapter.fireEvent(new InitializedEvent());
-                        },
-                        e => {
-                            thisAdapter.clearEverything();
-                            return utils.errP(e);
-                        });
+                    return thisAdapter._webKitConnection.attach(port, 'localhost');
                 });
+    }
+
+    private setConnection(connection: ns.INSDebugConnection) : ns.INSDebugConnection {
+        connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
+        connection.on('Debugger.resumed', () => this.onDebuggerResumed());
+        connection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));
+        connection.on('Debugger.globalObjectCleared', () => this.onGlobalObjectCleared());
+        connection.on('Debugger.breakpointResolved', params => this.onBreakpointResolved(params));
+        connection.on('Console.messageAdded', params => this.onConsoleMessage(params));
+        connection.on('Inspector.detached', () => this.terminateSession());
+        connection.on('close', () => this.terminateSession());
+        connection.on('error', () => this.terminateSession());
+        this._webKitConnection = connection;
+        return connection;
     }
 
     private onTnsOutputMessage(message: string, level: string = "log"): void {
