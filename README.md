@@ -24,13 +24,15 @@ install tsd -g`)
 modules installed
 6. run `tsd install` from the project folder to have the TypeScript
 declarations installed
+7. run `gulp` from the project folder. An `out` folder should be created.
 
 #### Build and Run
 1. Start Visual Studio Code and load the project (`code .` from the project
 directory)
-2. Press `F5` to run the extension development host
-3. Hit `F1`
-4. Type `NativeScript` and choose from the available commands
+2. Open `Debug Panel` and select `launch in extension host` configuration
+3. Press `F5` to run the extension development host
+4. Hit `F1`
+5. Type `NativeScript` and choose from the available commands
 
 > Visit [the official visual studio code site]
 (https://code.visualstudio.com/docs/extensions/example-hello-world) for more
