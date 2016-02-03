@@ -16,9 +16,7 @@
   "categories": ["Debuggers"],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "source-map": "^0.5.3",
-    "nativescript": "^1.5.1",
-    "shelljs": "0.5.3"
+    "source-map": "^0.5.3"
   },
   "devDependencies": {
     "gulp": "^3.9.0",
