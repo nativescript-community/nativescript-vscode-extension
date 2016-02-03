@@ -51,6 +51,21 @@ export abstract class NSProject extends EventEmitter {
         return this._projectPath;
     }
 
+    public ensureNativeScriptIsInstalled(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            let command: string = new CommandBuilder().build();
+            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+            child.on('close', exitCode => {
+                if(exitCode == 0) {
+                    resolve();
+                }
+                else {
+                    reject("NativeScript not found, please run 'npm install –g nativescript' to install it.");
+                }
+            })
+        });
+    }
+
     public abstract platform(): string;
 }
 
@@ -64,8 +79,31 @@ export class IosProject extends NSProject {
         return 'ios';
     }
 
+    public run(): Promise<ChildProcess> {
+        if(!this.isOSX()) {
+            return Promise.reject('iOS platform is only supported on OS X.');
+        }
+
+        return this.ensureNativeScriptIsInstalled()
+        .then(() => {
+            // build command to execute
+            let command: string = new CommandBuilder()
+                .appendParam("run")
+                .appendParam(this.platform())
+                .appendParam("--emulator")
+                .build();
+
+            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+            return child;
+        });
+    }
+
     public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<string> {
-        return this.ensureIsSupported()
+        if(!this.isOSX()) {
+            return Promise.reject('iOS platform is supported only on OS X.');
+        }
+
+        return this.ensureNativeScriptIsInstalled()
         .then(() => {
             // build command to execute
             let command: string = new CommandBuilder()
@@ -110,11 +148,8 @@ export class IosProject extends NSProject {
         });
     }
 
-    private ensureIsSupported(): Promise<void> {
-        if (!/^darwin/.test(process.platform)) {
-            return Promise.reject('iOS platform is supported only on Mac.');
-        }
-        return Promise.resolve<void>();
+    private isOSX(): boolean {
+        return /^darwin/.test(process.platform);
     }
 }
 

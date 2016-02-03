@@ -35,31 +35,19 @@
   },
   "main": "./out/nativescript/nsMain",
   "activationEvents": [
-    "onCommand:nativescript.create",
-    "onCommand:nativescript.build",
-    "onCommand:nativescript.run",
-    "onCommand:nativescript.livesync"
+    "onCommand:nativescript.runIos",
+    "onCommand:nativescript.runAndroid"
   ],
   "contributes": {
     "commands": [
       {
-        "command": "nativescript.create",
-        "title": "Create",
+        "command": "nativescript.runIos",
+        "title": "Run on iOS",
         "category": "NativeScript"
       },
       {
-        "command": "nativescript.build",
-        "title": "Build",
-        "category": "NativeScript"
-      },
-      {
-        "command": "nativescript.run",
-        "title": "Run",
-        "category": "NativeScript"
-      },
-      {
-        "command": "nativescript.livesync",
-        "title": "LiveSync",
+        "command": "nativescript.runAndroid",
+        "title": "Run on Android",
         "category": "NativeScript"
       }
     ],
