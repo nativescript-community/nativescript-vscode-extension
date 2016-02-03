@@ -9,9 +9,8 @@ gulpfile.js
 tsconfig.json
 tsd.json
 tslint.json
+.gitignore
 
 out/test/**
 
-node_modules/ws/node_modules/bufferutil/**
-node_modules/ws/node_modules/utf-8-validate/**
 node_modules/.bin/**

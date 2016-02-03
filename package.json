@@ -1,15 +1,15 @@
 {
-  "name": "nativescript-vscode-extension",
+  "name": "nativescript",
   "displayName": "NativeScript",
   "version": "0.0.1",
   "icon": "images/icon.png",
   "description": "A Visual Studio Code extension for NativeScript",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NativeScript/vscode-chrome-debug"
+    "url": "https://github.com/NativeScript/nativescript-vscode-extension/"
   },
   "publisher": "Telerik",
-  "bugs": "https://github.com/NativeScript/vscode-chrome-debug/issues",
+  "bugs": "https://github.com/NativeScript/nativescript-vscode-extension/issues",
   "engines": {
     "vscode": "0.10.x"
   },
@@ -70,7 +70,7 @@
         "enableBreakpointsFor": {
           "languageIds": [
             "javascript",
-            "typescriptreact"
+            "typescript"
           ]
         },
         "program": "./out/webkit/webkitDebug.js",
