@@ -48,37 +48,37 @@ export class PacketStream extends stream.Transform {
 }
 
 /**
- * Implements a Request/Response API on top of a TCP Socket for messages that are marked with an `id` property.
+ * Implements a Request/Response API on top of a Unix domain socket for messages that are marked with an `id` property.
  * Emits `message.method` for messages that don't have `id`.
  */
 class ResReqTcpSocket extends EventEmitter {
     private _pendingRequests = new Map<number, any>();
-    private _tcpSocketAttached: Promise<net.Socket>;
+    private _unixSocketAttached: Promise<net.Socket>;
 
     /**
-     * Attach to the given port and host
+     * Attach to the given filePath
      */
-    public attach(port: number, host?: string): Promise<void> {
-        this._tcpSocketAttached = new Promise((resolve, reject) => {
+    public attach(filePath: string): Promise<void> {
+        this._unixSocketAttached = new Promise((resolve, reject) => {
 
-            let tcp: net.Socket;
+            let unixSocket: net.Socket;
             try {
-                tcp = net.connect(port);
-                tcp.on('connect', () => {
-                    resolve(tcp);
+                unixSocket = net.createConnection(filePath);
+                unixSocket.on('connect', () => {
+                    resolve(unixSocket);
                 });
 
-                tcp.on('error', (e) => {
+                unixSocket.on('error', (e) => {
                     reject(e);
                 });
 
-                tcp.on('close', () => {
-                    Logger.log('TCP socket closed');
+                unixSocket.on('close', () => {
+                    Logger.log('Unix socket closed');
                     this.emit('close');
                 });
 
                 let packetsStream = new PacketStream();
-                tcp.pipe(packetsStream);
+                unixSocket.pipe(packetsStream);
 
                 packetsStream.on('data', (buffer: Buffer) => {
                     let packet = buffer.toString('utf16le');
@@ -92,12 +92,12 @@ class ResReqTcpSocket extends EventEmitter {
             }
         });
 
-        return <Promise<void>><any>this._tcpSocketAttached;
+        return <Promise<void>><any>this._unixSocketAttached;
     }
 
     public close(): void {
-        if (this._tcpSocketAttached) {
-            this._tcpSocketAttached.then(tcpSocket => tcpSocket.destroy());
+        if (this._unixSocketAttached) {
+            this._unixSocketAttached.then(socket => socket.destroy());
         }
     }
 
@@ -108,7 +108,7 @@ class ResReqTcpSocket extends EventEmitter {
     public sendMessage(message: IMessageWithId): Promise<any> {
         return new Promise((resolve, reject) => {
             this._pendingRequests.set(message.id, resolve);
-            this._tcpSocketAttached.then(tcpSocket => {
+            this._unixSocketAttached.then(socket => {
                 const msgStr = JSON.stringify(message);
                 Logger.log('To target: ' + msgStr);
                 let encoding = "utf16le";
@@ -116,7 +116,7 @@ class ResReqTcpSocket extends EventEmitter {
 				let payload = new Buffer(length + 4);
 				payload.writeInt32BE(length, 0);
 				payload.write(msgStr, 4, length, encoding);
-                tcpSocket.write(payload);
+                socket.write(payload);
             });
         });
     }
@@ -152,18 +152,18 @@ export class WebKitConnection implements ns.INSDebugConnection {
     }
 
     /**
-     * Attach the websocket to the first available tab in the chrome instance with the given remote debugging port number.
+     * Attach the underlying Unix socket
      */
-    public attach(port: number, host?: string): Promise<void> {
-        Logger.log('Attempting to attach on port ' + port);
-        return utils.retryAsync(() => this._attach(port, host), 6000)
+    public attach(filePath: string): Promise<void> {
+        Logger.log('Attempting to attach to path ' + filePath);
+        return utils.retryAsync(() => this._attach(filePath), 6000)
             .then(() => this.sendMessage('Debugger.enable'))
             .then(() => this.sendMessage('Console.enable'))
             .then(() => { });
     }
 
-    public _attach(port: number, host?: string): Promise<void> {
-        return this._socket.attach(port, host);
+    public _attach(filePath: string): Promise<void> {
+        return this._socket.attach(filePath);
     }
 
     public close(): void {

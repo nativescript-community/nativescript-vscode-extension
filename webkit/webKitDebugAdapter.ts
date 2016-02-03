@@ -6,6 +6,7 @@ import {Event} from '../common/v8Protocol';
 import {StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from '../common/debugSession';
 import {Handles} from '../common/handles';
 import {WebKitConnection} from './webKitConnection';
+import {AndroidDebugConnection} from '../nativescript/android/androidDebugConnection';
 import * as utils from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
 import * as ns from '../NativeScript/NativeScript';
@@ -110,8 +111,10 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         let iosProject : ns.IosProject = new ns.IosProject(this.webRoot);
         iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
         return iosProject.debug(args)
-        .then(() => {
-            return this.setConnection(new WebKitConnection()).attach(18181, 'localhost');
+        .then((socketFilePath) => {
+            let iosConnection: WebKitConnection = new WebKitConnection();
+            this.setConnection(iosConnection);
+            return iosConnection.attach(socketFilePath);
         });
     }
 
@@ -122,12 +125,14 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
         let port: number;
         this.onTnsOutputMessage("Getting debug port");
+        let androidConnection: AndroidDebugConnection = null;
         return androidProject.getDebugPort()
                 .then(debugPort => {
                     port = debugPort;
                     console.log("Creating debug connection");
                     if (!thisAdapter._webKitConnection) {
                         return androidProject.createConnection().then(connection => {
+                            androidConnection = connection;
                             this.setConnection(connection);
                             return Promise.resolve<void>();
                         });
@@ -141,7 +146,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 })
                 .then(() => {
                     this.onTnsOutputMessage("Attaching to debug application");
-                    return thisAdapter._webKitConnection.attach(port, 'localhost');
+                    return androidConnection.attach(port, 'localhost');
                 });
     }
 

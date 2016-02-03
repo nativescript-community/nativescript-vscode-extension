@@ -1,12 +1,11 @@
 import {exec, ChildProcess} from 'child_process';
+import {Logger} from '../webkit/utilities';
 import {WebKitConnection} from '../webkit/webKitConnection';
 import {AndroidDebugConnection} from './android/AndroidDebugConnection';
 import {EventEmitter} from 'events';
 
 export interface INSDebugConnection {
     on(eventName: string, handler: (msg: any) => void): void;
-
-    attach(port: number, host?: string): Promise<void>;
 
     close(): void;
 
@@ -65,15 +64,10 @@ export class IosProject extends NSProject {
         return 'ios';
     }
 
-    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            let error: string = this.isNotSupported();
-            if (error !== null) {
-                reject(error);
-                return;
-            }
-
-            let that = this;
+    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<string> {
+        return this.ensureIsSupported()
+        .then(() => {
+            // build command to execute
             let command: string = new CommandBuilder()
                 .appendParam("debug")
                 .appendParam(this.platform())
@@ -83,48 +77,44 @@ export class IosProject extends NSProject {
                 .appendParam("--no-client")
                 .build();
 
-            let proxyIsReadyPhrase: string = 'Press Ctrl + C to terminate, or disconnect.';
-            let cliIsReadyPhrase: string = 'Supressing debugging client.';
-            let backendIsReadyPhrase: string = 'NativeScript waiting for debugger.';
-            let proxyIsReady: boolean = false;
-            let cliIsReady: boolean = false;
-            let backendIsReady: boolean = false;
-            let resolved: boolean = false;
+            let socketPathPrefix = 'socket-file-location: ';
+            let socketPathPattern: RegExp = new RegExp(socketPathPrefix + '.*\.sock');
+            let readyToConnect: boolean = false;
 
-            // run NativeScript CLI command
-            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
-            child.stdout.on('data', function(data) {
-                console.log(data);
-                that.emit('TNS.outputMessage', data.toString(), 'log');
-                if(!resolved) {
-                    proxyIsReady = proxyIsReady || data.indexOf(proxyIsReadyPhrase) > -1;
-                    cliIsReady = cliIsReady || data.indexOf(cliIsReadyPhrase) > -1;
-                    backendIsReady = backendIsReady || data.indexOf(backendIsReadyPhrase) > -1;
-                    if (args.request === 'launch' && proxyIsReady && cliIsReady && backendIsReady) {
-                        resolved = true;
-                        resolve();
+            return new Promise<string>((resolve, reject) => {
+                // run NativeScript CLI command
+                let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+
+                child.stdout.on('data', (data) => {
+                    let strData: string = data.toString();
+                    Logger.log(strData);
+                    this.emit('TNS.outputMessage', strData, 'log');
+                    if(!readyToConnect) {
+                        let matches: RegExpMatchArray = strData.match(socketPathPattern);
+                        if(matches && matches.length > 0) {
+                            readyToConnect = true;
+                            resolve(matches[0].substr(socketPathPrefix.length));
+                        }
                     }
-                    else if(args.request === 'attach' && proxyIsReady && cliIsReady) {
-                        resolved = true;
-                        setTimeout(resolve, 1500); //resolve after a 1500ms
-                    }
-                }
-            });
-            child.stderr.on('data', function(data) {
-                console.error(data.toString());
-                that.emit('TNS.outputMessage', data.toString(), 'error');
-            });
-            child.on('close', function(code) {
-                reject("The debug process exited unexpectedly");
+                });
+
+                child.stderr.on('data', (data) => {
+                    Logger.log(data);
+                    this.emit('TNS.outputMessage', data, 'error');
+                });
+
+                child.on('close', (code) => {
+                    reject("The debug process exited unexpectedly");
+                });
             });
         });
     }
 
-    private isNotSupported(): string {
+    private ensureIsSupported(): Promise<void> {
         if (!/^darwin/.test(process.platform)) {
-            return 'iOS platform is supported only on Mac.';
+            return Promise.reject('iOS platform is supported only on Mac.');
         }
-        return null;
+        return Promise.resolve<void>();
     }
 }
 
@@ -191,7 +181,7 @@ export class AndoridProject extends NSProject {
         }
     }
 
-    public createConnection(): Promise<INSDebugConnection> {
+    public createConnection(): Promise<AndroidDebugConnection> {
         return Promise.resolve(new AndroidDebugConnection());
     }
 
