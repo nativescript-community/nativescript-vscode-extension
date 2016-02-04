@@ -18,22 +18,15 @@ project development within Visual Studio Code.
 1. [Set up Visual Studio Code](https://code.visualstudio.com/docs/editor/setup)
 2. [Install nodejs](https://nodejs.org/en/download/)
 3. Install [gulp](http://gulpjs.com/) globally (`npm install gulp -g`)
-4. Install [tsd](http://definitelytyped.org/tsd/) globally (`npm
-install tsd -g`)
-5. run `npm install` from the project folder to have the dependent node.js
-modules installed
-6. run `tsd install` from the project folder to have the TypeScript
-declarations installed
-7. run `gulp` from the project folder. An `out` folder should be created.
+4. Install [tsd](http://definitelytyped.org/tsd/) globally (`npm install tsd -g`)
+5. Install [vsce](https://code.visualstudio.com/docs/tools/vscecli) globally (`npm install -g vsce`)
+6. run `npm install` from the project folder to have the dependent node.js modules installed
+7. run `tsd install` from the project folder to have the TypeScript declarations installed
 
-#### Build and Run
-1. Start Visual Studio Code and load the project (`code .` from the project
-directory)
-2. Open `Debug Panel` and select `launch in extension host` configuration
-3. Press `F5` to run the extension development host
-4. Hit `F1`
-5. Type `NativeScript` and choose from the available commands
+#### Build and Install
+1. run `gulp` from the project folder to build the extension. An `out` folder should be created containing the build artifacts
+2. run `vsce package` from the project folder. `nativescript-x.x.x.vsix` file should be created in your project folder.
+3. [Install the extension](https://code.visualstudio.com/docs/extensions/install-extension) by running `code nativescript-x.x.x.vsix` from the project folder.
 
 > Visit [the official visual studio code site]
-(https://code.visualstudio.com/docs/extensions/example-hello-world) for more
-information on running Visual Studio Code plugins.
+(https://code.visualstudio.com/docs/extensions/example-hello-world) for more information on running Visual Studio Code plugins.
