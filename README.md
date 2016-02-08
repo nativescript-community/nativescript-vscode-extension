@@ -20,8 +20,9 @@ project development within Visual Studio Code.
 3. Install [gulp](http://gulpjs.com/) globally (`npm install gulp -g`)
 4. Install [tsd](http://definitelytyped.org/tsd/) globally (`npm install tsd -g`)
 5. Install [vsce](https://code.visualstudio.com/docs/tools/vscecli) globally (`npm install -g vsce`)
-6. run `npm install` from the project folder to have the dependent node.js modules installed
-7. run `tsd install` from the project folder to have the TypeScript declarations installed
+7. run `npm install` from `/nativescript-cli` folder to install nativescript CLI. If the required version of the CLI is not published, yet, paste the build artefacts of [NativeScript CLI](https://github.com/NativeScript/nativescript-cli) under the `/nativescript-cli/node_modules/nativescript` folder
+8. run `npm install` from the project folder to have the dependent node.js modules installed
+9. run `tsd install` from the project folder to have the TypeScript declarations installed
 
 #### Build and Install
 1. run `gulp` from the project folder to build the extension. An `out` folder should be created containing the build artifacts

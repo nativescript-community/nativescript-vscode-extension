@@ -3,6 +3,7 @@ import {Logger} from '../webkit/utilities';
 import {WebKitConnection} from '../webkit/webKitConnection';
 import {AndroidDebugConnection} from './android/AndroidDebugConnection';
 import {EventEmitter} from 'events';
+import * as path from 'path';
 
 export interface INSDebugConnection {
     on(eventName: string, handler: (msg: any) => void): void;
@@ -271,7 +272,7 @@ class CommandBuilder {
     private _command: string;
 
     constructor() {
-        this._command = 'tns';
+        this._command = path.resolve(path.dirname(__filename), '../../nativescript-cli/node_modules/nativescript/bin/tns');
     }
 
     public appendParam(parameter: string): CommandBuilder {
