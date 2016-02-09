@@ -79,7 +79,7 @@ export class IosProject extends NSProject {
         return 'ios';
     }
 
-    public run(): Promise<ChildProcess> {
+    public run(emulator: boolean): Promise<ChildProcess> {
         if(!this.isOSX()) {
             return Promise.reject('iOS platform is only supported on OS X.');
         }
@@ -90,7 +90,7 @@ export class IosProject extends NSProject {
             let command: string = new CommandBuilder()
                 .appendParam("run")
                 .appendParam(this.platform())
-                .appendParam("--emulator")
+                .appendFlag("--emulator", emulator)
                 .build();
 
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
