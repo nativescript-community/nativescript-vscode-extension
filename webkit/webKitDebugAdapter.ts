@@ -38,7 +38,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private _chromeProc: ChildProcess;
     private _webKitConnection: ns.INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
-    private webRoot: string;
+    private appRoot: string;
     private platform: string;
     private isAttached: boolean;
 
@@ -92,7 +92,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
     private _attach(args: IAttachRequestArgs | ILaunchRequestArgs) {
         this.initDiagnosticLogging(args.request, args);
-        this.webRoot = utils.getWebRoot(args);
+        this.appRoot = utils.getAppRoot(args);
         this.platform = args.platform;
         this.isAttached = false;
 
@@ -108,7 +108,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private _attachIos(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
-        let iosProject : ns.IosProject = new ns.IosProject(this.webRoot);
+        let iosProject : ns.IosProject = new ns.IosProject(this.appRoot);
         iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
         return iosProject.debug(args)
         .then((socketFilePath) => {
@@ -119,7 +119,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private _attachAndroid(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
-        let androidProject: ns.AndoridProject = new ns.AndoridProject(this.webRoot);
+        let androidProject: ns.AndoridProject = new ns.AndoridProject(this.appRoot);
         let thisAdapter: WebKitDebugAdapter = this;
 
         androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
@@ -290,7 +290,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         let isClientPath = false;
         if (localMessage.url)
         {
-            const clientPath = utils.webkitUrlToClientPath(this.webRoot, this.platform, localMessage.url);
+            const clientPath = utils.webkitUrlToClientPath(this.appRoot, this.platform, localMessage.url);
             if (clientPath !== '') {
                 localMessage.url = clientPath;
                 isClientPath = true;

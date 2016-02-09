@@ -21,12 +21,12 @@ export class PathTransformer implements IDebugTransformer {
     private _pendingBreakpointsByPath = new Map<string, IPendingBreakpoint>();
 
     public launch(args: ILaunchRequestArgs): void {
-        this._webRoot = utils.getWebRoot(args);
+        this._webRoot = utils.getAppRoot(args);
         this._platform = args.platform;
     }
 
     public attach(args: IAttachRequestArgs): void {
-        this._webRoot = utils.getWebRoot(args);
+        this._webRoot = utils.getAppRoot(args);
         this._platform = args.platform;
     }
 

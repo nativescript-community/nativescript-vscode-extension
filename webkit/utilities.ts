@@ -395,22 +395,20 @@ export function errP(msg: any): Promise<any> {
 }
 
 /**
- * Calculates the webRoot from a launch/attach request. The webRoot is the directory that the
- * files are served from by a web server, (or the directory that they would be served from, and which
- * sourceRoot may be relative to).
+ * Calculates the appRoot from a launch/attach request. The appRoot is the root directory of the NativeScript app.
  */
-export function getWebRoot(args: ILaunchRequestArgs | IAttachRequestArgs): string {
-    let webRoot: string;
-    if (args.webRoot) {
-        webRoot = args.webRoot;
-        if (!path.isAbsolute(webRoot)) {
-            webRoot = path.resolve(args.cwd, webRoot);
+export function getAppRoot(args: ILaunchRequestArgs | IAttachRequestArgs): string {
+    let appRoot: string;
+    if (args.appRoot) {
+        appRoot = args.appRoot;
+        if (!path.isAbsolute(appRoot)) {
+            appRoot = path.resolve(args.cwd, appRoot);
         }
     } else {
-        webRoot = args.cwd;
+        appRoot = args.cwd;
     }
 
-    return webRoot;
+    return appRoot;
 }
 
 /**
