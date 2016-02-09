@@ -9,6 +9,7 @@ interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments {
     diagnosticLogging?: boolean;
     emulator?:boolean;
     request: string;
+    tnsArgs?: string;
 }
 
 interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments {
@@ -19,6 +20,7 @@ interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments {
     diagnosticLogging?: boolean;
     emulator?:boolean;
     request: string;
+    tnsArgs?: string;
 }
 
 interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArguments {

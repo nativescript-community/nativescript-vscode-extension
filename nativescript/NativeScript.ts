@@ -56,7 +56,7 @@ export abstract class NSProject extends EventEmitter {
             let command: string = new CommandBuilder().build();
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
             child.on('close', exitCode => {
-                if(exitCode == 0) {
+                if (exitCode == 0) {
                     resolve();
                 }
                 else {
@@ -80,72 +80,72 @@ export class IosProject extends NSProject {
     }
 
     public run(emulator: boolean): Promise<ChildProcess> {
-        if(!this.isOSX()) {
+        if (!this.isOSX()) {
             return Promise.reject('iOS platform is only supported on OS X.');
         }
 
         return this.ensureNativeScriptIsInstalled()
-        .then(() => {
-            // build command to execute
-            let command: string = new CommandBuilder()
-                .appendParam("run")
-                .appendParam(this.platform())
-                .appendFlag("--emulator", emulator)
-                .build();
+            .then(() => {
+                // build command to execute
+                let command: string = new CommandBuilder()
+                    .appendParam("run")
+                    .appendParam(this.platform())
+                    .tryAppendParam("--emulator", emulator)
+                    .build();
 
-            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
-            return child;
-        });
+                let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+                return child;
+            });
     }
 
     public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<string> {
-        if(!this.isOSX()) {
+        if (!this.isOSX()) {
             return Promise.reject('iOS platform is supported only on OS X.');
         }
 
         return this.ensureNativeScriptIsInstalled()
-        .then(() => {
-            // build command to execute
-            let command: string = new CommandBuilder()
-                .appendParam("debug")
-                .appendParam(this.platform())
-                .appendFlag("--emulator", args.emulator)
-                .appendFlag("--start", args.request === "attach")
-                .appendFlag("--debug-brk", args.request === "launch")
-                .appendParam("--no-client")
-                .build();
+            .then(() => {
+                // build command to execute
+                let command: string = new CommandBuilder()
+                    .appendParam("debug")
+                    .appendParam(this.platform())
+                    .tryAppendParam("--emulator", args.emulator)
+                    .tryAppendParam("--start", args.request === "attach")
+                    .tryAppendParam("--debug-brk", args.request === "launch")
+                    .appendParam("--no-client")
+                    .build();
 
-            let socketPathPrefix = 'socket-file-location: ';
-            let socketPathPattern: RegExp = new RegExp(socketPathPrefix + '.*\.sock');
-            let readyToConnect: boolean = false;
+                let socketPathPrefix = 'socket-file-location: ';
+                let socketPathPattern: RegExp = new RegExp(socketPathPrefix + '.*\.sock');
+                let readyToConnect: boolean = false;
 
-            return new Promise<string>((resolve, reject) => {
-                // run NativeScript CLI command
-                let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+                return new Promise<string>((resolve, reject) => {
+                    // run NativeScript CLI command
+                    let child: ChildProcess = exec(command, { cwd: this.projectPath() });
 
-                child.stdout.on('data', (data) => {
-                    let strData: string = data.toString();
-                    Logger.log(strData);
-                    this.emit('TNS.outputMessage', strData, 'log');
-                    if(!readyToConnect) {
-                        let matches: RegExpMatchArray = strData.match(socketPathPattern);
-                        if(matches && matches.length > 0) {
-                            readyToConnect = true;
-                            resolve(matches[0].substr(socketPathPrefix.length));
+                    child.stdout.on('data', (data) => {
+                        let strData: string = data.toString();
+                        Logger.log(strData);
+                        this.emit('TNS.outputMessage', strData, 'log');
+                        if (!readyToConnect) {
+                            let matches: RegExpMatchArray = strData.match(socketPathPattern);
+                            if (matches && matches.length > 0) {
+                                readyToConnect = true;
+                                resolve(matches[0].substr(socketPathPrefix.length));
+                            }
                         }
-                    }
-                });
+                    });
 
-                child.stderr.on('data', (data) => {
-                    Logger.log(data);
-                    this.emit('TNS.outputMessage', data, 'error');
-                });
+                    child.stderr.on('data', (data) => {
+                        Logger.log(data);
+                        this.emit('TNS.outputMessage', data, 'error');
+                    });
 
-                child.on('close', (code) => {
-                    reject("The debug process exited unexpectedly");
+                    child.on('close', (code) => {
+                        reject("The debug process exited unexpectedly");
+                    });
                 });
             });
-        });
     }
 
     private isOSX(): boolean {
@@ -169,58 +169,58 @@ export class AndoridProject extends NSProject {
             return Promise.resolve<void>();
         }
         else if (args.request === "launch") {
-            //TODO: interaction with CLI here
-            //throw new Error("Launch on Android not implemented");
-            let that = this;
-            let launched = false;
-            return new Promise<void>((resolve, reject) => {
-                let command: string = new CommandBuilder()
-                    .appendParam("debug")
-                    .appendParam(this.platform())
-                    .appendFlag("--emulator", args.emulator)
-                    .appendFlag("--debug-brk", true)
-                    //.appendFlag("--start", true)
-                    //.appendFlag("--log trace", true)
-                    .appendParam("--no-client")
-                    .build();
+            return this.ensureNativeScriptIsInstalled()
+                .then(() => {
+                    let that = this;
+                    let launched = false;
 
-                // run NativeScript CLI command
-                let newEnv = process.env;
-                //newEnv["ANDROID_HOME"] = "d:\\adt-bundle-windows-x86_64-20140702\\sdk\\";
-                this.child = exec(command, { cwd: this.projectPath(), env: newEnv });
-                this.child.stdout.on('data', function(data) {
-                    let strData: string = data.toString();
-                    console.log(data.toString());
-                    that.emit('TNS.outputMessage', data.toString(), 'log');
-                    if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
-                        that.child = null;
-                        launched = true;
+                    return new Promise<void>((resolve, reject) => {
+                        let command: string = new CommandBuilder()
+                            .appendParam("debug")
+                            .appendParam(this.platform())
+                            .tryAppendParam("--emulator", args.emulator)
+                            .appendParam("--debug-brk")
+                            .appendParam("--no-client")
+                            .appendParam(args.tnsArgs)
+                            .build();
 
-                        //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
-                        setTimeout(() => {
-                            resolve();
-                        }, 500);
-                    }
+                        // run NativeScript CLI command
+                        let newEnv = process.env;
+                        this.child = exec(command, { cwd: this.projectPath(), env: newEnv });
+                        this.child.stdout.on('data', function(data) {
+                            let strData: string = data.toString();
+                            console.log(data.toString());
+                            that.emit('TNS.outputMessage', data.toString(), 'log');
+                            if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
+                                that.child = null;
+                                launched = true;
+
+                                //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
+                                setTimeout(() => {
+                                    resolve();
+                                }, 500);
+                            }
+                        });
+
+                        this.child.stderr.on('data', function(data) {
+                            console.error(data.toString());
+                            that.emit('TNS.outputMessage', data.toString(), 'error');
+
+                        });
+                        this.child.on('close', function(code) {
+                            that.child = null;
+                            reject("The debug process exited unexpectedly");
+                        });
+                    });
                 });
-
-                this.child.stderr.on('data', function(data) {
-                    console.error(data.toString());
-                    that.emit('TNS.outputMessage', data.toString(), 'error');
-
-                });
-                this.child.on('close', function(code) {
-                    that.child = null;
-                    reject("The debug process exited unexpectedly");
-                });
-            });
-        }
+         }
     }
 
     public createConnection(): Promise<AndroidDebugConnection> {
         return Promise.resolve(new AndroidDebugConnection());
     }
 
-    public getDebugPort(): Promise<number> {
+    public getDebugPort(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<number> {
         //TODO: Call CLI to get the debug port
         //return Promise.resolve(40001);
 
@@ -229,7 +229,8 @@ export class AndoridProject extends NSProject {
         let command: string = new CommandBuilder()
             .appendParam("debug")
             .appendParam(this.platform())
-            .appendFlag("--get-port", true)
+            .appendParam("--get-port")
+            .appendParam(args.tnsArgs)
             .build();
         let that = this;
         // run NativeScript CLI command
@@ -274,14 +275,14 @@ class CommandBuilder {
         this._command = 'tns';
     }
 
-    public appendParam(parameter: string): CommandBuilder {
-        this._command += ' ' + parameter;
+    public appendParam(parameter: string = ""): CommandBuilder {
+        this._command += " " + parameter;
         return this;
     }
 
-    public appendFlag(flagName: string, flagValue: boolean): CommandBuilder {
-        if (flagValue) {
-            this.appendParam(flagName);
+    public tryAppendParam(parameter: string = "", condtion: boolean): CommandBuilder {
+        if (condtion) {
+            this._command += " " + parameter;
         }
         return this;
     }

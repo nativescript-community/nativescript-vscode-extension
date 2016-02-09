@@ -161,6 +161,11 @@
                 },
                 "default": []
               },
+              "tnsArgs": {
+                "type": "string",
+                "description": "Optional arguments passed to the NativeScript CLI executable.",
+                "default": null
+              },
               "sourceMaps": {
                 "type": "boolean",
                 "description": "Use JavaScript source maps (if they exist).",
