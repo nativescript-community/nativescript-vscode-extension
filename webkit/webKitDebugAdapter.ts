@@ -126,7 +126,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         let port: number;
         this.onTnsOutputMessage("Getting debug port");
         let androidConnection: AndroidDebugConnection = null;
-        return androidProject.getDebugPort()
+        return androidProject.getDebugPort(args)
                 .then(debugPort => {
                     port = debugPort;
                     console.log("Creating debug connection");
