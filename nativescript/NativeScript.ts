@@ -102,6 +102,7 @@ export class IosProject extends NSProject {
             .tryAppendParam("--start", args.request === "attach")
             .tryAppendParam("--debug-brk", args.request === "launch")
             .appendParam("--no-client")
+            .appendParam(args.tnsArgs)
             .build();
 
         let socketPathPrefix = 'socket-file-location: ';
