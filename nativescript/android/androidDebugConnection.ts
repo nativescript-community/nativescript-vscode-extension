@@ -3,7 +3,7 @@ import {EventEmitter} from 'events';
 import * as utils from '../../webkit/utilities';
 import {Logger} from '../../webkit/utilities';
 import * as Net from 'net';
-import * as ns from '../NativeScript'
+import * as ns from '../nativeScript'
 
 
 interface IMessageWithId {

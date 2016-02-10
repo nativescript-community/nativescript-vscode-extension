@@ -47,6 +47,7 @@ gulp.task('default', ['build']);
 var lintSources = [
     'test',
     'webkit',
+    'nativescript'
 ].map(function(tsFolder) { return tsFolder + '/**/*.ts'; });
 lintSources = lintSources.concat([
     'adapter/sourceMaps/sourceMapTransformer.ts',

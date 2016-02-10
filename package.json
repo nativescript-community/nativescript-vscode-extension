@@ -2,6 +2,7 @@
   "name": "nativescript",
   "displayName": "NativeScript",
   "version": "0.0.1",
+  "nativescript-cli-version": "1.6",
   "icon": "images/icon.png",
   "description": "A Visual Studio Code extension for NativeScript",
   "repository": {

@@ -7,7 +7,7 @@ import * as stream from 'stream';
 import {EventEmitter} from 'events';
 import * as utils from './utilities';
 import {Logger} from './utilities';
-import * as ns from '../nativescript/NativeScript';
+import * as ns from '../nativescript/nativeScript';
 
 interface IMessageWithId {
     id: number;

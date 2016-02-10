@@ -1,8 +1,9 @@
-import {exec, ChildProcess} from 'child_process';
+import {exec, execSync, ChildProcess} from 'child_process';
 import {Logger} from '../webkit/utilities';
 import {WebKitConnection} from '../webkit/webKitConnection';
 import {AndroidDebugConnection} from './android/AndroidDebugConnection';
 import {EventEmitter} from 'events';
+import * as path from 'path';
 
 export interface INSDebugConnection {
     on(eventName: string, handler: (msg: any) => void): void;
@@ -51,21 +52,6 @@ export abstract class NSProject extends EventEmitter {
         return this._projectPath;
     }
 
-    public ensureNativeScriptIsInstalled(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            let command: string = new CommandBuilder().build();
-            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
-            child.on('close', exitCode => {
-                if (exitCode == 0) {
-                    resolve();
-                }
-                else {
-                    reject("NativeScript not found, please run 'npm install –g nativescript' to install it.");
-                }
-            })
-        });
-    }
-
     public abstract platform(): string;
 }
 
@@ -83,69 +69,76 @@ export class IosProject extends NSProject {
         if (!this.isOSX()) {
             return Promise.reject('iOS platform is only supported on OS X.');
         }
+        if(!CliInfo.isExisting()) {
+            return Promise.reject(CliInfo.getMessage());
+        }
 
-        return this.ensureNativeScriptIsInstalled()
-            .then(() => {
-                // build command to execute
-                let command: string = new CommandBuilder()
-                    .appendParam("run")
-                    .appendParam(this.platform())
-                    .tryAppendParam("--emulator", emulator)
-                    .build();
+        // build command to execute
+        let command: string = new CommandBuilder()
+            .appendParam("run")
+            .appendParam(this.platform())
+            .tryAppendParam("--emulator", emulator)
+            .build();
 
-                let child: ChildProcess = exec(command, { cwd: this.projectPath() });
-                return child;
-            });
+        let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+        return Promise.resolve(child);
     }
 
     public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<string> {
         if (!this.isOSX()) {
             return Promise.reject('iOS platform is supported only on OS X.');
         }
+        if(!CliInfo.isExisting()) {
+            return Promise.reject(CliInfo.getMessage());
+        }
 
-        return this.ensureNativeScriptIsInstalled()
-            .then(() => {
-                // build command to execute
-                let command: string = new CommandBuilder()
-                    .appendParam("debug")
-                    .appendParam(this.platform())
-                    .tryAppendParam("--emulator", args.emulator)
-                    .tryAppendParam("--start", args.request === "attach")
-                    .tryAppendParam("--debug-brk", args.request === "launch")
-                    .appendParam("--no-client")
-                    .build();
+        // build command to execute
+        let command: string = new CommandBuilder()
+            .appendParam("debug")
+            .appendParam(this.platform())
+            .tryAppendParam("--emulator", args.emulator)
+            .tryAppendParam("--start", args.request === "attach")
+            .tryAppendParam("--debug-brk", args.request === "launch")
+            .appendParam("--no-client")
+            .build();
 
-                let socketPathPrefix = 'socket-file-location: ';
-                let socketPathPattern: RegExp = new RegExp(socketPathPrefix + '.*\.sock');
-                let readyToConnect: boolean = false;
+        let socketPathPrefix = 'socket-file-location: ';
+        let socketPathPattern: RegExp = new RegExp(socketPathPrefix + '.*\.sock');
+        let readyToConnect: boolean = false;
 
-                return new Promise<string>((resolve, reject) => {
-                    // run NativeScript CLI command
-                    let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+        return new Promise<string>((resolve, reject) => {
+            if(!CliInfo.isCompatible()) {
+                this.emit('TNS.outputMessage', CliInfo.getMessage(), 'error');
+            }
 
-                    child.stdout.on('data', (data) => {
-                        let strData: string = data.toString();
-                        Logger.log(strData);
-                        this.emit('TNS.outputMessage', strData, 'log');
-                        if (!readyToConnect) {
-                            let matches: RegExpMatchArray = strData.match(socketPathPattern);
-                            if (matches && matches.length > 0) {
-                                readyToConnect = true;
-                                resolve(matches[0].substr(socketPathPrefix.length));
-                            }
+            // run NativeScript CLI command
+            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+
+            child.stdout.on('data', (data) => {
+                let strData: string = data.toString();
+                Logger.log(strData);
+                this.emit('TNS.outputMessage', strData, 'log');
+                if(!readyToConnect) {
+                    let matches: RegExpMatchArray = strData.match(socketPathPattern);
+                    if(matches && matches.length > 0) {
+                        if(!CliInfo.isCompatible()) {
+                            this.emit('TNS.outputMessage', CliInfo.getMessage(), 'error');
                         }
-                    });
-
-                    child.stderr.on('data', (data) => {
-                        Logger.log(data);
-                        this.emit('TNS.outputMessage', data, 'error');
-                    });
-
-                    child.on('close', (code) => {
-                        reject("The debug process exited unexpectedly");
-                    });
-                });
+                        readyToConnect = true;
+                        resolve(matches[0].substr(socketPathPrefix.length));
+                    }
+                }
             });
+
+            child.stderr.on('data', (data) => {
+                Logger.log(data);
+                this.emit('TNS.outputMessage', data, 'error');
+            });
+
+            child.on('close', (code) => {
+                reject("The debug process exited unexpectedly");
+            });
+        });
     }
 
     private isOSX(): boolean {
@@ -169,50 +162,47 @@ export class AndoridProject extends NSProject {
             return Promise.resolve<void>();
         }
         else if (args.request === "launch") {
-            return this.ensureNativeScriptIsInstalled()
-                .then(() => {
-                    let that = this;
-                    let launched = false;
+            let that = this;
+            let launched = false;
 
-                    return new Promise<void>((resolve, reject) => {
-                        let command: string = new CommandBuilder()
-                            .appendParam("debug")
-                            .appendParam(this.platform())
-                            .tryAppendParam("--emulator", args.emulator)
-                            .appendParam("--debug-brk")
-                            .appendParam("--no-client")
-                            .appendParam(args.tnsArgs)
-                            .build();
+            return new Promise<void>((resolve, reject) => {
+                let command: string = new CommandBuilder()
+                    .appendParam("debug")
+                    .appendParam(this.platform())
+                    .tryAppendParam("--emulator", args.emulator)
+                    .appendParam("--debug-brk")
+                    .appendParam("--no-client")
+                    .appendParam(args.tnsArgs)
+                    .build();
 
-                        // run NativeScript CLI command
-                        let newEnv = process.env;
-                        this.child = exec(command, { cwd: this.projectPath(), env: newEnv });
-                        this.child.stdout.on('data', function(data) {
-                            let strData: string = data.toString();
-                            console.log(data.toString());
-                            that.emit('TNS.outputMessage', data.toString(), 'log');
-                            if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
-                                that.child = null;
-                                launched = true;
+                // run NativeScript CLI command
+                let newEnv = process.env;
+                this.child = exec(command, { cwd: this.projectPath(), env: newEnv });
+                this.child.stdout.on('data', function(data) {
+                    let strData: string = data.toString();
+                    console.log(data.toString());
+                    that.emit('TNS.outputMessage', data.toString(), 'log');
+                    if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
+                        that.child = null;
+                        launched = true;
 
-                                //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
-                                setTimeout(() => {
-                                    resolve();
-                                }, 500);
-                            }
-                        });
-
-                        this.child.stderr.on('data', function(data) {
-                            console.error(data.toString());
-                            that.emit('TNS.outputMessage', data.toString(), 'error');
-
-                        });
-                        this.child.on('close', function(code) {
-                            that.child = null;
-                            reject("The debug process exited unexpectedly");
-                        });
-                    });
+                        //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
+                        setTimeout(() => {
+                            resolve();
+                        }, 500);
+                    }
                 });
+
+                this.child.stderr.on('data', function(data) {
+                    console.error(data.toString());
+                    that.emit('TNS.outputMessage', data.toString(), 'error');
+
+                });
+                this.child.on('close', function(code) {
+                    that.child = null;
+                    reject("The debug process exited unexpectedly");
+                });
+            });
          }
     }
 
@@ -290,4 +280,89 @@ class CommandBuilder {
     public build(): string {
         return this._command;
     }
+}
+
+
+export enum CliState {
+    NotExisting,
+    OlderThanSupported,
+    NewerThanSupported,
+    Compatible
+}
+
+export module CliInfo {
+    var installedCliVersion: number[];
+    var extensionCliVersion: number[];
+    let state: CliState;
+    let message: string;
+
+    function compareByMinorVersions(v1: number[], v2: number[]) {
+        return (v1[0] - v2[0] != 0) ? (v1[0] - v2[0]) : v1[1] - v2[1];
+    }
+
+    function parseVersion(versionStr: string): number[] {
+        if (versionStr == null) {
+            return null;
+        }
+        let version: number[] = versionStr.split('.').map<number>((str, index, array) => parseInt(str));
+        for(let i = version.length; i < 3; i++) {
+            version.push(0);
+        }
+        return version;
+    }
+
+    function versionToString(version: number[]) {
+        return `${version[0]}.${version[1]}.${version[2]}`;
+    }
+
+    export function getMessage() {
+        return message;
+    }
+
+    export function getState() {
+        return state;
+    }
+
+    export function isExisting() {
+        return state != CliState.NotExisting;
+    }
+
+    export function isCompatible() {
+        return state == CliState.Compatible;
+    }
+
+    function initialize() {
+        // get the supported CLI version from package.json
+        extensionCliVersion = parseVersion(require(path.resolve(__dirname, '../../package.json'))['nativescript-cli-version']);
+        // get the currently installed CLI version
+        let getVersionCommand: string = new CommandBuilder().appendParam('--version').build(); // build the command
+        try {
+            let versionStr: string = execSync(getVersionCommand).toString(); // execute it
+            installedCliVersion = versionStr ? parseVersion(versionStr) : null; // parse the version string
+        } catch(e) {
+            installedCliVersion = null;
+        }
+
+        // initialize the state of the CLI by comparing the installed CLI version and the extension CLI version
+        if (installedCliVersion) {
+            let compareResult: number = compareByMinorVersions(installedCliVersion, extensionCliVersion);
+            if (compareResult < 0) {
+                state = CliState.OlderThanSupported;
+                message = `NativeScript extension is expected to work with NativeScript v${versionToString(extensionCliVersion)}, but currently NativeScript v${versionToString(installedCliVersion)} is installed. This may lead to not working features. Try updating NativeScript by executing 'npm install -g nativescript'.`;
+            }
+            else if (compareResult > 0) {
+                state = CliState.NewerThanSupported;
+                message = `NativeScript extension is expected to work with NativeScript v${versionToString(extensionCliVersion)}, but currently NativeScript v${versionToString(installedCliVersion)} is installed. This may lead to not working features. Try updating the extension by running 'Show Outdated Extensions' command.`
+            }
+            else {
+                state = CliState.Compatible;
+                message = null;
+            }
+        }
+        else {
+            state = CliState.NotExisting;
+            message = `NativeScript not found, please run 'npm install –g nativescript@${versionToString(extensionCliVersion)}' to use this extension.`;
+        }
+    }
+    initialize();
 }
