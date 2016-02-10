@@ -108,7 +108,7 @@ export class IosProject extends NSProject {
 
         return new Promise<string>((resolve, reject) => {
             if(!CliInfo.isCompatible()) {
-                this.emit('TNS.outputMessage', CliInfo.getMessage(), 'error');
+                this.emit('TNS.outputMessage', 'WARNING: ' + CliInfo.getMessage(), 'error');
             }
 
             // run NativeScript CLI command
@@ -122,7 +122,7 @@ export class IosProject extends NSProject {
                     let matches: RegExpMatchArray = strData.match(socketPathPattern);
                     if(matches && matches.length > 0) {
                         if(!CliInfo.isCompatible()) {
-                            this.emit('TNS.outputMessage', CliInfo.getMessage(), 'error');
+                            this.emit('TNS.outputMessage', 'WARNING: ' + CliInfo.getMessage(), 'error');
                         }
                         readyToConnect = true;
                         resolve(matches[0].substr(socketPathPrefix.length));
@@ -348,11 +348,11 @@ export module CliInfo {
             let compareResult: number = compareByMinorVersions(installedCliVersion, extensionCliVersion);
             if (compareResult < 0) {
                 state = CliState.OlderThanSupported;
-                message = `NativeScript extension is expected to work with NativeScript v${versionToString(extensionCliVersion)}, but currently NativeScript v${versionToString(installedCliVersion)} is installed. This may lead to not working features. Try updating NativeScript by executing 'npm install -g nativescript'.`;
+                message = `NativeScript extension is expected to work with NativeScript v${versionToString(extensionCliVersion)}, but currently NativeScript v${versionToString(installedCliVersion)} is installed. This may lead to not working features. Try to update NativeScript by executing 'npm install -g nativescript'.`;
             }
             else if (compareResult > 0) {
                 state = CliState.NewerThanSupported;
-                message = `NativeScript extension is expected to work with NativeScript v${versionToString(extensionCliVersion)}, but currently NativeScript v${versionToString(installedCliVersion)} is installed. This may lead to not working features. Try updating the extension by running 'Show Outdated Extensions' command.`
+                message = `NativeScript extension is expected to work with NativeScript v${versionToString(extensionCliVersion)}, but currently NativeScript v${versionToString(installedCliVersion)} is installed. This may lead to not working features. Try to update the extension by running 'Show Outdated Extensions' command.`
             }
             else {
                 state = CliState.Compatible;
@@ -361,7 +361,7 @@ export module CliInfo {
         }
         else {
             state = CliState.NotExisting;
-            message = `NativeScript not found, please run 'npm install –g nativescript@${versionToString(extensionCliVersion)}' to use this extension.`;
+            message = `NativeScript not found, please run 'npm install –g nativescript@${versionToString(extensionCliVersion)}' to install it.`;
         }
     }
     initialize();
