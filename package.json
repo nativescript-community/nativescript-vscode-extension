@@ -52,6 +52,18 @@
         "category": "NativeScript"
       }
     ],
+    "keybindings": [
+        {
+          "command": "nativescript.runIos",
+          "key": "ctrl+i",
+          "mac": "cmd+i"
+        },
+        {
+          "command": "nativescript.runAndroid",
+          "key": "ctrl+a",
+          "mac": "cmd+a"
+        }
+    ],
     "debuggers": [
       {
         "type": "nativescript",
