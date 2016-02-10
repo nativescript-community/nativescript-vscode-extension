@@ -53,6 +53,8 @@ export abstract class NSProject extends EventEmitter {
     }
 
     public abstract platform(): string;
+
+    public abstract run(emulator: boolean): Promise<ChildProcess>;
 }
 
 export class IosProject extends NSProject {
@@ -146,7 +148,7 @@ export class IosProject extends NSProject {
     }
 }
 
-export class AndoridProject extends NSProject {
+export class AndroidProject extends NSProject {
     private child: ChildProcess;
 
     constructor(projectPath: string) {
@@ -155,6 +157,22 @@ export class AndoridProject extends NSProject {
 
     public platform(): string {
         return 'android';
+    }
+
+    public run(emulator: boolean): Promise<ChildProcess> {
+        if(!CliInfo.isExisting()) {
+            return Promise.reject(CliInfo.getMessage());
+        }
+
+        // build command to execute
+        let command: string = new CommandBuilder()
+            .appendParam("run")
+            .appendParam(this.platform())
+            .tryAppendParam("--emulator", emulator)
+            .build();
+
+        let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+        return Promise.resolve(child);
     }
 
     public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {

@@ -119,7 +119,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private _attachAndroid(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
-        let androidProject: ns.AndoridProject = new ns.AndoridProject(this.appRoot);
+        let androidProject: ns.AndroidProject = new ns.AndroidProject(this.appRoot);
         let thisAdapter: WebKitDebugAdapter = this;
 
         if(!ns.CliInfo.isExisting()) {

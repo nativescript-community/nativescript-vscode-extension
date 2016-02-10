@@ -8,9 +8,9 @@ export function activate(context: vscode.ExtensionContext) {
     let haveToShowWarningForIncompatibleCli = ns.CliInfo.isExisting() && !ns.CliInfo.isCompatible();
 
     let iosRunOptions = ['device', 'emulator'];
+    let androidRunOptions = ['device', 'emulator'];
 
-    let runIosCommand = vscode.commands.registerCommand('nativescript.runIos', () => {
-
+    let runCommandHandler = (project: ns.NSProject, options: string[]) => {
         if (!ns.CliInfo.isExisting()) {
             vscode.window.showErrorMessage(ns.CliInfo.getMessage());
             return;
@@ -28,15 +28,15 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            vscode.window.showQuickPick(iosRunOptions)
+            vscode.window.showQuickPick(options)
             .then(target => {
                 if(target == undefined) {
                     return; // e.g. if the user presses escape button
                 }
 
                 // Move the selected option to be the first element in order to keep the last selected option at the top of the list
-                iosRunOptions.splice(iosRunOptions.indexOf(target), 1);
-                iosRunOptions.unshift(target);
+                options.splice(options.indexOf(target), 1);
+                options.unshift(target);
 
                 // Show output channel
                 let runChannel: vscode.OutputChannel = vscode.window.createOutputChannel('Run on iOS');
@@ -44,9 +44,8 @@ export function activate(context: vscode.ExtensionContext) {
                 runChannel.show(vscode.ViewColumn.Two);
 
                 // Execute run command
-                let iosProject: ns.IosProject = new ns.IosProject(vscode.workspace.rootPath);
                 let emulator: boolean = (target === 'emulator');
-                return iosProject.run(emulator)
+                return project.run(emulator)
                 .then(tnsProcess => {
                     tnsProcess.on('error', err => {
                         vscode.window.showErrorMessage('Unexpected error executing NativeScript Run command.');
@@ -67,10 +66,14 @@ export function activate(context: vscode.ExtensionContext) {
                 });
             });
         });
+    };
+
+    let runIosCommand = vscode.commands.registerCommand('nativescript.runIos', () => {
+        return runCommandHandler(new ns.IosProject(vscode.workspace.rootPath), iosRunOptions);
     });
 
     let runAndroidCommand = vscode.commands.registerCommand('nativescript.runAndroid', () => {
-
+        return runCommandHandler(new ns.AndroidProject(vscode.workspace.rootPath), iosRunOptions);
     });
 
     context.subscriptions.push(runIosCommand);
