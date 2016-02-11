@@ -69,7 +69,7 @@ class ResReqNetSocket extends EventEmitter {
             that.conn.on('error', reject);
 
             that.conn.on('connect', function() {
-
+                that.emit('connect');
                 // Replace the promise-rejecting handler
                 that.conn.removeListener('error', reject);
 

@@ -119,7 +119,6 @@ export class IosProject extends NSProject {
 
             child.stdout.on('data', (data) => {
                 let strData: string = data.toString();
-                Logger.log(strData);
                 this.emit('TNS.outputMessage', strData, 'log');
                 if(!readyToConnect) {
                     let matches: RegExpMatchArray = strData.match(socketPathPattern);
@@ -134,7 +133,6 @@ export class IosProject extends NSProject {
             });
 
             child.stderr.on('data', (data) => {
-                Logger.log(data);
                 this.emit('TNS.outputMessage', data, 'error');
             });
 
@@ -194,12 +192,13 @@ export class AndroidProject extends NSProject {
                     .appendParam(args.tnsArgs)
                     .build();
 
+                        Logger.log("tns  debug command: " + command);
+
                 // run NativeScript CLI command
                 let newEnv = process.env;
                 this.child = exec(command, { cwd: this.projectPath(), env: newEnv });
                 this.child.stdout.on('data', function(data) {
                     let strData: string = data.toString();
-                    console.log(data.toString());
                     that.emit('TNS.outputMessage', data.toString(), 'log');
                     if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
                         that.child = null;
@@ -213,7 +212,6 @@ export class AndroidProject extends NSProject {
                 });
 
                 this.child.stderr.on('data', function(data) {
-                    console.error(data.toString());
                     that.emit('TNS.outputMessage', data.toString(), 'error');
 
                 });
@@ -247,7 +245,7 @@ export class AndroidProject extends NSProject {
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
             child.stdout.on('data', function(data) {
                 that.emit('TNS.outputMessage', data.toString(), 'log');
-                console.log("getDebugPort: " + data.toString());
+                Logger.log("getDebugPort: " + data.toString());
                 let regexp = new RegExp(" ([\\d]{5})", "g");
 
                 //for the new output
@@ -257,11 +255,11 @@ export class AndroidProject extends NSProject {
                 // console.log(match);
 
                 let portNumberMatch = data.toString().match(regexp)
-                console.log("port number match " + portNumberMatch);
+                Logger.log("port number match " + portNumberMatch);
                 if (portNumberMatch) {
                     let portNumber = parseInt(portNumberMatch);
                     if (portNumber) {
-                        console.log("port number " + portNumber);
+                        Logger.log("port number " + portNumber);
                         child.stdout.removeAllListeners('data');
                         resolve(portNumber);
                     }

@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as path from 'path';
-
+import * as fs from 'fs';
 import {ISourceMaps, SourceMaps} from './sourceMaps';
 import * as utils from '../../webkit/utilities';
 
@@ -185,15 +185,39 @@ export class SourceMapTransformer implements IDebugTransformer {
         if (this._sourceMaps) {
             this._allRuntimeScriptPaths.add(event.body.scriptUrl);
 
+            let sourceMapUrlValue = event.body.sourceMapURL;
+
             if (!event.body.sourceMapURL) {
+
+                let fileContents = fs.readFileSync(event.body.scriptUrl, 'utf8');
+
+                var baseRegex = "\\s*[@#]\\s*sourceMappingURL\\s*=\\s*([^\\s]*)";
+
+                // Matches /* ... */ comments
+                var blockCommentRegex = new RegExp("/\\*" + baseRegex + "\\s*\\*/");
+
+                // Matches // .... comments
+                var commentRegex = new RegExp("//" + baseRegex + "($|\n|\r\n?)");
+
+                let match = fileContents.match(commentRegex);
+                if (!match) {
+                    match = fileContents.match(blockCommentRegex);
+                }
+
+                if (match) {
+                    sourceMapUrlValue = match[1];
+                }
+            }
+
+            if (!sourceMapUrlValue || sourceMapUrlValue === "") {
                 this.resolvePendingBreakpoints(event.body.scriptUrl);
                 return;
             }
 
-            this._sourceMaps.ProcessNewSourceMap(event.body.scriptUrl, event.body.sourceMapURL).then(() => {
+            this._sourceMaps.ProcessNewSourceMap(event.body.scriptUrl, sourceMapUrlValue).then(() => {
                 const sources = this._sourceMaps.AllMappedSources(event.body.scriptUrl);
                 if (sources) {
-                    utils.Logger.log(`SourceMaps.scriptParsed: ${event.body.scriptUrl} was just loaded and has mapped sources: ${JSON.stringify(sources) }`);
+                    utils.Logger.log(`SourceMaps.scriptParsed: ${event.body.scriptUrl} was just loaded and has mapped sources: ${JSON.stringify(sources)}`);
                     sources.forEach(this.resolvePendingBreakpoints, this);
                 }
             });

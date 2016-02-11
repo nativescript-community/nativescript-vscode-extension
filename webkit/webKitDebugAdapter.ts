@@ -13,6 +13,7 @@ import * as ns from '../NativeScript/nativeScript';
 import {spawn, ChildProcess} from 'child_process';
 import * as path from 'path';
 
+
 interface IScopeVarHandle {
     objectId: string;
     thisObj?: WebKitProtocol.Runtime.RemoteObject;
@@ -110,10 +111,11 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private _attachIos(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
         let iosProject : ns.IosProject = new ns.IosProject(this.appRoot);
         iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
+
         return iosProject.debug(args)
         .then((socketFilePath) => {
             let iosConnection: WebKitConnection = new WebKitConnection();
-            this.setConnection(iosConnection);
+            this.setConnection(iosConnection, args);
             return iosConnection.attach(socketFilePath);
         });
     }
@@ -127,17 +129,17 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         }
 
         androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
+
         let port: number;
         this.onTnsOutputMessage("Getting debug port");
         let androidConnection: AndroidDebugConnection = null;
         return androidProject.getDebugPort(args)
                 .then(debugPort => {
                     port = debugPort;
-                    console.log("Creating debug connection");
                     if (!thisAdapter._webKitConnection) {
                         return androidProject.createConnection().then(connection => {
                             androidConnection = connection;
-                            this.setConnection(connection);
+                            this.setConnection(connection, args);
                             return Promise.resolve<void>();
                         });
                     }
@@ -145,6 +147,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                     return Promise.resolve<void>();
                 })
                 .then(() => {
+                    console.log("Preparing for debug");
                     this.onTnsOutputMessage("Preparing for debug");
                     if(!ns.CliInfo.isCompatible()) {
                         this.onTnsOutputMessage('WARNING: ' + ns.CliInfo.getMessage(), 'error');
@@ -152,6 +155,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                     return androidProject.debug(args);
                 })
                 .then(() => {
+                    console.log("Attaching to debug application");
                     this.onTnsOutputMessage("Attaching to debug application");
                     if(!ns.CliInfo.isCompatible()) {
                         this.onTnsOutputMessage('WARNING: ' + ns.CliInfo.getMessage(), 'error');
@@ -160,7 +164,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 });
     }
 
-    private setConnection(connection: ns.INSDebugConnection) : ns.INSDebugConnection {
+    private setConnection(connection: ns.INSDebugConnection, args: IAttachRequestArgs | ILaunchRequestArgs) : ns.INSDebugConnection {
         connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
         connection.on('Debugger.resumed', () => this.onDebuggerResumed());
         connection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));
@@ -170,11 +174,18 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         connection.on('Inspector.detached', () => this.terminateSession());
         connection.on('close', () => this.terminateSession());
         connection.on('error', () => this.terminateSession());
+        connection.on('connect', () => this.onConnected(args))
         this._webKitConnection = connection;
         return connection;
     }
 
+    private onConnected(args: IAttachRequestArgs | ILaunchRequestArgs): void {
+        this.onTnsOutputMessage("Debugger connected");
+    }
+
     private onTnsOutputMessage(message: string, level: string = "log"): void {
+        utils.Logger.log(message);
+
         if (!this.isAttached) {
             let messageParams: WebKitProtocol.Console.MessageAddedParams = {
                 message: {
@@ -199,17 +210,19 @@ export class WebKitDebugAdapter implements IDebugAdapter {
             this.fireEvent(new TerminatedEvent());
         }
 
+        this.onTnsOutputMessage("Terminating debug session");
         this.clearEverything();
     }
 
     private clearEverything(): void {
-
         this.clearClientContext();
         this.clearTargetContext();
         this.isAttached = false;
         this._chromeProc = null;
 
         if (this._webKitConnection) {
+            this.onTnsOutputMessage("Closing debug connection");
+
             this._webKitConnection.close();
             this._webKitConnection = null;
         }
