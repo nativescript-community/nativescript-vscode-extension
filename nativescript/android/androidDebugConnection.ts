@@ -92,8 +92,8 @@ class ResReqNetSocket extends EventEmitter {
                 that.conn.on('data', function(data) {
                     that.debugBuffer += data;
                     that.parse(function() {
-                         that.emit('connect');
                          that.connected = true;
+                         that.emit('connect');
                          resolve();
                     });
                 });
@@ -127,6 +127,7 @@ class ResReqNetSocket extends EventEmitter {
 
     private parse(connectedCallback: () => any) {
         var b, obj;
+        var that = this;
         if (this.msg && this.msg.headersDone) {
             //parse body
             if (Buffer.byteLength(this.debugBuffer) >= this.msg.contentLength) {
@@ -146,10 +147,9 @@ class ResReqNetSocket extends EventEmitter {
                         console.log('event: ' + obj.event + " obj: " + JSON.stringify(obj));
 
                         if (obj.event === "afterCompile") {
-                            if (connectedCallback) {
+                            if (!that.connected && connectedCallback) {
                                 connectedCallback();
                             }
-                            connectedCallback = null;
                         }
 
                         this.emit(obj.event, obj);
@@ -159,7 +159,7 @@ class ResReqNetSocket extends EventEmitter {
                     }
                 }
                 this.msg = false;
-                this.parse();
+                this.parse(connectedCallback);
             }
             return;
         }
@@ -180,7 +180,7 @@ class ResReqNetSocket extends EventEmitter {
                 console.warn('no Content-Length');
             }
             this.debugBuffer = this.debugBuffer.slice(this.offset + 4);
-            this.parse();
+            this.parse(connectedCallback);
         }
     }
 
