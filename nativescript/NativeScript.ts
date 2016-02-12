@@ -148,7 +148,6 @@ export class IosProject extends NSProject {
 }
 
 export class AndroidProject extends NSProject {
-    private child: ChildProcess;
 
     constructor(projectPath: string) {
         super(projectPath);
@@ -195,13 +194,11 @@ export class AndroidProject extends NSProject {
                         Logger.log("tns  debug command: " + command);
 
                 // run NativeScript CLI command
-                let newEnv = process.env;
-                this.child = exec(command, { cwd: this.projectPath(), env: newEnv });
-                this.child.stdout.on('data', function(data) {
+                let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+                child.stdout.on('data', function(data) {
                     let strData: string = data.toString();
                     that.emit('TNS.outputMessage', data.toString(), 'log');
                     if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
-                        that.child = null;
                         launched = true;
 
                         //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
@@ -211,12 +208,12 @@ export class AndroidProject extends NSProject {
                     }
                 });
 
-                this.child.stderr.on('data', function(data) {
+                child.stderr.on('data', function(data) {
                     that.emit('TNS.outputMessage', data.toString(), 'error');
 
                 });
-                this.child.on('close', function(code) {
-                    that.child = null;
+
+                child.on('close', function(code) {
                     reject("The debug process exited unexpectedly code:" + code);
                 });
             });
@@ -245,7 +242,6 @@ export class AndroidProject extends NSProject {
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
             child.stdout.on('data', function(data) {
                 that.emit('TNS.outputMessage', data.toString(), 'log');
-                Logger.log("getDebugPort: " + data.toString());
                 let regexp = new RegExp(" ([\\d]{5})", "g");
 
                 //for the new output
@@ -265,9 +261,11 @@ export class AndroidProject extends NSProject {
                     }
                 }
             });
+
             child.stderr.on('data', function(data) {
-                console.error(data.toString());
+                that.emit('TNS.outputMessage', data.toString(), 'error');
             });
+
             child.on('close', function(code) {
                 reject("Getting debug port failed with code: " + code);
             });

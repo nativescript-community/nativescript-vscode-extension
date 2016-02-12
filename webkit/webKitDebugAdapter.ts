@@ -103,6 +103,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 this.fireEvent(new InitializedEvent());
             },
             e => {
+                this.onTnsOutputMessage("Command failed: " + e, "error");
                 this.clearEverything();
                 return utils.errP(e);
             });
