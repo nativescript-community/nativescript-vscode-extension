@@ -137,7 +137,7 @@ export class IosProject extends NSProject {
             });
 
             child.on('close', (code) => {
-                reject("The debug process exited unexpectedly");
+                reject("The debug process exited unexpectedly code:" + code);
             });
         });
     }
@@ -217,7 +217,7 @@ export class AndroidProject extends NSProject {
                 });
                 this.child.on('close', function(code) {
                     that.child = null;
-                    reject("The debug process exited unexpectedly");
+                    reject("The debug process exited unexpectedly code:" + code);
                 });
             });
          }
@@ -269,7 +269,7 @@ export class AndroidProject extends NSProject {
                 console.error(data.toString());
             });
             child.on('close', function(code) {
-                reject(code);
+                reject("Getting debug port failed with code: " + code);
             });
         });
     }
