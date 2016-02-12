@@ -148,7 +148,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                     return Promise.resolve<void>();
                 })
                 .then(() => {
-                    console.log("Preparing for debug");
                     this.onTnsOutputMessage("Preparing for debug");
                     if(!ns.CliInfo.isCompatible()) {
                         this.onTnsOutputMessage('WARNING: ' + ns.CliInfo.getMessage(), 'error');
@@ -156,7 +155,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                     return androidProject.debug(args);
                 })
                 .then(() => {
-                    console.log("Attaching to debug application");
                     this.onTnsOutputMessage("Attaching to debug application");
                     if(!ns.CliInfo.isCompatible()) {
                         this.onTnsOutputMessage('WARNING: ' + ns.CliInfo.getMessage(), 'error');
@@ -360,7 +358,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
             const inDebug = typeof (<any>global).v8debug === 'object';
             console.log("InDebug: " + inDebug);
-            const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, /*timeoutMs*/inDebug ? 2000000 : 2000, 'Set breakpoints request timed out');
+            const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, /*timeoutMs*/inDebug ? 2000000 : 8000, 'Set breakpoints request timed out');
 
             // Do just one setBreakpointsRequest at a time to avoid interleaving breakpoint removed/breakpoint added requests to Chrome.
             // Swallow errors in the promise queue chain so it doesn't get blocked, but return the failing promise for error handling.

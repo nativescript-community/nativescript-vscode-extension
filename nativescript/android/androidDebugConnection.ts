@@ -69,7 +69,6 @@ class ResReqNetSocket extends EventEmitter {
             that.conn.on('error', reject);
 
             that.conn.on('connect', function() {
-                that.emit('connect');
                 // Replace the promise-rejecting handler
                 that.conn.removeListener('error', reject);
 
@@ -92,7 +91,11 @@ class ResReqNetSocket extends EventEmitter {
 
                 that.conn.on('data', function(data) {
                     that.debugBuffer += data;
-                    that.parse();
+                    that.parse(function() {
+                         that.emit('connect');
+                         that.connected = true;
+                         resolve();
+                    });
                 });
 
 
@@ -101,12 +104,15 @@ class ResReqNetSocket extends EventEmitter {
                 });
 
                 that.conn.on('close', function() {
+                    if (!that.connected)
+                    {
+                        reject("Cannot not connect. Check the application is running on the device");
+                        that.emit('close', that.lastError || 'Debugged process exited.');
+                        return;
+                    }
                     that.connected = false;
                     that.emit('close', that.lastError || 'Debugged process exited.');
                 });
-
-                that.connected = true;
-                resolve();
             });
         });
     }
@@ -119,7 +125,7 @@ class ResReqNetSocket extends EventEmitter {
         };
     }
 
-    private parse() {
+    private parse(connectedCallback: () => any) {
         var b, obj;
         if (this.msg && this.msg.headersDone) {
             //parse body
@@ -138,6 +144,14 @@ class ResReqNetSocket extends EventEmitter {
                     }
                     else if (obj.type === 'event') {
                         console.log('event: ' + obj.event + " obj: " + JSON.stringify(obj));
+
+                        if (obj.event === "afterCompile") {
+                            if (connectedCallback) {
+                                connectedCallback();
+                            }
+                            connectedCallback = null;
+                        }
+
                         this.emit(obj.event, obj);
                     }
                     else {
