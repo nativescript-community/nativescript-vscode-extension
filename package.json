@@ -26,13 +26,12 @@
     "gulp-tslint": "^3.3.1",
     "gulp-typescript": "^2.8.0",
     "gulp-util": "^3.0.5",
-    "mocha": "^2.3.3",
-    "mockery": "^1.4.0",
-    "sinon": "^1.17.2",
-    "tsd": "^0.6.3",
+    "tsd": "^0.6.5",
     "tslint": "^2.5.1",
     "typescript": "^1.6.2",
-    "vscode": "0.10.x"
+    "vscode": "0.10.x",
+    "vsce": "^1.0.0"
+
   },
   "main": "./out/nativescript/nsMain",
   "activationEvents": [
