@@ -1,10 +1,14 @@
 {
   "name": "nativescript",
-  "displayName": "NativeScript",
   "version": "0.0.1",
   "nativescript-cli-version": "1.6",
   "icon": "images/icon.png",
-  "description": "A Visual Studio Code extension for NativeScript",
+  "displayName": "NativeScript",
+  "description": "Integrated debugging and commands for NativeScript app development",
+  "galleryBanner": {
+    "color": "#425df4",
+    "theme": "dark"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/NativeScript/nativescript-vscode-extension/"
@@ -14,7 +18,7 @@
   "engines": {
     "vscode": "0.10.x"
   },
-  "categories": ["Debuggers"],
+  "categories": ["Debuggers", "Other"],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
     "source-map": "^0.5.3"
