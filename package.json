@@ -1,10 +1,10 @@
 {
   "name": "nativescript",
-  "version": "0.0.1",
+  "version": "1.0.0-beta",
   "nativescript-cli-version": "1.6",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
-  "description": "Integrated debugging and commands for NativeScript app development",
+  "description": "NativeScript support for Visual Studio Code",
   "galleryBanner": {
     "color": "#425df4",
     "theme": "dark"
