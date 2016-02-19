@@ -4,6 +4,7 @@
 typings/**
 testapp/**
 test/**
+images/screenshots/**
 *.vsix
 gulpfile.js
 tsconfig.json
