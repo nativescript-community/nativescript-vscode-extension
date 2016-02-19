@@ -18,6 +18,7 @@
   "engines": {
     "vscode": "0.10.x"
   },
+  "homepage": "https://www.nativescript.org/",
   "categories": ["Debuggers", "Other"],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
