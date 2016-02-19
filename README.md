@@ -13,17 +13,17 @@ To install [NativeScript](https://www.nativescript.org/) and all its dependencie
 
 Create NativeScript application by running `tns create MyApp` and open `MyApp` folder in Visual Studio Code. Open the Debug Panel, click the gear icon
 
-![gear icon](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/1-gear-icon.jpg)
+![gear icon](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/screenshots/nativescript-gear-icon.jpg)
 
 and choose NativeScript debug environment.
 
-![NativeScript debug settings](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/2-nativescript-debug-settings.jpg)
+![NativeScript debug settings](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/screenshots/nativescript-debug-settings.png)
 
 ### Debug your NativeScript application
 
 To start the application with attached debugger, choose one of the launch configurations from the drop-down list and then click the start button.
 
-![Launch settings](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/4-nativescript-launch-configurations.jpg)
+![Launch settings](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/screenshots/nativescript-launch-configurations.png)
 
 Your application will be launched and the VSCode debugger will break on the first JavaScript statement. Click continue and your app will show up on the emulator/device. If you want to attach to already running NativeScript application, use one of the attach configurations. More information on what you can do with the Visual Studio Code Debugger you can find [here](https://code.visualstudio.com/docs/editor/debugging).
 
@@ -31,7 +31,7 @@ Your application will be launched and the VSCode debugger will break on the firs
 
 Type `NativeScript` in the Command Palette and you will see all available commands. 
 
-![NativeScript Commands](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/7-nativescript-commands.jpg)
+![NativeScript Commands](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/screenshots/nativescript-commands.png)
 
 There's only a couple of them but the list will grow in the future.
 
