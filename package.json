@@ -1,6 +1,6 @@
 {
   "name": "nativescript",
-  "version": "1.0.0-beta",
+  "version": "0.1.0",
   "nativescript-cli-version": "1.6",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
