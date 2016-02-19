@@ -5,7 +5,7 @@ NativeScript Extension for Visual Studio Code
 
 The NativeScript extension for Visual Studio Code aids your [NativeScript](https://www.nativescript.org/) project development within Visual Studio Code.
 
-### Instal NativeScript
+### Install NativeScript
 
 To install [NativeScript](https://www.nativescript.org/) and all its dependencies, follow the instructions in our [getting started guide](http://docs.nativescript.org/start/getting-started#getting-up-and-running).
 
