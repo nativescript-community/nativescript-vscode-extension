@@ -242,17 +242,21 @@ export class AndroidProject extends NSProject {
             let child: ChildProcess = exec(command, { cwd: this.projectPath() });
             child.stdout.on('data', function(data) {
                 that.emit('TNS.outputMessage', data.toString(), 'log');
-                let regexp = new RegExp(" ([\\d]{5})", "g");
+
+                let regexp = new RegExp("(?:debug port: )([\\d]{5})");
 
                 //for the new output
                 // var input = "device: 030b258308e6ce89 debug port: 40001";
-                // var regexp = new RegExp("(?:^device: )([\\S]+)(?: debug port: )([\\d]+)", "g");
-                // var match = regexp.exec(input);
-                // console.log(match);
 
-                let portNumberMatch = data.toString().match(regexp)
-                Logger.log("port number match " + portNumberMatch);
+                let portNumberMatch = null;
+                let match = data.toString().match(regexp);
+                if (match)
+                {
+                    portNumberMatch = match[1];
+                }
+
                 if (portNumberMatch) {
+                    Logger.log("port number match '" + portNumberMatch + "'");
                     let portNumber = parseInt(portNumberMatch);
                     if (portNumber) {
                         Logger.log("port number " + portNumber);
