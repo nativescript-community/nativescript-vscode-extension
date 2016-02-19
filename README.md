@@ -1,32 +1,40 @@
-NativeScript extension for Visual Studio Code
+NativeScript Extension for Visual Studio Code
 ========
 
 ### Introduction
-The NativeScript extension for Visual Studio Code aids your NativeScript
-project development within Visual Studio Code.
 
-### Installation
-1. Load Visual Studio Code
-2. Press `F1`
-3. Type `Install Extension`
-4. Type `NativeScript`
-5. Hit ENTER
+The NativeScript extension for Visual Studio Code aids your [NativeScript](https://www.nativescript.org/) project development within Visual Studio Code.
 
-### Build
+### Instal NativeScript
 
-#### Prerequisites
-1. [Set up Visual Studio Code](https://code.visualstudio.com/docs/editor/setup)
-2. [Install nodejs](https://nodejs.org/en/download/)
-3. Install [gulp](http://gulpjs.com/) globally (`npm install gulp -g`)
-4. Install [tsd](http://definitelytyped.org/tsd/) globally (`npm install tsd -g`)
-5. Install [vsce](https://code.visualstudio.com/docs/tools/vscecli) globally (`npm install -g vsce`)
-6. run `npm install` from the project folder to have the dependent node.js modules installed
-7. run `tsd install` from the project folder to have the TypeScript declarations installed
+To install [NativeScript](https://www.nativescript.org/) and all its dependencies, follow the instructions in our [getting started guide](http://docs.nativescript.org/start/getting-started#getting-up-and-running).
 
-#### Build and Install
-1. run `gulp` from the project folder to build the extension. An `out` folder should be created containing the build artifacts
-2. run `vsce package` from the project folder. `nativescript-x.x.x.vsix` file should be created in your project folder.
-3. [Install the extension](https://code.visualstudio.com/docs/extensions/install-extension) by running `code nativescript-x.x.x.vsix` from the project folder.
+### Setup the extension
 
-> Visit [the official visual studio code site]
-(https://code.visualstudio.com/docs/extensions/example-hello-world) for more information on running Visual Studio Code plugins.
+Create NativeScript application by running `tns create MyApp` and open `MyApp` folder in Visual Studio Code. Open the Debug Panel, click the gear icon
+
+![gear icon](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/1-gear-icon.jpg)
+
+and choose NativeScript debug environment.
+
+![NativeScript debug settings](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/2-nativescript-debug-settings.jpg)
+
+### Debug your NativeScript application
+
+To start the application with attached debugger, choose one of the launch configurations from the drop-down list and then click the start button.
+
+![Launch settings](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/4-nativescript-launch-configurations.jpg)
+
+Your application will be launched and the VSCode debugger will break on the first JavaScript statement. Click continue and your app will show up on the emulator/device. If you want to attach to already running NativeScript application, use one of the attach configurations. More information on what you can do with the Visual Studio Code Debugger you can find [here](https://code.visualstudio.com/docs/editor/debugging).
+
+### NativeScript commands
+
+Type `NativeScript` in the Command Palette and you will see all available commands. 
+
+![NativeScript Commands](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/7-nativescript-commands.jpg)
+
+There's only a couple of them but the list will grow in the future.
+
+The `Run` command triggers `tns run` on emulator. You can run your app both on iOS and Android.
+
+If your version of NativeScript is incompatible with the extension you will see a warning the first time you run a command.
