@@ -35,6 +35,6 @@ Type `NativeScript` in the Command Palette and you will see all available comman
 
 There's only a couple of them but the list will grow in the future.
 
-The `Run` command triggers `tns run` on emulator. You can run your app both on iOS and Android.
+The `Run` command triggers `tns run` on emulator or device. You can run your app both on iOS and Android.
 
 If your version of NativeScript is incompatible with the extension you will see a warning the first time you run a command.
