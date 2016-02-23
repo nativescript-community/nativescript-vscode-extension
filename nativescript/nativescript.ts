@@ -1,7 +1,7 @@
 import {exec, execSync, ChildProcess} from 'child_process';
 import {Logger} from '../webkit/utilities';
 import {WebKitConnection} from '../webkit/webKitConnection';
-import {AndroidDebugConnection} from './android/AndroidDebugConnection';
+import {AndroidDebugConnection} from './android/androidDebugConnection';
 import {EventEmitter} from 'events';
 import * as path from 'path';
 

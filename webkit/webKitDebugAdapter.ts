@@ -9,7 +9,7 @@ import {WebKitConnection} from './webKitConnection';
 import {AndroidDebugConnection} from '../nativescript/android/androidDebugConnection';
 import * as utils from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
-import * as ns from '../NativeScript/nativeScript';
+import * as ns from '../nativescript/nativescript';
 import {spawn, ChildProcess} from 'child_process';
 import * as path from 'path';
 

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as child from 'child_process';
-import * as ns from './nativeScript';
+import * as ns from './nativescript';
 
 // this method is called when your extension is activated
 export function activate(context: vscode.ExtensionContext) {
