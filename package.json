@@ -78,7 +78,7 @@
             "typescript"
           ]
         },
-        "program": "./out/webkit/webkitDebug.js",
+        "program": "./out/webkit/webKitDebug.js",
         "runtime": "node",
         "initialConfigurations": [
             {
