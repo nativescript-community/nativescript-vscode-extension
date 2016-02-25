@@ -59,13 +59,13 @@
     "keybindings": [
         {
           "command": "nativescript.runIos",
-          "key": "ctrl+i",
-          "mac": "cmd+i"
+          "key": "ctrl+alt+i",
+          "mac": "cmd+alt+i"
         },
         {
           "command": "nativescript.runAndroid",
-          "key": "ctrl+a",
-          "mac": "cmd+a"
+          "key": "ctrl+alt+a",
+          "mac": "cmd+alt+a"
         }
     ],
     "debuggers": [
