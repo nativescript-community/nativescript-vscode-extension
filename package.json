@@ -89,7 +89,6 @@
             "appRoot": ".",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "stopOnEntry": true,
             "emulator": false
           },
           {
@@ -110,7 +109,6 @@
             "appRoot": ".",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "stopOnEntry": true,
             "emulator": true
           },
           {
@@ -131,7 +129,6 @@
             "appRoot": ".",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "stopOnEntry": true,
             "emulator": false
           },
           {
@@ -142,7 +139,6 @@
             "appRoot": ".",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "stopOnEntry": true,
             "emulator": true
           },
           {
@@ -183,6 +179,11 @@
                 "description": "Optional arguments passed to the NativeScript CLI executable.",
                 "default": null
               },
+              "appRoot": {
+                "type": "string",
+                "description": "The path to the root folder of the application relative to the current working directory.",
+                "default": null
+              },
               "sourceMaps": {
                 "type": "boolean",
                 "description": "Use JavaScript source maps (if they exist).",
@@ -208,6 +209,24 @@
           "attach": {
             "required": [],
             "properties": {
+              "runtimeArgs": {
+                "type": "array",
+                "description": "Optional arguments passed to the runtime executable.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "tnsArgs": {
+                "type": "string",
+                "description": "Optional arguments passed to the NativeScript CLI executable.",
+                "default": null
+              },
+              "appRoot": {
+                "type": "string",
+                "description": "The path to the root folder of the application relative to the current working directory.",
+                "default": null
+              },
               "sourceMaps": {
                 "type": "boolean",
                 "description": "Use JavaScript source maps (if they exist).",
