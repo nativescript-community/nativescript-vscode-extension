@@ -4,12 +4,14 @@
         {
             "name": "launch as server",
             "type": "node",
+            "request": "launch",
             "program": "${workspaceRoot}/out/webkit/webKitDebug.js",
-			"runtimeArgs": ["--harmony", "--nolazy"],
+			"runtimeArgs": ["--nolazy"],
             "stopOnEntry": true,
             "args": [ "--server=4712" ],
             "sourceMaps": true,
-            "outDir": "${workspaceRoot}/out"
+            "outDir": null,
+            "cwd": "${workspaceRoot}"
         },
         {
             "name": "launch in extension host",
@@ -22,15 +24,6 @@
             ],
             "stopOnEntry": false,
 			"sourceMaps": true,
-            "outDir": "${workspaceRoot}/out"
-        },
-        {
-            "name": "test",
-            "type": "node",
-            "program": "${workspaceRoot}/node_modules/gulp/bin/gulp.js",
-            "stopOnEntry": false,
-            "args": [ "test" ],
-            "sourceMaps": true,
             "outDir": "out"
         }
     ]

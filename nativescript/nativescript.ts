@@ -44,8 +44,8 @@ export abstract class NSProject extends EventEmitter {
     private _projectPath: string;
 
     constructor(projectPath: string) {
-        this._projectPath = projectPath;
         super();
+        this._projectPath = projectPath;
     }
 
     public projectPath(): string {
