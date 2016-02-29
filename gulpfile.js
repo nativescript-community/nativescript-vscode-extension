@@ -13,7 +13,6 @@ var mocha = require('gulp-mocha');
 var sources = [
     'adapter',
     'common',
-    //'test', test are not relevant in the context of NativeScript
     'typings',
     'custom-typings',
     'webkit',
@@ -21,9 +20,13 @@ var sources = [
 ].map(function(tsFolder) { return tsFolder + '/**/*.ts'; });
 
 var projectConfig = {
+    target: "es5",
+    module: "commonjs",
+    moduleResolution: "node",
+    sourceMap: true,
     noImplicitAny: false,
-    target: 'ES5',
-    module: 'commonjs',
+    removeComments: false,
+    preserveConstEnums: true,
     declarationFiles: true,
     typescript: typescript
 };
@@ -61,20 +64,4 @@ gulp.task('tslint', function(){
       return gulp.src(lintSources, { base: '.' })
         .pipe(tslint())
         .pipe(tslint.report('verbose'));
-});
-
-function test() {
-    return gulp.src('out/test/**/*.test.js', { read: false })
-        .pipe(mocha({ ui: 'tdd' }))
-        .on('error', function(e) {
-            log(e ? e.toString() : 'error in test task!');
-            this.emit('end');
-        });
-}
-
-gulp.task('build-test', ['build'], test);
-gulp.task('test', test);
-
-gulp.task('watch-build-test', ['build', 'build-test'], function() {
-    return gulp.watch(sources, ['build', 'build-test']);
 });
