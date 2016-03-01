@@ -22,7 +22,9 @@
   "categories": ["Debuggers", "Other"],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "source-map": "^0.5.3"
+    "source-map": "^0.5.3",
+    "vscode-debugprotocol": "^1.6.1",
+    "vscode-debugadapter": "^1.6.1"
   },
   "devDependencies": {
     "gulp": "^3.9.0",

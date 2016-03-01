@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
+import {ILaunchRequestArgs, IAttachRequestArgs} from '../webkit/WebKitAdapterInterfaces';
 
 const DEFAULT_CHROME_PATH = {
     OSX: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',

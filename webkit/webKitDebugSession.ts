@@ -1,10 +1,8 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
-
-import {Response} from '../common/v8Protocol';
-import {OutputEvent} from '../common/debugSession';
-import {DebugSession, ErrorDestination} from '../common/debugSession';
+import {OutputEvent, DebugSession, ErrorDestination} from 'vscode-debugadapter';
+import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {WebKitDebugAdapter} from './webKitDebugAdapter';
 import {Logger} from './utilities';
@@ -98,7 +96,7 @@ export class WebKitDebugSession extends DebugSession {
      * Overload dispatchRequest to dispatch to the adapter proxy instead of debugSession's methods for each request.
      */
     protected dispatchRequest(request: DebugProtocol.Request): void {
-        const response = new Response(request);
+        const response = { seq: 0, type: 'response', request_seq: request.seq, command: request.command, success: true  };
         try {
             Logger.log(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
             this.sendResponseAsync(

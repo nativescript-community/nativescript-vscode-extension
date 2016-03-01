@@ -2,16 +2,17 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {Event} from '../common/v8Protocol';
-import {StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from '../common/debugSession';
-import {Handles} from '../common/handles';
+import {spawn, ChildProcess} from 'child_process';
+import * as path from 'path';
+import {Handles, StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from 'vscode-debugadapter';
+import {DebugProtocol} from 'vscode-debugprotocol';
 import {WebKitConnection} from './webKitConnection';
 import {AndroidDebugConnection} from '../nativescript/android/androidDebugConnection';
 import * as utils from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
 import * as ns from '../nativescript/nativescript';
-import {spawn, ChildProcess} from 'child_process';
-import * as path from 'path';
+import {ILaunchRequestArgs, IAttachRequestArgs, IDebugAdapter, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IBreakpoint,
+    IStackTraceResponseBody, IScopesResponseBody, IVariablesResponseBody, ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody} from './WebKitAdapterInterfaces';
 
 
 interface IScopeVarHandle {
@@ -58,12 +59,12 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         this._scriptsById = new Map<WebKitProtocol.Debugger.ScriptId, WebKitProtocol.Debugger.Script>();
         this._committedBreakpointsByUrl = new Map<string, WebKitProtocol.Debugger.BreakpointId[]>();
         this._setBreakpointsRequestQ = Promise.resolve<void>();
-        this.fireEvent(new Event('clearTargetContext'));
+        this.fireEvent({ seq: 0, type: 'event',  event: 'clearTargetContext'});
     }
 
     private clearClientContext(): void {
         this._clientAttached = false;
-        this.fireEvent(new Event('clearClientContext'));
+        this.fireEvent({ seq: 0, type: 'event',  event: 'clearClientContext'});
     }
 
     public registerEventHandler(eventHandler: (event: DebugProtocol.Event) => void): void {
@@ -280,7 +281,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
         if (!this._expectingResumedEvent) {
             // This is a private undocumented event provided by VS Code to support the 'continue' button on a paused Chrome page
-            let resumedEvent = new Event('continued', { threadId: WebKitDebugAdapter.THREAD_ID });
+            let resumedEvent: DebugProtocol.Event = { seq: 0, type: 'event',  event: 'continued', body: { threadId: WebKitDebugAdapter.THREAD_ID }};
             this.fireEvent(resumedEvent);
         } else {
             this._expectingResumedEvent = false;
@@ -291,7 +292,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         this._scriptsById.set(script.scriptId, script);
 
         if (!this.isExtensionScript(script)) {
-            this.fireEvent(new Event('scriptParsed', { scriptUrl: script.url, sourceMapURL: script.sourceMapURL }));
+            this.fireEvent({ seq: 0, type: 'event',  event: 'scriptParsed', body: { scriptUrl: script.url, sourceMapURL: script.sourceMapURL }});
         }
     }
 

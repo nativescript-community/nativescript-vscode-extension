@@ -3,6 +3,8 @@
  *--------------------------------------------------------*/
 
 import * as utils from '../webkit/utilities';
+import {DebugProtocol} from 'vscode-debugprotocol';
+import {IDebugTransformer, IDebugAdapter} from '../webkit/WebKitAdapterInterfaces';
 
 export type EventHandler = (event: DebugProtocol.Event) => void;
 

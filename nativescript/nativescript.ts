@@ -1,9 +1,10 @@
 import {exec, execSync, ChildProcess} from 'child_process';
+import {EventEmitter} from 'events';
+import * as path from 'path';
 import {Logger} from '../webkit/utilities';
 import {WebKitConnection} from '../webkit/webKitConnection';
 import {AndroidDebugConnection} from './android/androidDebugConnection';
-import {EventEmitter} from 'events';
-import * as path from 'path';
+import {ILaunchRequestArgs, IAttachRequestArgs} from '../webkit/WebKitAdapterInterfaces';
 
 export interface INSDebugConnection {
     on(eventName: string, handler: (msg: any) => void): void;

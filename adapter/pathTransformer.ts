@@ -3,6 +3,8 @@
  *--------------------------------------------------------*/
 
 import * as utils from '../webkit/utilities';
+import {DebugProtocol} from 'vscode-debugprotocol';
+import {ISetBreakpointsArgs, IDebugTransformer, ILaunchRequestArgs, IAttachRequestArgs, IStackTraceResponseBody} from '../webkit/WebKitAdapterInterfaces';
 
 interface IPendingBreakpoint {
     resolve: () => void;
