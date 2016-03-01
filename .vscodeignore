@@ -2,8 +2,6 @@
 **/*.map
 .vscode/**
 typings/**
-testapp/**
-test/**
 images/screenshots/**
 *.vsix
 gulpfile.js
@@ -11,7 +9,5 @@ tsconfig.json
 tsd.json
 tslint.json
 .gitignore
-
-out/test/**
 
 node_modules/.bin/**
