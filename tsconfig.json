@@ -1,8 +1,36 @@
 {
     "compilerOptions": {
-        "target": "es5"
+        "target": "es5",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "noImplicitAny": false,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "outDir": "out"
     },
-    "exclude": [
-        "node_modules",
+    "files": [
+        // typescript definitions
+        "typings/tsd.d.ts",
+        "custom-typings/es6-impl/es6-impl.d.ts",
+        "webkit/webKitProtocol.d.ts",
+
+        "./webkit/consoleHelper.ts",
+        "./webkit/utilities.ts",
+        "./webkit/webKitConnection.ts",
+        "./webkit/webKitDebug.ts",
+        "./webkit/webKitDebugAdapter.ts",
+        "./webkit/webKitDebugSession.ts",
+
+        "./adapter/adapterProxy.ts",
+        "./adapter/lineNumberTransformer.ts",
+        "./adapter/pathTransformer.ts",
+        "./adapter/sourceMaps/pathUtilities.ts",
+        "./adapter/sourceMaps/sourceMaps.ts",
+        "./adapter/sourceMaps/sourceMapTransformer.ts",
+
+        "./nativescript/nsMain.ts",
+        "./nativescript/nativescript.ts",
+        "./nativescript/android/androidDebugConnection.ts"
     ]
 }
