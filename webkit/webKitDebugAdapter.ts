@@ -354,7 +354,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
             // DebugProtocol sends all current breakpoints for the script. Clear all scripts for the breakpoint then add all of them
             const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
                 .then(() => this._clearAllBreakpoints(targetScriptUrl))
-                .then(() => this._addBreakpoints(targetScriptUrl, args.lines, args.cols))
+                .then(() => this._addBreakpoints(targetScriptUrl, args))
                 .then(responses => ({ breakpoints: this._webkitBreakpointResponsesToODPBreakpoints(targetScriptUrl, responses, args.lines) }));
 
             const inDebug = typeof (<any>global).v8debug === 'object';
@@ -386,10 +386,10 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         });
     }
 
-    private _addBreakpoints(url: string, lines: number[], cols?: number[]): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse[]> {
+    private _addBreakpoints(url: string, breakpoints: ISetBreakpointsArgs): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse[]> {
         // Call setBreakpoint for all breakpoints in the script simultaneously
-        const responsePs = lines
-            .map((lineNumber, i) => this._webKitConnection.debugger_setBreakpointByUrl(url, lineNumber, cols ? cols[i] : 0));
+        const responsePs = breakpoints.breakpoints
+            .map((b, i) => this._webKitConnection.debugger_setBreakpointByUrl(url, breakpoints.lines[i], breakpoints.cols ? breakpoints.cols[i] : 0, b.condition));
 
         // Join all setBreakpoint requests to a single promise
         return Promise.all(responsePs);

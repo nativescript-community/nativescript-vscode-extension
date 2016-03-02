@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/out/webkit/webKitDebug.js",
 			"runtimeArgs": ["--nolazy"],
-            "stopOnEntry": true,
+            "stopOnEntry": false,
             "args": [ "--server=4712" ],
             "sourceMaps": true,
             "outDir": null,

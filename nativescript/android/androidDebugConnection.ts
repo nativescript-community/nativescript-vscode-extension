@@ -442,7 +442,7 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
         this._socket.close();
     }
 
-    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
+    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition?: string): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
         //throw new Error("Not implemented");
         //return this.sendMessage('Debugger.setBreakpointByUrl', <WebKitProtocol.Debugger.SetBreakpointByUrlParams>{ url, lineNumber, columnNumber });
 
@@ -451,7 +451,8 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
             type: 'script',
             target: that.inspectorUrlToV8Name(url),
             line: lineNumber,
-            column: columnNumber
+            column: columnNumber,
+            condition: condition
         };
 
         return this.request("setbreakpoint", requestParams)

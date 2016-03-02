@@ -171,11 +171,11 @@ export class WebKitConnection implements ns.INSDebugConnection {
     }
 
     public debugger_setBreakpoint(location: WebKitProtocol.Debugger.Location, condition?: string): Promise<WebKitProtocol.Debugger.SetBreakpointResponse> {
-        return this.sendMessage('Debugger.setBreakpoint', <WebKitProtocol.Debugger.SetBreakpointParams>{ location, condition });
+        return this.sendMessage('Debugger.setBreakpoint', <WebKitProtocol.Debugger.SetBreakpointParams>{ location, options: { condition: condition }});
     }
 
-    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
-        return this.sendMessage('Debugger.setBreakpointByUrl', <WebKitProtocol.Debugger.SetBreakpointByUrlParams>{ url, lineNumber, columnNumber: 0 /* a columnNumber different from 0 confuses the debugger */ });
+    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition?: string): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
+        return this.sendMessage('Debugger.setBreakpointByUrl', <WebKitProtocol.Debugger.SetBreakpointByUrlParams>{ url: url, lineNumber: lineNumber, columnNumber: 0 /* a columnNumber different from 0 confuses the debugger */, options: { condition: condition }});
     }
 
     public debugger_removeBreakpoint(breakpointId: string): Promise<WebKitProtocol.Response> {

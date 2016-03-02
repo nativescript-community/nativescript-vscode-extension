@@ -11,7 +11,7 @@ export interface INSDebugConnection {
 
     close(): void;
 
-    debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse>
+    debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition?: string): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse>
 
     debugger_removeBreakpoint(breakpointId: string): Promise<WebKitProtocol.Response>
 

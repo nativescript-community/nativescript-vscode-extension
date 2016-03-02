@@ -65,16 +65,22 @@ declare namespace WebKitProtocol {
             columnNumber?: number;
         }
 
-        interface SetBreakpointParams {
-            location: Location;
-            condition?: string;
+        interface BreakpointAction {
+            type: string; /* "log", "evaluate", "sound" or "probe" */
+            data?: string;
+            id?: number;
         }
 
-        interface SetBreakpointResponse extends Response {
-            result: {
-                breakpointId: BreakpointId;
-                actualLocation: Location;
-            };
+        interface BreakpointOptions {
+            condition?: string;
+            actions?: BreakpointAction[];
+            autoContinue?: boolean;
+            ignoreCount?: number;
+        }
+
+        interface SetBreakpointParams {
+            location: Location;
+            options: BreakpointOptions;
         }
 
         interface SetBreakpointByUrlParams {
@@ -82,7 +88,14 @@ declare namespace WebKitProtocol {
             urlRegex?: string;
             lineNumber: number;
             columnNumber: number;
-            condition?: string;
+            options: BreakpointOptions;
+        }
+
+        interface SetBreakpointResponse extends Response {
+            result: {
+                breakpointId: BreakpointId;
+                actualLocation: Location;
+            };
         }
 
         interface SetBreakpointByUrlResponse extends Response {
