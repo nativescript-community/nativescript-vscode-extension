@@ -4,6 +4,7 @@
 
 import * as utils from '../webkit/utilities';
 import {DebugProtocol} from 'vscode-debugprotocol';
+import * as path from 'path';
 import {ISetBreakpointsArgs, IDebugTransformer, ILaunchRequestArgs, IAttachRequestArgs, IStackTraceResponseBody} from '../webkit/WebKitAdapterInterfaces';
 
 interface IPendingBreakpoint {
@@ -21,6 +22,7 @@ export class PathTransformer implements IDebugTransformer {
     private _clientPathToWebkitUrl = new Map<string, string>();
     private _webkitUrlToClientPath = new Map<string, string>();
     private _pendingBreakpointsByPath = new Map<string, IPendingBreakpoint>();
+    private inferedDeviceRoot :string = null;
 
     public launch(args: ILaunchRequestArgs): void {
         this._webRoot = utils.getAppRoot(args);
@@ -51,7 +53,38 @@ export class PathTransformer implements IDebugTransformer {
                 args.source.path = this._clientPathToWebkitUrl.get(url);
                 utils.Logger.log(`Paths.setBP: Resolved ${url} to ${args.source.path}`);
                 resolve();
-            } else {
+            }
+            else if (this.inferedDeviceRoot) {
+                utils.Logger.log(`Paths.setBP: No target url cached for client path: ${url}. Using inffered device root to set breakpoint`);
+
+                let inferedUrl = url.replace(this._webRoot, this.inferedDeviceRoot).replace(/\\/g, "/");
+
+                //change device path if {N} core module or {N} module
+                if (inferedUrl.indexOf("/node_modules/tns-core-modules/") != -1)
+                {
+                    inferedUrl = inferedUrl.replace("/node_modules/tns-core-modules/", "/app/tns_modules/");
+                }
+                else if (inferedUrl.indexOf("/node_modules/") != -1)
+                {
+                    inferedUrl = inferedUrl.replace("/node_modules/", "/app/tns_modules/");
+                }
+
+                //change platform specific paths
+                if (inferedUrl.indexOf(".android.") != -1)
+                {
+                    inferedUrl = inferedUrl.replace(".android.", ".");
+                }
+                else if (inferedUrl.indexOf(".ios.") != -1)
+                {
+                    inferedUrl = inferedUrl.replace(".ios.", ".");
+                }
+
+                args.source.path = inferedUrl;
+                this._pendingBreakpointsByPath.set(args.source.path, { resolve, reject, args });
+                 utils.Logger.log("resolving infered promise on path  " + url);
+                resolve();
+            }
+            else {
                 utils.Logger.log(`Paths.setBP: No target url cached for client path: ${url}, waiting for target script to be loaded.`);
                 args.source.path = url;
                 this._pendingBreakpointsByPath.set(args.source.path, { resolve, reject, args });
@@ -70,6 +103,17 @@ export class PathTransformer implements IDebugTransformer {
 
     public scriptParsed(event: DebugProtocol.Event): void {
         const webkitUrl: string = event.body.scriptUrl;
+        if (!this.inferedDeviceRoot)
+        {
+            this.inferedDeviceRoot = utils.inferDeviceRoot(this._webRoot, this._platform, webkitUrl);
+             utils.Logger.log("\n\n\n ***Inferred device root: " + this.inferedDeviceRoot + "\n\n\n");
+
+            if (this.inferedDeviceRoot.indexOf("/data/user/0/") != -1)
+            {
+                this.inferedDeviceRoot = this.inferedDeviceRoot.replace("/data/user/0/", "/data/data/");
+            }
+        }
+
         const clientPath = utils.webkitUrlToClientPath(this._webRoot, this._platform, webkitUrl);
 
         if (!clientPath) {
