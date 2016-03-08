@@ -87,7 +87,7 @@
             "type": "nativescript",
             "platform": "ios",
             "request": "launch",
-            "appRoot": ".",
+            "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
             "emulator": false
@@ -97,7 +97,7 @@
             "type": "nativescript",
             "platform": "ios",
             "request": "attach",
-            "appRoot": ".",
+            "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
             "emulator": false
@@ -107,7 +107,7 @@
             "type": "nativescript",
             "platform": "ios",
             "request": "launch",
-            "appRoot": ".",
+            "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
             "emulator": true
@@ -117,7 +117,7 @@
             "type": "nativescript",
             "platform": "ios",
             "request": "attach",
-            "appRoot": ".",
+            "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
             "emulator": true
@@ -127,7 +127,7 @@
             "type": "nativescript",
             "platform": "android",
             "request": "launch",
-            "appRoot": ".",
+            "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
             "emulator": false
@@ -137,7 +137,7 @@
             "type": "nativescript",
             "platform": "android",
             "request": "launch",
-            "appRoot": ".",
+            "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
             "emulator": true
@@ -147,7 +147,7 @@
             "type": "nativescript",
             "platform": "android",
             "request": "attach",
-            "appRoot": ".",
+            "appRoot": "${workspaceRoot}",
             "sourceMaps": false,
             "diagnosticLogging": false,
             "emulator": false
@@ -157,7 +157,7 @@
             "type": "nativescript",
             "platform": "android",
             "request": "attach",
-            "appRoot": ".",
+            "appRoot": "${workspaceRoot}",
             "sourceMaps": false,
             "diagnosticLogging": false,
             "emulator": true

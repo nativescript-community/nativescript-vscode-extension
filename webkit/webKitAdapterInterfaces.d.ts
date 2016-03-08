@@ -1,7 +1,6 @@
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments {
-    cwd: string; /* Automatically set by VS Code to the currently opened folder */
     platform: string;
     appRoot?: string;
     runtimeArgs?: string[];
@@ -15,7 +14,6 @@ export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments {
-    cwd: string; /* Automatically set by VS Code to the currently opened folder */
     platform: string;
     appRoot?: string;
     sourceMaps?: boolean;

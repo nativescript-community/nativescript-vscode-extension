@@ -399,17 +399,7 @@ export function errP(msg: any): Promise<any> {
  * Calculates the appRoot from a launch/attach request. The appRoot is the root directory of the NativeScript app.
  */
 export function getAppRoot(args: ILaunchRequestArgs | IAttachRequestArgs): string {
-    let appRoot: string;
-    if (args.appRoot) {
-        appRoot = args.appRoot;
-        if (!path.isAbsolute(appRoot)) {
-            appRoot = path.resolve(args.cwd, appRoot);
-        }
-    } else {
-        appRoot = args.cwd;
-    }
-
-    return appRoot;
+    return (args.appRoot && path.isAbsolute(args.appRoot)) ? args.appRoot : '';
 }
 
 /**
