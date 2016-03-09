@@ -24,7 +24,7 @@
             ],
             "stopOnEntry": false,
 			"sourceMaps": true,
-            "outDir": "out"
+            "outDir": "${workspaceRoot}/out"
         }
     ]
 }

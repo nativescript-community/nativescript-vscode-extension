@@ -1,6 +1,6 @@
 {
   "name": "nativescript",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "nativescript-cli-version": "1.6",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
@@ -16,7 +16,7 @@
   "publisher": "Telerik",
   "bugs": "https://github.com/NativeScript/nativescript-vscode-extension/issues",
   "engines": {
-    "vscode": "0.10.9"
+    "vscode": "^0.10.10"
   },
   "homepage": "https://www.nativescript.org/",
   "categories": ["Debuggers", "Other"],
