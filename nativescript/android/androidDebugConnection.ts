@@ -106,7 +106,7 @@ class ResReqNetSocket extends EventEmitter {
                 that.conn.on('close', function() {
                     if (!that.connected)
                     {
-                        reject("Cannot not connect. Check the application is running on the device");
+                        reject("Can't connect. Check the application is running on the device");
                         that.emit('close', that.lastError || 'Debugged process exited.');
                         return;
                     }
@@ -136,16 +136,14 @@ class ResReqNetSocket extends EventEmitter {
                 this.debugBuffer = b.toString('utf8', this.msg.contentLength, b.length);
                 if (this.msg.body.length > 0) {
                     obj = JSON.parse(this.msg.body);
+                    Logger.log('From target(' + (obj.type ? obj.type : '') + '): ' + this.msg.body);
                     if (typeof obj.running === 'boolean') {
                         this.isRunning = obj.running;
                     }
                     if (obj.type === 'response' && obj.request_seq > 0) {
-                        console.log('response: ' + this.msg.body);
                         this.callbacks.processResponse(obj.request_seq, [obj]);
                     }
                     else if (obj.type === 'event') {
-                        console.log('event: ' + obj.event + " obj: " + JSON.stringify(obj));
-
                         if (obj.event === "afterCompile") {
                             if (!that.connected && connectedCallback) {
                                 connectedCallback();
@@ -153,9 +151,6 @@ class ResReqNetSocket extends EventEmitter {
                         }
 
                         this.emit(obj.event, obj);
-                    }
-                    else {
-                        console.log('unknown: ' + this.msg.body);
                     }
                 }
                 this.msg = false;
@@ -186,6 +181,7 @@ class ResReqNetSocket extends EventEmitter {
 
     public send(data) {
         if (this.connected) {
+            Logger.log('To target: ' + data);
             this.conn.write('Content-Length: ' + data.length + '\r\n\r\n' + data);
         }
     }
