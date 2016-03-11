@@ -47,6 +47,8 @@ export interface ISourceMaps {
      * With a known sourceMapURL for a generated script, process create the SourceMap and cache for later
      */
     ProcessNewSourceMap(path: string, sourceMapURL: string): Promise<void>;
+
+    FindSourceMapUrlInFile(generatedFilePath: string): string;
 }
 
 
@@ -70,7 +72,7 @@ export class SourceMaps implements ISourceMaps {
 		var map = this._findSourceToGeneratedMapping(pathToSource);
 		if (map)
 			return map.generatedPath();
-		return null;;
+		return null;
 	}
 
 	public MapFromSource(pathToSource: string, line: number, column: number): MappingResult {
@@ -110,91 +112,279 @@ export class SourceMaps implements ISourceMaps {
 
 	//---- private -----------------------------------------------------------------------
 
-	private _findSourceToGeneratedMapping(pathToSource: string): SourceMap {
+    private _findSourceToGeneratedMapping(pathToSource: string): SourceMap {
 
-		if (pathToSource) {
+        if (!pathToSource) {
+            return null;
+        }
 
-			if (pathToSource in this._sourceToGeneratedMaps) {
-				return this._sourceToGeneratedMaps[pathToSource];
-			}
+        if (pathToSource in this._sourceToGeneratedMaps) {
+            return this._sourceToGeneratedMaps[pathToSource];
+        }
 
-			for (let key in this._generatedToSourceMaps) {
-				const m = this._generatedToSourceMaps[key];
-				if (m.doesOriginateFrom(pathToSource)) {
-					this._sourceToGeneratedMaps[pathToSource] = m;
-					return m;
-				}
-			}
+        // a reverse lookup: in all source maps try to find pathToSource in the sources array
+        for (let key in this._generatedToSourceMaps) {
+            const m = this._generatedToSourceMaps[key];
+            if (m.doesOriginateFrom(pathToSource)) {
+                this._sourceToGeneratedMaps[pathToSource] = m;
+                return m;
+            }
+        }
 
-            // not found in existing maps
-		}
-		return null;
-	}
+        //try finding a map file next to the source file
+        let generatedFilePath = null;
+        const pos = pathToSource.lastIndexOf('.');
+        if (pos >= 0) {
+            generatedFilePath = pathToSource.substr(0, pos) + '.js';
+        }
+
+        if (FS.existsSync(generatedFilePath)) {
+            let parsedSourceMap = this.findGeneratedToSourceMappingSync(generatedFilePath);
+            if (parsedSourceMap) {
+                if (parsedSourceMap.doesOriginateFrom(pathToSource)) {
+                    this._sourceToGeneratedMaps[pathToSource] = parsedSourceMap;
+                    return parsedSourceMap;
+                }
+            }
+        }
+
+        //try finding all js files in app root and parse their source maps
+        let files = this.walkPath(this._webRoot);
+        files.forEach(file => {
+            let parsedSourceMap = this.findGeneratedToSourceMappingSync(file);
+            if (parsedSourceMap) {
+                if (parsedSourceMap.doesOriginateFrom(pathToSource)) {
+                    this._sourceToGeneratedMaps[pathToSource] = parsedSourceMap;
+                    return parsedSourceMap;
+                }
+            }
+        });
+
+
+        // let module_files = this.walkPath(Path.join(this._webRoot, "node_modules"));
+        // module_files.forEach(file => {
+        //     let parsedSourceMap =  this.findGeneratedToSourceMappingSync(file);
+        //     if (parsedSourceMap)
+        //     {
+        //         if (parsedSourceMap.doesOriginateFrom(pathToSource))
+        //         {
+        //             this._sourceToGeneratedMaps[pathToSource] = parsedSourceMap;
+        //             return parsedSourceMap;
+        //         }
+        //     }
+        // });
+
+        return null;
+        // not found in existing maps
+    }
+
+    /**
+	 * try to find the 'sourceMappingURL' in the file with the given path.
+	 * Returns null in case of errors.
+	 */
+    public FindSourceMapUrlInFile(generatedFilePath: string): string {
+
+        try {
+            const contents = FS.readFileSync(generatedFilePath).toString();
+            const lines = contents.split('\n');
+            for (let line of lines) {
+                const matches = SourceMaps.SOURCE_MAPPING_MATCHER.exec(line);
+                if (matches && matches.length === 2) {
+                    const uri = matches[1].trim();
+                    Logger.log(`_findSourceMapUrlInFile: source map url at end of generated file '${generatedFilePath}''`);
+                    return uri;
+                }
+            }
+        } catch (e) {
+            // ignore exception
+        }
+        return null;
+    }
+
+    private walkPath(path: string): string[] {
+        var results = [];
+        var list = FS.readdirSync(path);
+        list.forEach(file => {
+            file = Path.join(path, file);
+            var stat = FS.statSync(file);
+            if (stat && stat.isDirectory()) {
+                results = results.concat(this.walkPath(file));
+            }
+            else {
+                results.push(file);
+            }
+        });
+
+        return results
+    }
+
+    // /**
+	//  * Loads source map from file system.
+	//  * If no generatedPath is given, the 'file' attribute of the source map is used.
+	//  */
+	// private _loadSourceMap(map_path: string, generatedPath?: string): SourceMap {
+
+	// 	if (map_path in this._allSourceMaps) {
+	// 		return this._allSourceMaps[map_path];
+	// 	}
+
+	// 	try {
+	// 		const mp = Path.join(map_path);
+	// 		const contents = FS.readFileSync(mp).toString();
+
+	// 		const map = new SourceMap(mp, generatedPath, contents);
+	// 		this._allSourceMaps[map_path] = map;
+
+	// 		this._registerSourceMap(map);
+
+	// 		Logger.log(`_loadSourceMap: successfully loaded source map '${map_path}'`);
+
+	// 		return map;
+	// 	}
+	// 	catch (e) {
+	// 		Logger.log(`_loadSourceMap: loading source map '${map_path}' failed with exception: ${e}`);
+	// 	}
+	// 	return null;
+	// }
+
+    // private _registerSourceMap(map: SourceMap) {
+	// 	const gp = map.generatedPath();
+	// 	if (gp) {
+	// 		this._generatedToSourceMaps[gp] = map;
+	// 	}
+	// }
 
     /**
      * pathToGenerated - an absolute local path or a URL.
      * mapPath - a path relative to pathToGenerated.
      */
-	private _findGeneratedToSourceMapping(pathToGenerated: string, mapPath: string): Promise<SourceMap> {
-		if (!pathToGenerated) {
+	private _findGeneratedToSourceMapping(generatedFilePath: string, mapPath: string): Promise<SourceMap> {
+		if (!generatedFilePath) {
             return Promise.resolve(null);
         }
 
-        if (pathToGenerated in this._generatedToSourceMaps) {
-            return Promise.resolve(this._generatedToSourceMaps[pathToGenerated]);
+        if (generatedFilePath in this._generatedToSourceMaps) {
+            return Promise.resolve(this._generatedToSourceMaps[generatedFilePath]);
         }
 
-        if (mapPath.indexOf("data:application/json;base64,") >= 0) {
-            Logger.log(`SourceMaps.findGeneratedToSourceMapping: Using inlined sourcemap in ${pathToGenerated}`);
-
-            // sourcemap is inlined
-            const pos = mapPath.indexOf(',');
-            const data = mapPath.substr(pos+1);
-            try {
-                const buffer = new Buffer(data, 'base64');
-                const json = buffer.toString();
-                if (json) {
-                    const map = new SourceMap(pathToGenerated, json, this._webRoot);
-                    this._generatedToSourceMaps[pathToGenerated] = map;
-                    return Promise.resolve(map);
-                }
-            }
-            catch (e) {
-                Logger.log(`SourceMaps.findGeneratedToSourceMapping: exception while processing data url (${e.stack})`);
-            }
-
-            return null;
-        }
+       let parsedSourceMap = this.parseInlineSourceMap(mapPath, generatedFilePath);
+       if (parsedSourceMap)
+       {
+           return Promise.resolve(parsedSourceMap);
+       }
 
         // if path is relative make it absolute
         if (!Path.isAbsolute(mapPath)) {
-            if (Path.isAbsolute(pathToGenerated)) {
+            if (Path.isAbsolute(generatedFilePath)) {
                 // runtime script is on disk, so map should be too
-                mapPath = PathUtils.makePathAbsolute(pathToGenerated, mapPath);
+                mapPath = PathUtils.makePathAbsolute(generatedFilePath, mapPath);
             } else {
                 // runtime script is not on disk, construct the full url for the source map
-                const scriptUrl = URL.parse(pathToGenerated);
+                const scriptUrl = URL.parse(generatedFilePath);
                 mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${Path.dirname(scriptUrl.pathname)}/${mapPath}`;
             }
         }
 
-        return this._createSourceMap(mapPath, pathToGenerated).then(map => {
+        return this._createSourceMap(mapPath, generatedFilePath).then(map => {
             if (!map) {
-                const mapPathNextToSource = pathToGenerated + ".map";
+                const mapPathNextToSource = generatedFilePath + ".map";
                 if (mapPathNextToSource !== mapPath) {
-                    return this._createSourceMap(mapPathNextToSource, pathToGenerated);
+                    return this._createSourceMap(mapPathNextToSource, generatedFilePath);
                 }
             }
 
             return map;
         }).then(map => {
             if (map) {
-                this._generatedToSourceMaps[pathToGenerated] = map;
+                this._generatedToSourceMaps[generatedFilePath] = map;
             }
 
             return map || null;
         });
 	}
+
+
+    /**
+     * generatedFilePath - an absolute local path to the generated file
+     * returns the SourceMap parsed from inlined value or from a map file available next to the generated file
+     */
+    private findGeneratedToSourceMappingSync(generatedFilePath: string): SourceMap {
+        if (!generatedFilePath) {
+            return null;
+        }
+
+        if (generatedFilePath in this._generatedToSourceMaps) {
+            return this._generatedToSourceMaps[generatedFilePath];
+        }
+
+        let sourceMapUrlValue = this.FindSourceMapUrlInFile(generatedFilePath);
+        if (!sourceMapUrlValue)
+        {
+            return null;
+        }
+
+        let parsedSourceMap = this.parseInlineSourceMap(sourceMapUrlValue, generatedFilePath);
+        if (parsedSourceMap) {
+            return parsedSourceMap;
+        }
+
+        if (!FS.existsSync(generatedFilePath)) {
+            Logger.log("findGeneratedToSourceMappingSync: can't find the sourceMapping for file: " + generatedFilePath);
+            return null;
+        }
+
+        // if path is relative make it absolute
+        if (!Path.isAbsolute(sourceMapUrlValue)) {
+            if (Path.isAbsolute(generatedFilePath)) {
+                // runtime script is on disk, so map should be too
+                sourceMapUrlValue = PathUtils.makePathAbsolute(generatedFilePath, sourceMapUrlValue);
+            } else {
+                // runtime script is not on disk, construct the full url for the source map
+                // const scriptUrl = URL.parse(generatedFilePath);
+                // mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${Path.dirname(scriptUrl.pathname)}/${mapPath}`;
+
+                return null;
+            }
+        }
+
+       let map = this._createSourceMapSync(sourceMapUrlValue, generatedFilePath);
+       if (!map) {
+            const mapPathNextToSource = generatedFilePath + ".map";
+            if (mapPathNextToSource !== sourceMapUrlValue) {
+                map = this._createSourceMapSync(mapPathNextToSource, generatedFilePath);
+            }
+        }
+
+        if (map) {
+            this._generatedToSourceMaps[generatedFilePath] = map;
+            return map;
+        }
+
+        return null;
+    }
+
+    private parseInlineSourceMap(sourceMapContents: string, generatedFilePath: string) : SourceMap
+    {
+         if (sourceMapContents.indexOf("data:application/json;base64,") >= 0) {
+            // sourcemap is inlined
+            const pos = sourceMapContents.indexOf(',');
+            const data = sourceMapContents.substr(pos+1);
+            try {
+                const buffer = new Buffer(data, 'base64');
+                const json = buffer.toString();
+                if (json) {
+                    const map = new SourceMap(generatedFilePath, json, this._webRoot);
+                    this._generatedToSourceMaps[generatedFilePath] = map;
+                    return map;
+                }
+            }
+            catch (e) {
+                Logger.log(`can't parse inlince sourcemap. exception while processing data url (${e.stack})`);
+            }
+        }
+
+        return null;
+    }
 
 	private _createSourceMap(mapPath: string, pathToGenerated: string): Promise<SourceMap> {
         let contentsP: Promise<string>;
@@ -229,6 +419,17 @@ export class SourceMaps implements ISourceMaps {
                 return null;
             }
         });
+	}
+
+    private _createSourceMapSync(mapPath: string, pathToGenerated: string): SourceMap {
+        let contents = FS.readFileSync(mapPath, 'utf8');
+        try {
+            // Throws for invalid contents JSON
+            return new SourceMap(pathToGenerated, contents, this._webRoot);
+        } catch (e) {
+            Logger.log(`SourceMaps.createSourceMap: exception while processing sourcemap: ${e.stack}`);
+            return null;
+        }
 	}
 }
 

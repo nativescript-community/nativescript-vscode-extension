@@ -411,7 +411,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 // unverified breakpoints.
                 if (response.error || !response.result.locations.length) {
                     return <IBreakpoint>{
-                        verified: false,
+                        verified: !response.error,
                         line: requestLines[i],
                         column: 0
                     };

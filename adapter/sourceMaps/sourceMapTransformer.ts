@@ -189,26 +189,8 @@ export class SourceMapTransformer implements IDebugTransformer {
 
             let sourceMapUrlValue = event.body.sourceMapURL;
 
-            if (!event.body.sourceMapURL) {
-
-                let fileContents = fs.readFileSync(event.body.scriptUrl, 'utf8');
-
-                var baseRegex = "\\s*[@#]\\s*sourceMappingURL\\s*=\\s*([^\\s]*)";
-
-                // Matches /* ... */ comments
-                var blockCommentRegex = new RegExp("/\\*" + baseRegex + "\\s*\\*/");
-
-                // Matches // .... comments
-                var commentRegex = new RegExp("//" + baseRegex + "($|\n|\r\n?)");
-
-                let match = fileContents.match(commentRegex);
-                if (!match) {
-                    match = fileContents.match(blockCommentRegex);
-                }
-
-                if (match) {
-                    sourceMapUrlValue = match[1];
-                }
+            if (!sourceMapUrlValue) {
+                sourceMapUrlValue = this._sourceMaps.FindSourceMapUrlInFile(event.body.scriptUrl);
             }
 
             if (!sourceMapUrlValue || sourceMapUrlValue === "") {
@@ -225,6 +207,36 @@ export class SourceMapTransformer implements IDebugTransformer {
             });
         }
     }
+
+    // private getSourceMappingFile(filePathOrSourceMapValue: string): string {
+
+    //     let result = filePathOrSourceMapValue;
+
+    //     if (!fs.existsSync(filePathOrSourceMapValue)) {
+    //         return result;
+    //     }
+
+    //     let fileContents = fs.readFileSync(filePathOrSourceMapValue, 'utf8');
+
+    //     var baseRegex = "\\s*[@#]\\s*sourceMappingURL\\s*=\\s*([^\\s]*)";
+
+    //     // Matches /* ... */ comments
+    //     var blockCommentRegex = new RegExp("/\\*" + baseRegex + "\\s*\\*/");
+
+    //     // Matches // .... comments
+    //     var commentRegex = new RegExp("//" + baseRegex + "($|\n|\r\n?)");
+
+    //     let match = fileContents.match(commentRegex);
+    //     if (!match) {
+    //         match = fileContents.match(blockCommentRegex);
+    //     }
+
+    //     if (match) {
+    //         result = match[1];
+    //     }
+
+    //     return result;
+    // }
 
     private resolvePendingBreakpoints(sourcePath: string): void {
         // If there's a setBreakpoints request waiting on this script, go through setBreakpoints again
