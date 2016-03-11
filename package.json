@@ -30,7 +30,7 @@
     "gulp": "^3.9.0",
     "gulp-shell": "^0.5.2",
     "tsd": "^0.6.5",
-    "tslint": "^2.5.1",
+    "tslint": "^3.5.0",
     "typescript": "^1.8.2",
     "vscode": "^0.11.x",
     "vsce": "^1.0.0"
