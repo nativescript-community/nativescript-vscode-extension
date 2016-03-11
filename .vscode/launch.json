@@ -10,7 +10,7 @@
             "stopOnEntry": false,
             "args": [ "--server=4712" ],
             "sourceMaps": true,
-            "outDir": null,
+            "outDir": "${workspaceRoot}/out",
             "cwd": "${workspaceRoot}"
         },
         {
