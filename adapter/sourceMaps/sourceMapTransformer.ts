@@ -45,7 +45,19 @@ export class SourceMapTransformer implements IDebugTransformer {
             this._authoredPathsToMappedBPLines = new Map<string, number[]>();
             this._authoredPathsToMappedBPCols = new Map<string, number[]>();
         }
+
+        let stringProto: any = String.prototype;
+        if (!stringProto.endsWith)
+        {
+            stringProto.endsWith = function(str)
+            {
+                var lastIndex = this.lastIndexOf(str);
+                return (lastIndex !== -1) && (lastIndex + str.length === this.length);
+            }
+        }
     }
+
+
 
     public clearTargetContext(): void {
         this._allRuntimeScriptPaths = new Set<string>();
@@ -56,7 +68,7 @@ export class SourceMapTransformer implements IDebugTransformer {
      */
     public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            if (this._sourceMaps && args.source.path) {
+            if (this._sourceMaps && args.source.path && path.extname(args.source.path) !== ".js") {
                 const argsPath = args.source.path;
                 const mappedPath = this._sourceMaps.MapPathFromSource(argsPath);
                 if (mappedPath) {
