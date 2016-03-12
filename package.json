@@ -1,7 +1,7 @@
 {
   "name": "nativescript",
   "version": "0.2.0",
-  "nativescript-cli-version": "1.6",
+  "minNativescriptCliVersion": "1.6",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
   "description": "NativeScript support for Visual Studio Code",
@@ -41,8 +41,7 @@
   },
   "main": "./out/nativescript/nsMain",
   "activationEvents": [
-    "onCommand:nativescript.runIos",
-    "onCommand:nativescript.runAndroid"
+    "*"
   ],
   "contributes": {
     "commands": [

@@ -126,10 +126,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         let androidProject: ns.AndroidProject = new ns.AndroidProject(this.appRoot);
         let thisAdapter: WebKitDebugAdapter = this;
 
-        if(!ns.CliInfo.isExisting()) {
-            return Promise.reject(ns.CliInfo.getMessage());
-        }
-
         androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
 
         let port: number;
@@ -150,16 +146,10 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 })
                 .then(() => {
                     this.onTnsOutputMessage("Preparing for debug");
-                    if(!ns.CliInfo.isCompatible()) {
-                        this.onTnsOutputMessage('WARNING: ' + ns.CliInfo.getMessage(), 'error');
-                    }
                     return androidProject.debug(args);
                 })
                 .then(() => {
                     this.onTnsOutputMessage("Attaching to debug application");
-                    if(!ns.CliInfo.isCompatible()) {
-                        this.onTnsOutputMessage('WARNING: ' + ns.CliInfo.getMessage(), 'error');
-                    }
                     return androidConnection.attach(port, 'localhost');
                 });
     }
