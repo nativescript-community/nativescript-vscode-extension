@@ -38,3 +38,15 @@ There's only a couple of them but the list will grow in the future.
 The `Run` command triggers `tns run` on emulator or device. You can run your app both on iOS and Android.
 
 If your version of NativeScript is incompatible with the extension you will see a warning the first time you run a command.
+
+### Get the latest bits
+
+1. Clone the [extension repository](https://github.com/NativeScript/nativescript-vscode-extension): `git clone git@github.com:NativeScript/nativescript-vscode-extension.git`
+2. To build the extension run the following commands in the root repository folder 
+```
+npm install # installs npm dependencies
+./node_modules/.bin/tsd install # fetches TypeScript definitions
+./node_modules/.bin/gulp # Builds the extension and produces 'out' folder
+./node_modules/.bin/vsce package # produces nativescript-*.*.*.vsix in the root folder
+```
+3. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
