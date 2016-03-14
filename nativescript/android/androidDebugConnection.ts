@@ -206,7 +206,9 @@ class ResReqNetSocket extends EventEmitter {
     }
 
     public close() {
-        this.conn.end();
+        if (this.conn) {
+            this.conn.end();
+        }
     }
 }
 
