@@ -261,7 +261,6 @@ export function webkitUrlToClientPath(webRoot: string, additionalFileExtension: 
         return nsProjectFile;
     }
 
-    let shiftedParts = [];
     let pathParts = pathName.split(path.sep);
     while (pathParts.length > 0) {
         const clientPath = path.join(webRoot, pathParts.join(path.sep));
@@ -269,8 +268,7 @@ export function webkitUrlToClientPath(webRoot: string, additionalFileExtension: 
             return canonicalizeUrl(clientPath);
         }
 
-       let shifted = pathParts.shift();
-       shiftedParts.push(shifted);
+        pathParts.shift();
     }
 
     //check for {N} android internal files

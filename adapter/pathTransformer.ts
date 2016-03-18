@@ -27,6 +27,7 @@ export class PathTransformer implements IDebugTransformer {
     public launch(args: ILaunchRequestArgs): void {
         this._webRoot = utils.getAppRoot(args);
         this._platform = args.platform;
+        this.inferedDeviceRoot = (this._platform === 'ios') ? 'file://' : this.inferedDeviceRoot;
     }
 
     public attach(args: IAttachRequestArgs): void {
@@ -55,18 +56,7 @@ export class PathTransformer implements IDebugTransformer {
                 resolve();
             }
             else if (this.inferedDeviceRoot) {
-                utils.Logger.log(`Paths.setBP: No target url cached for client path: ${url}. Using inffered device root to set breakpoint`);
-
-                let inferedUrl = null;
-                if (this._platform == "android") {
-                    inferedUrl = url.replace(this._webRoot, this.inferedDeviceRoot).replace(/\\/g, "/");
-                }
-                else if (this._platform === "ios") {
-                    inferedUrl = url.replace(this._webRoot, "").replace(/\\/g, "/");
-                }
-                else {
-                    throw new Error("Not supported platform");
-                }
+                let inferedUrl = url.replace(this._webRoot, this.inferedDeviceRoot).replace(/\\/g, "/");
 
                 //change device path if {N} core module or {N} module
                 if (inferedUrl.indexOf("/node_modules/tns-core-modules/") != -1)
@@ -79,18 +69,10 @@ export class PathTransformer implements IDebugTransformer {
                 }
 
                 //change platform specific paths
-                if (inferedUrl.indexOf(".android.") != -1)
-                {
-                    inferedUrl = inferedUrl.replace(".android.", ".");
-                }
-                else if (inferedUrl.indexOf(".ios.") != -1)
-                {
-                    inferedUrl = inferedUrl.replace(".ios.", ".");
-                }
+                inferedUrl = inferedUrl.replace(`.${this._platform}.`, '.');
 
                 args.source.path = inferedUrl;
-                this._pendingBreakpointsByPath.set(args.source.path, { resolve, reject, args });
-                 utils.Logger.log("resolving infered promise on path  " + url);
+                utils.Logger.log(`Paths.setBP: Resolved (by infering) ${url} to ${args.source.path}`);
                 resolve();
             }
             else {
