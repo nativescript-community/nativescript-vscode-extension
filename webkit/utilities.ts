@@ -240,12 +240,12 @@ export function webkitUrlToClientPath(webRoot: string, additionalFileExtension: 
         return '';
     }
 
-    aUrl = decodeURI(aUrl);
-
-    // If we don't have the client workingDirectory for some reason, don't try to map the url to a client path
+     // If we don't have the client workingDirectory for some reason, don't try to map the url to a client path
     if (!webRoot) {
         return '';
     }
+
+    aUrl = decodeURI(aUrl);
 
     // Search the filesystem under the webRoot for the file that best matches the given url
     let pathName = url.parse(canonicalizeUrl(aUrl)).pathname;
@@ -283,6 +283,64 @@ export function webkitUrlToClientPath(webRoot: string, additionalFileExtension: 
     }
 
     return '';
+}
+
+/**
+ * Infers the device root of a given path.
+ * The device root is the parent directory of all {N} source files
+ * This implementation assumes that all files are all under one common root on the device
+ * Returns all the device parent directories of a source file until the file is found on the client by client path
+ */
+export function inferDeviceRoot(projectRoot: string, additionalFileExtension: string, aUrl: string): string {
+    if (!aUrl) {
+        return null;
+    }
+
+    // If we don't have the projectRoot for some reason, don't try to map the url to a client path
+    if (!projectRoot) {
+        return null;
+    }
+
+    aUrl = decodeURI(aUrl);
+
+    // Search the filesystem under the webRoot for the file that best matches the given url
+    let pathName = url.parse(canonicalizeUrl(aUrl)).pathname;
+    if (!pathName || pathName === '/') {
+        return null;
+    }
+
+    // Dealing with the path portion of either a url or an absolute path to remote file.
+    // Need to force path.sep separator
+    pathName = pathName.replace(/\//g, path.sep);
+
+    let shiftedParts = [];
+    let pathParts = pathName.split(path.sep);
+    while (pathParts.length > 0) {
+        const clientPath = path.join(projectRoot, pathParts.join(path.sep));
+        if (existsSync(clientPath)) {
+            //return canonicalizeUrl(clientPath);
+            return shiftedParts.join(path.sep).replace(/\\/g, "/");
+        }
+
+       let shifted = pathParts.shift();
+       shiftedParts.push(shifted);
+    }
+
+    //check for {N} android internal files
+    shiftedParts = [];
+    pathParts = pathName.split(path.sep);
+    while (pathParts.length > 0) {
+        const clientPath = path.join(projectRoot, "platforms/android/src/main/assets", pathParts.join(path.sep));
+        if (existsSync(clientPath)) {
+            //return canonicalizeUrl(clientPath);
+            return shiftedParts.join(path.sep).replace(/\\/g, "/");
+        }
+
+        let shifted = pathParts.shift();
+        shiftedParts.push(shifted);
+    }
+
+    return null;
 }
 
 /**
