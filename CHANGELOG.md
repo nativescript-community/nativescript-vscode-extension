@@ -1,3 +1,9 @@
+0.2.1
+=====
+
+## What's New
+- [Support preliminary brakepoints](https://github.com/NativeScript/nativescript-vscode-extension/pull/30)
+
 0.2.0
 =====
 
