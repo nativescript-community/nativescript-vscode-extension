@@ -5,12 +5,12 @@
             "name": "launch as server",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/out/webkit/webKitDebug.js",
+            "program": "${workspaceRoot}/../out/webkit/webKitDebug.js",
 			"runtimeArgs": ["--nolazy"],
             "stopOnEntry": false,
             "args": [ "--server=4712" ],
             "sourceMaps": true,
-            "outDir": "${workspaceRoot}/out",
+            "outDir": "${workspaceRoot}/../out",
             "cwd": "${workspaceRoot}"
         },
         {
@@ -24,7 +24,7 @@
             ],
             "stopOnEntry": false,
 			"sourceMaps": true,
-            "outDir": "${workspaceRoot}/out"
+            "outDir": "${workspaceRoot}/../out"
         }
     ]
 }

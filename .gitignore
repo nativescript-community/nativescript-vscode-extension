@@ -1,7 +1,8 @@
 .DS_Store
 out/
 node_modules/
-typings/
+src/typings/
 
-nativescript-vscode-extension*.vsix
+npm-debug.log
+nativescript-*.vsix
 
