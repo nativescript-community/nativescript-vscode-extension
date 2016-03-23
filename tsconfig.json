@@ -11,7 +11,7 @@
     },
     "files": [
         // typescript definitions
-        "typings/tsd.d.ts",
+        "typings/main.d.ts",
         "custom-typings/es6-impl/es6-impl.d.ts",
         "webkit/webKitProtocol.d.ts",
 

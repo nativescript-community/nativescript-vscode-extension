@@ -19,7 +19,10 @@
     "vscode": "^0.10.10"
   },
   "homepage": "https://www.nativescript.org/",
-  "categories": ["Debuggers", "Other"],
+  "categories": [
+    "Debuggers",
+    "Other"
+  ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
     "source-map": "^0.5.3",
@@ -27,17 +30,17 @@
     "vscode-debugadapter": "^1.6.1"
   },
   "devDependencies": {
-    "gulp": "^3.9.0",
-    "gulp-shell": "^0.5.2",
-    "tsd": "^0.6.5",
     "tslint": "^3.5.0",
     "typescript": "^1.8.2",
-    "vscode": "^0.11.x",
-    "vsce": "^1.0.0"
-
+    "typings": "^0.7.9",
+    "vsce": "^1.0.0",
+    "vscode": "^0.11.x"
   },
   "scripts": {
-    "postinstall": "node ./node_modules/vscode/bin/install"
+    "postinstall": "node ./node_modules/vscode/bin/install && typings install",
+    "clean": "git clean -fdx",
+    "build": "tsc",
+    "package": "vsce package"
   },
   "main": "./out/nativescript/nsMain",
   "activationEvents": [
@@ -57,16 +60,16 @@
       }
     ],
     "keybindings": [
-        {
-          "command": "nativescript.runIos",
-          "key": "ctrl+alt+i",
-          "mac": "cmd+alt+i"
-        },
-        {
-          "command": "nativescript.runAndroid",
-          "key": "ctrl+alt+a",
-          "mac": "cmd+alt+a"
-        }
+      {
+        "command": "nativescript.runIos",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i"
+      },
+      {
+        "command": "nativescript.runAndroid",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
+      }
     ],
     "debuggers": [
       {
@@ -81,7 +84,7 @@
         "program": "./out/webkit/webKitDebug.js",
         "runtime": "node",
         "initialConfigurations": [
-            {
+          {
             "name": "Launch on iOS Device",
             "type": "nativescript",
             "platform": "ios",
@@ -200,9 +203,9 @@
                 "default": null
               },
               "emulator": {
-                  "type": "boolean",
-                  "description": "Whether the app to run in emulator or on a physical device.",
-                  "default": false
+                "type": "boolean",
+                "description": "Whether the app to run in emulator or on a physical device.",
+                "default": false
               }
             }
           },
@@ -243,9 +246,9 @@
                 "default": null
               },
               "emulator": {
-                  "type": "boolean",
-                  "description": "Whether the app to run in emulator or on a physical device.",
-                  "default": false
+                "type": "boolean",
+                "description": "Whether the app to run in emulator or on a physical device.",
+                "default": false
               }
             }
           }
