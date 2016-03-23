@@ -45,10 +45,9 @@ If your version of NativeScript is incompatible with the extension you will see 
 2. To build the extension run the following commands in the root repository folder
 
     ```
-    npm install # installs npm dependencies
-    ./node_modules/.bin/tsd install # fetches TypeScript definitions
-    ./node_modules/.bin/gulp # Builds the extension and produces 'out' folder
-    ./node_modules/.bin/vsce package # produces nativescript-*.*.*.vsix in the root folder
+    npm install
+    npm run build # compiles TypeScript source files to JavaScript
+    npm run package # produces nativescript-*.*.*.vsix in the root folder
     ```
 
 3. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
