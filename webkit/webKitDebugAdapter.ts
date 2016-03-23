@@ -43,6 +43,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private appRoot: string;
     private platform: string;
     private isAttached: boolean;
+    private _lastOutputEvent: OutputEvent;
 
     public constructor() {
         this._variableHandles = new Handles<IScopeVarHandle>();
@@ -161,6 +162,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         connection.on('Debugger.globalObjectCleared', () => this.onGlobalObjectCleared());
         connection.on('Debugger.breakpointResolved', params => this.onBreakpointResolved(params));
         connection.on('Console.messageAdded', params => this.onConsoleMessage(params));
+        connection.on('Console.messageRepeatCountUpdated', params => this.onMessageRepeatCountUpdated(params));
         connection.on('Inspector.detached', () => this.terminateSession());
         connection.on('close', () => this.terminateSession());
         connection.on('error', () => this.terminateSession());
@@ -312,9 +314,15 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
         const formattedMessage = formatConsoleMessage(localMessage, isClientPath);
         if (formattedMessage) {
-            this.fireEvent(new OutputEvent(
-                formattedMessage.text + '\n',
-                formattedMessage.isError ? 'stderr' : 'stdout'));
+            let outputEvent: OutputEvent = new OutputEvent(formattedMessage.text + '\n', formattedMessage.isError ? 'stderr' : 'stdout');
+            this._lastOutputEvent = outputEvent;
+            this.fireEvent(outputEvent);
+        }
+    }
+
+    public onMessageRepeatCountUpdated(params: WebKitProtocol.Console.MessageRepeatCountUpdatedEventArgs) {
+        if (this._lastOutputEvent) {
+            this.fireEvent(this._lastOutputEvent);
         }
     }
 

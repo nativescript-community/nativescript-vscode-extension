@@ -234,6 +234,10 @@ declare namespace WebKitProtocol {
             message: Message;
         }
 
+        interface MessageRepeatCountUpdatedEventArgs {
+            count: number;
+        }
+
         interface Message {
             line?: number;
             column?: number;
