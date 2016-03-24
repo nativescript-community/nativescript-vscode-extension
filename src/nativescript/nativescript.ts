@@ -35,11 +35,6 @@ export interface INSDebugConnection {
     runtime_getProperties(objectId: string, ownProperties: boolean, accessorPropertiesOnly: boolean): Promise<WebKitProtocol.Runtime.GetPropertiesResponse>;
 
     runtime_evaluate(expression: string, objectGroup?: any, contextId?: number, returnByValue?: boolean): Promise<WebKitProtocol.Runtime.EvaluateResponse>;
-
-    page_setOverlayMessage(message: string): Promise<WebKitProtocol.Response>;
-
-    page_clearOverlayMessage(): Promise<WebKitProtocol.Response>;
-
 }
 
 export abstract class NSProject extends EventEmitter {

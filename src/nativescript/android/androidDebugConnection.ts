@@ -378,7 +378,7 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
         };
     };
 
-    private fetchCallFrames(): Promise<any> {
+    private fetchCallFrames(): Promise<WebKitProtocol.Debugger.CallFrame[]> {
 
         let that = this;
         return this.request("backtrace",
@@ -401,7 +401,6 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
                             type: that.v8ScopeTypeToString(scope.type)
                         };
                     });
-
 
                     return {
                         callFrameId: frame.index.toString(),
@@ -762,18 +761,6 @@ export class AndroidDebugConnection implements ns.INSDebugConnection {
     public runtime_evaluate(expression: string, objectGroup = 'dummyObjectGroup', contextId?: number, returnByValue = false): Promise<WebKitProtocol.Runtime.EvaluateResponse> {
         //return this.sendMessage('Runtime.evaluate', <WebKitProtocol.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
         throw new Error("Not implemented");
-    }
-
-    public page_setOverlayMessage(message: string): Promise<WebKitProtocol.Response> {
-        //return this.sendMessage('Page.setOverlayMessage', { message });
-        //throw new Error("Not implemented");
-        return Promise.resolve();
-    }
-
-    public page_clearOverlayMessage(): Promise<WebKitProtocol.Response> {
-        //return this.sendMessage('Page.setOverlayMessage');
-        //throw new Error("Not implemented");
-        return Promise.resolve();
     }
 
     // private sendMessage(method: any, params?: any): Promise<WebKitProtocol.Response> {

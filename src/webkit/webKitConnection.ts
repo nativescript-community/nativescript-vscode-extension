@@ -222,14 +222,6 @@ export class WebKitConnection implements ns.INSDebugConnection {
         return this.sendMessage('Runtime.evaluate', <WebKitProtocol.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
     }
 
-    public page_setOverlayMessage(message: string): Promise<WebKitProtocol.Response> {
-        return this.sendMessage('Page.setOverlayMessage', { message });
-    }
-
-    public page_clearOverlayMessage(): Promise<WebKitProtocol.Response> {
-        return this.sendMessage('Page.setOverlayMessage');
-    }
-
     private sendMessage(method: any, params?: any): Promise<WebKitProtocol.Response> {
         return this._socket.sendMessage({
             id: this._nextId++,

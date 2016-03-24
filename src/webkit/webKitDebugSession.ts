@@ -19,6 +19,7 @@ export class WebKitDebugSession extends DebugSession {
         super(targetLinesStartAt1, isServer);
 
         Logger.init(isServer, msg => this.sendEvent(new OutputEvent(`  ›${msg}\n`)));
+        process.removeAllListeners('unhandledRejection');
         process.addListener('unhandledRejection', reason => {
             Logger.log(`******** ERROR! Unhandled promise rejection: ${reason}`);
         });

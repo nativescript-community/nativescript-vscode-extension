@@ -22,7 +22,6 @@ interface IScopeVarHandle {
 
 export class WebKitDebugAdapter implements IDebugAdapter {
     private static THREAD_ID = 1;
-    private static PAGE_PAUSE_MESSAGE = 'Paused in Visual Studio Code';
     private static EXCEPTION_VALUE_ID = 'EXCEPTION_VALUE_ID';
 
     private _initArgs: DebugProtocol.InitializeRequestArguments;
@@ -72,9 +71,29 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         this._eventHandler = eventHandler;
     }
 
-    public initialize(args: DebugProtocol.InitializeRequestArguments): void {
+    public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilites | Promise<DebugProtocol.Capabilites> {
         // Cache to log if diagnostic logging is enabled later
         this._initArgs = args;
+        return {
+            supportsConfigurationDoneRequest: true,
+            supportsFunctionBreakpoints: false,
+            supportsConditionalBreakpoints: true,
+            supportsEvaluateForHovers: false,
+            exceptionBreakpointFilters: [{
+				label: 'All Exceptions',
+				filter: 'all',
+				default: false
+			},
+			{
+				label: 'Uncaught Exceptions',
+				filter: 'uncaught',
+				default: true
+			}]
+        }
+    }
+
+    public configurationDone(args: DebugProtocol.ConfigurationDoneArguments): void {
+
     }
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
@@ -228,8 +247,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private onDebuggerPaused(notification: WebKitProtocol.Debugger.PausedParams): void {
-
-        this._overlayHelper.doAndCancel(() => this._webKitConnection.page_setOverlayMessage(WebKitDebugAdapter.PAGE_PAUSE_MESSAGE));
         this._currentStack = notification.callFrames;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
@@ -268,7 +285,6 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private onDebuggerResumed(): void {
-        this._overlayHelper.wait(() => this._webKitConnection.page_clearOverlayMessage());
         this._currentStack = null;
 
         if (!this._expectingResumedEvent) {

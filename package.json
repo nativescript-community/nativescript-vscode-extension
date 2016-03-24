@@ -26,21 +26,27 @@
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
     "source-map": "^0.5.3",
-    "vscode-debugprotocol": "^1.6.1",
-    "vscode-debugadapter": "^1.6.1"
+    "vscode-debugprotocol": "^1.7.0",
+    "vscode-debugadapter": "^1.7.0"
   },
   "devDependencies": {
+    "mocha": "^2.4.5",
     "tslint": "^3.5.0",
     "typescript": "^1.8.2",
     "typings": "^0.7.9",
     "vsce": "^1.0.0",
-    "vscode": "^0.11.x"
+    "vscode": "^0.11.x",
+    "vscode-debugadapter-testsupport": "^1.7.0"
   },
   "scripts": {
     "postinstall": "node ./node_modules/vscode/bin/install && cd src && typings install",
     "clean": "git clean -fdx",
     "build": "tsc -p ./src",
-    "package": "vsce package"
+    "package": "vsce package",
+    "launch-as-server": "node --nolazy ./out/webkit/webKitDebug.js --server=4712",
+    "test-mac": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/mac.json ./out/tests",
+    "test-win": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/win.json ./out/tests",
+    "test-custom": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/custom.json ./out/tests"
   },
   "main": "./out/nativescript/nsMain",
   "activationEvents": [

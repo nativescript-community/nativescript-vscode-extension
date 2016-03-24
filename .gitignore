@@ -2,7 +2,10 @@
 out/
 node_modules/
 src/typings/
-
+src/tests/config/custom.json
+src/tests/testdata/JSApp
+src/tests/testdata/TSApp
+src/tests/testdata/**/node_modules
+src/tests/testdata/**/platforms
 npm-debug.log
 nativescript-*.vsix
-
