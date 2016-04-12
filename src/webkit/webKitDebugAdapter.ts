@@ -507,15 +507,12 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                         } :
                         {
                             // Name should be undefined, work around VS Code bug 20274
-                            name: 'eval: ' + script.scriptId,
+                            name: undefined,
                             sourceReference: scriptIdToSourceReference(script.scriptId)
                         };
                 }
                 else {
-                    source = {
-                        name: 'eval: ' + 1,
-                        sourceReference: scriptIdToSourceReference('1')
-                    };
+                    source = { name: 'eval: Unknown' };
                 }
 
                 // If the frame doesn't have a function name, it's either an anonymous function
