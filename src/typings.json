@@ -1,0 +1,11 @@
+{
+  "name": "nativescript",
+  "version": false,
+  "ambientDependencies": {
+    "es6-collections": "github:DefinitelyTyped/DefinitelyTyped/es6-collections/es6-collections.d.ts#81b951f1ac437d1eb5ff5171a0bfa6c467634b13",
+    "es6-promise": "github:DefinitelyTyped/DefinitelyTyped/es6-promise/es6-promise.d.ts#81b951f1ac437d1eb5ff5171a0bfa6c467634b13",
+    "mocha": "registry:dt/mocha#2.2.5+20160317120654",
+    "node": "github:DefinitelyTyped/DefinitelyTyped/node/node.d.ts#8ea42cd8bb11863ed6f242d67c502288ebc45a7b",
+    "source-map": "github:DefinitelyTyped/DefinitelyTyped/source-map/source-map.d.ts#bb45306d0fd8ce0852a8d24c023fd787f4151e65"
+  }
+}

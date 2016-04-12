@@ -1,0 +1,4 @@
+--colors
+--ui tdd
+--timeout 60000
+--reporter spec

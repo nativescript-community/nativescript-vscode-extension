@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "noImplicitAny": false,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "outDir": "../out"
+    },
+    "files": [
+        // typescript definitions
+        "typings/main.d.ts",
+        "custom-typings/es6-impl/es6-impl.d.ts",
+        "webkit/webKitProtocol.d.ts",
+
+        "./webkit/webKitDebug.ts",
+        "./nativescript/nsMain.ts",
+        "./tests/adapter.test.ts"
+    ]
+}
