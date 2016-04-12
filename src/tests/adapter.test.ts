@@ -397,7 +397,7 @@ describe('The adapter', () => {
             });
 		});
 
-        it.only(`${meta} should attach`, () => {
+        it(`${meta} should attach`, () => {
             let appRoot = context.getAppPath('JsApp');
 
             let scenario = new Scenario(dc);
