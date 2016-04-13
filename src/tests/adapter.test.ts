@@ -410,5 +410,30 @@ describe('The adapter', () => {
                 });
             });
 		});
+        
+        // iOS specifc tests
+        if (platform == 'ios') {
+            it(`${meta} should not hang on evaluating watch expression on call frame with unknown source`, () => {
+                let appRoot = context.getAppPath('JsApp');
+
+                let scenario = new Scenario(dc);
+                scenario.launchRequestArgs = Scenario.getDefaultLaunchArgs(platform, appRoot, config.emulator);
+                
+                
+                return Promise.all<any>([
+                    scenario.start(),
+                    scenario.client.onNextTime('stopped').then(e => {
+                        return scenario.client.stackTraceRequest({ threadId: e.body.threadId }).then(response => {
+                            let callFrame = response.body.stackFrames.filter(callFrame => !callFrame.source.path && !callFrame.source.sourceReference)[0];
+                            return scenario.client.evaluateRequest({ expression: 'Math.random()', frameId: callFrame.id, context: 'watch' }).then(response => {
+                                assert.fail(undefined, undefined, 'Evaluate request should fail');
+                            }, response => {
+                                assert.equal(response.message, '-', 'error message mismatch');
+                            });
+                        });
+                    })
+                ]);
+            });
+        }
     });
 });

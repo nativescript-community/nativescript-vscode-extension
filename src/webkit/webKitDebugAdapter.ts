@@ -299,7 +299,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private onScriptParsed(script: WebKitProtocol.Debugger.Script): void {
         this._scriptsById.set(script.scriptId, script);
 
-        if (!this.isExtensionScript(script)) {
+        if (this.scriptIsNotAnonymous(script)) {
             this.fireEvent({ seq: 0, type: 'event',  event: 'scriptParsed', body: { scriptUrl: script.url, sourceMapURL: script.sourceMapURL }});
         }
     }
@@ -491,28 +491,50 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
         const stackFrames: DebugProtocol.StackFrame[] = stack
             .map((callFrame: WebKitProtocol.Debugger.CallFrame, i: number) => {
-                const script = this._scriptsById.get(callFrame.location.scriptId);
-                const line = callFrame.location.lineNumber;
-                const column = callFrame.location.columnNumber;
+                const sourceReference = scriptIdToSourceReference(callFrame.location.scriptId);
+                const scriptId = callFrame.location.scriptId;
+                const script = this._scriptsById.get(scriptId);
 
                 let source: DebugProtocol.Source;
-                if (script) {
-                    // When the script has a url and isn't a content script, send the name and path fields. PathTransformer will
-                    // attempt to resolve it to a script in the workspace. Otherwise, send the name and sourceReference fields.
-                    source = (script.url && !this.isExtensionScript(script)) ?
-                        {
+                if (this.scriptIsNotUnknown(scriptId)) {
+                    // We have received Debugger.scriptParsed event for the script.
+                    if (this.scriptIsNotAnonymous(script)) {
+                        /**
+                         * We have received non-empty url with the Debugger.scriptParsed event.
+                         * We set the url value to the path property. Later on, the PathTransformer will attempt to resolve it to a script in the app root folder.
+                         * In case it fails to resolve it, we also set the sourceReference field in order to allow the client to send source request to retrieve the source.
+                         * If the PathTransformer resolves the url successfully, it will change the value of sourceReference to 0.
+                         */
+                        source = {
                             name: path.basename(script.url),
                             path: script.url,
                             sourceReference: scriptIdToSourceReference(script.scriptId) // will be 0'd out by PathTransformer if not needed
-                        } :
-                        {
-                            // Name should be undefined, work around VS Code bug 20274
-                            name: undefined,
-                            sourceReference: scriptIdToSourceReference(script.scriptId)
                         };
+                    }
+                    else {
+                        /**
+                         * We have received Debugger.scriptParsed event with empty url value.
+                         * Sending only the sourceId will make the client to send source request to retrieve the source of the script.
+                         */
+                        source = {
+                            name: 'anonymous source',
+                            sourceReference: sourceReference
+                        };
+                    }
                 }
                 else {
-                    source = { name: 'eval: Unknown' };
+                    /**
+                     * Unknown script. No Debugger.scriptParsed event received for the script.
+                     *
+                     * Some 'internal scripts' are intentionally referenced by id equal to 0. Others have id > 0 but no Debugger.scriptParsed event is sent when parsed.
+                     * In both cases we can't get its source code. If we send back a zero sourceReference the VS Code client will not send source request.
+                     * The most we can do is to include a dummy stack frame with no source associated and without specifing the sourceReference.
+                     */
+                    source = {
+                        name: 'unknown source',
+                        origin: 'internal module',
+                        sourceReference: 0
+                    };
                 }
 
                 // If the frame doesn't have a function name, it's either an anonymous function
@@ -521,9 +543,9 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 return {
                     id: i,
                     name: frameName,
-                    source,
-                    line: line,
-                    column
+                    source: source,
+                    line: callFrame.location.lineNumber,
+                    column: callFrame.location.columnNumber
                 };
             });
 
@@ -588,6 +610,9 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
     public source(args: DebugProtocol.SourceArguments): Promise<ISourceResponseBody> {
         return this._webKitConnection.debugger_getScriptSource(sourceReferenceToScriptId(args.sourceReference)).then(webkitResponse => {
+            if (webkitResponse.error) {
+                throw new Error(webkitResponse.error.message);
+            }
             return { content: webkitResponse.result.scriptSource };
         });
     }
@@ -606,8 +631,12 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     public evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
         let evalPromise: Promise<any>;
         if (this.paused) {
-            const callFrameId = this._currentStack[args.frameId].callFrameId;
-            evalPromise = this._webKitConnection.debugger_evaluateOnCallFrame(callFrameId, args.expression);
+            const callFrame = this._currentStack[args.frameId];
+            if (!this.scriptIsNotUnknown(callFrame.location.scriptId)) {
+                // The iOS debugger backend hangs and stops responding after receiving evaluate request on call frame which has unknown source.
+                throw new Error('-'); // The message will be printed in the VS Code UI
+            }
+            evalPromise = this._webKitConnection.debugger_evaluateOnCallFrame(callFrame.callFrameId, args.expression);
         } else {
             evalPromise = this._webKitConnection.runtime_evaluate(args.expression);
         }
@@ -648,8 +677,14 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         return result;
     }
 
-    private isExtensionScript(script: WebKitProtocol.Debugger.Script): boolean {
-        return script.isContentScript || !script.url || script.url.startsWith('extensions::') || script.url.startsWith('chrome-extension://');
+    // Returns true if the script has url supplied in Debugger.scriptParsed event
+    private scriptIsNotAnonymous(script: WebKitProtocol.Debugger.Script): boolean {
+        return script && !!script.url;
+    }
+
+    // Returns true if Debugger.scriptParsed event is received for the provided script id
+    private scriptIsNotUnknown(scriptId: WebKitProtocol.Debugger.ScriptId): boolean {
+        return !!this._scriptsById.get(scriptId);
     }
 }
 

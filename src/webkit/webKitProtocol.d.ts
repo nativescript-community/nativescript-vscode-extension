@@ -28,7 +28,6 @@ declare namespace WebKitProtocol {
             startColumn?: number;
             endLine?: number;
             endColumn?: number;
-            isInternalScript?: boolean;
             sourceMapURL?: string;
             isContentScript?: boolean;
         }
