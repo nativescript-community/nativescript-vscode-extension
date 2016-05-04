@@ -51,18 +51,19 @@ export class Scenario {
     }
 
     public static getDefaultLaunchArgs(platform: string, appRoot: string, emulator: boolean): DebugProtocol.LaunchRequestArguments {
-        return {
+        let args = {
             platform: platform,
             request: "launch",
             appRoot: appRoot,
             sourceMaps: true,
             emulator: emulator,
             tnsArgs: `${process.env.DeviceId ? `--device ${process.env.DeviceId}` : ''}`
-        }
+        };
+        return args;
     }
 
     public static getDefaultAttachArgs(platform: string, appRoot: string, emulator: boolean): DebugProtocol.LaunchRequestArguments {
-        return {
+        let args = {
             platform: platform,
             request: "attach",
             appRoot: appRoot,
@@ -70,6 +71,7 @@ export class Scenario {
             emulator: emulator,
             tnsArgs: `${process.env.DeviceId ? `--device ${process.env.DeviceId}` : ''}`
         }
+        return args;
     }
 
     constructor(client: NsDebugClient) {
