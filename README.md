@@ -42,12 +42,22 @@ If your version of NativeScript is incompatible with the extension you will see 
 ### Get the latest bits
 
 1. Clone the [extension repository](https://github.com/NativeScript/nativescript-vscode-extension): `git clone git@github.com:NativeScript/nativescript-vscode-extension.git`
-2. To build the extension run the following commands in the root repository folder
+2. To build the extension run the following commands in the root repository folder:
 
     ```
     npm install
     npm run build # compiles TypeScript source files to JavaScript
     npm run package # produces nativescript-*.*.*.vsix in the root folder
-    ```
+    ```    
 
-3. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
+3. To test the extension run the following commands in the root repository folder:
+
+    ```
+    npm install
+    npm run build # compiles TypeScript source files to JavaScript
+    npm run launch-as-server # launches the debug adapter in server mode
+    # execute this in a separate terminal
+    npm run test-mac # run tests on ios device
+    ```    
+
+4. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
