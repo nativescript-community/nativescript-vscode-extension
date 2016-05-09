@@ -452,7 +452,7 @@ export class CliVersionInfo {
     public getErrorMessage(): string {
         switch (this._state) {
             case CliState.NotExisting:
-                return `NativeScript CLI not found, please run 'npm install –g nativescript@${Version.stringify(ExtensionVersionInfo.getMinSupportedNativeScriptVersion())}' to install it.`;
+                return `NativeScript CLI not found, please run 'npm install –g nativescript' to install it.`;
             case CliState.OlderThanSupported:
                 return `The existing NativeScript extension is compatible with NativeScript CLI v${Version.stringify(ExtensionVersionInfo.getMinSupportedNativeScriptVersion())} or greater. The currently installed NativeScript CLI is v${Version.stringify(CliVersionInfo.getInstalledCliVersion())}. You can update the NativeScript CLI by executing 'npm install -g nativescript'.`;
             default:
