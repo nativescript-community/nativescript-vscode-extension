@@ -148,30 +148,26 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
         androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
 
-        let port: number;
         this.onTnsOutputMessage("Getting debug port");
         let androidConnection: AndroidDebugConnection = null;
-        return androidProject.getDebugPort(args)
-                .then(debugPort => {
-                    port = debugPort;
-                    if (!thisAdapter._webKitConnection) {
-                        return androidProject.createConnection().then(connection => {
-                            androidConnection = connection;
-                            this.setConnection(connection, args);
-                            return Promise.resolve<void>();
-                        });
-                    }
 
-                    return Promise.resolve<void>();
-                })
-                .then(() => {
-                    this.onTnsOutputMessage("Preparing for debug");
-                    return androidProject.debug(args);
-                })
-                .then(() => {
-                    this.onTnsOutputMessage("Attaching to debug application");
-                    return androidConnection.attach(port, 'localhost');
-                });
+        let runDebugCommand: Promise<any> = (args.request == 'launch') ? androidProject.debug(args) : Promise.resolve();
+
+        return runDebugCommand.then(_ => {
+            let port: number;
+            return androidProject.getDebugPort(args).then(debugPort => {
+                port = debugPort;
+                if (!thisAdapter._webKitConnection) {
+                    return androidProject.createConnection().then(connection => {
+                        androidConnection = connection;
+                        this.setConnection(connection, args);
+                    });
+                }
+            }).then(() => {
+                this.onTnsOutputMessage("Attaching to debug application");
+                return androidConnection.attach(port, 'localhost');
+            });
+        });
     }
 
     private setConnection(connection: ns.INSDebugConnection, args: IAttachRequestArgs | ILaunchRequestArgs) : ns.INSDebugConnection {
