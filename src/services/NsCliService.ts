@@ -3,61 +3,96 @@ import * as fs from 'fs';
 import {EventEmitter} from 'events';
 import * as path from 'path';
 import * as https from 'https';
-import {Logger} from '../webkit/utilities';
-import {WebKitConnection} from '../webkit/webKitConnection';
-import {AndroidDebugConnection} from './android/androidDebugConnection';
-import {ILaunchRequestArgs, IAttachRequestArgs} from '../webkit/WebKitAdapterInterfaces';
+import {Version} from '../common/Version';
+import {Logger} from '../debug-adapter/utilities';
+import {ILaunchRequestArgs, IAttachRequestArgs} from '../debug-adapter/WebKitAdapterInterfaces';
+import {ExtensionVersionInfo} from './ExtensionVersionInfo';
 
-export interface INSDebugConnection {
-    on(eventName: string, handler: (msg: any) => void): void;
+export enum CliVersionState {
+    NotExisting,
+    OlderThanSupported,
+    Compatible
+}
 
-    close(): void;
+export class CliVersionInfo {
+    private static installedCliVersion: number[] = null;
 
-    debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition?: string): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse>
+    private _state: CliVersionState;
 
-    debugger_removeBreakpoint(breakpointId: string): Promise<WebKitProtocol.Response>
+    public static getInstalledCliVersion(): number[] {
+        if (this.installedCliVersion === null) {
+            // get the currently installed CLI version
+            let getVersionCommand: string = new CommandBuilder().appendParam('--version').buildAsString(); // tns --version
+            try {
+                let versionStr: string = execSync(getVersionCommand).toString().trim(); // execute it
+                this.installedCliVersion = versionStr ? Version.parse(versionStr) : null; // parse the version string
+            } catch(e) {
+                this.installedCliVersion = null;
+            }
+        }
 
-    debugger_stepOver(): Promise<WebKitProtocol.Response>;
+        return this.installedCliVersion;
+    }
 
-    debugger_stepIn(): Promise<WebKitProtocol.Response>;
+    constructor() {
+        let installedCliVersion: number[] = CliVersionInfo.getInstalledCliVersion();
+        if (installedCliVersion === null) {
+            this._state = CliVersionState.NotExisting;
+        }
+        else {
+            let minSupportedCliVersion = ExtensionVersionInfo.getMinSupportedNativeScriptVersion();
+            this._state = Version.compareBySubminor(installedCliVersion, minSupportedCliVersion) < 0 ? CliVersionState.OlderThanSupported : CliVersionState.Compatible;
+        }
+    }
 
-    debugger_stepOut(): Promise<WebKitProtocol.Response>;
+    public getState(): CliVersionState {
+        return this._state;
+    }
 
-    debugger_resume(): Promise<WebKitProtocol.Response>;
+    public isCompatible(): boolean {
+        return this._state === CliVersionState.Compatible;
+    }
 
-    debugger_pause(): Promise<WebKitProtocol.Response>;
-
-    debugger_evaluateOnCallFrame(callFrameId: string, expression: string, objectGroup?, returnByValue?: boolean): Promise<WebKitProtocol.Debugger.EvaluateOnCallFrameResponse>;
-
-    debugger_setPauseOnExceptions(state: string): Promise<WebKitProtocol.Response>;
-
-    debugger_getScriptSource(scriptId: WebKitProtocol.Debugger.ScriptId): Promise<WebKitProtocol.Debugger.GetScriptSourceResponse>;
-
-    runtime_getProperties(objectId: string, ownProperties: boolean, accessorPropertiesOnly: boolean): Promise<WebKitProtocol.Runtime.GetPropertiesResponse>;
-
-    runtime_evaluate(expression: string, objectGroup?: any, contextId?: number, returnByValue?: boolean): Promise<WebKitProtocol.Runtime.EvaluateResponse>;
+    public getErrorMessage(): string {
+        switch (this._state) {
+            case CliVersionState.NotExisting:
+                return `NativeScript CLI not found, please run 'npm install –g nativescript' to install it.`;
+            case CliVersionState.OlderThanSupported:
+                return `The existing NativeScript extension is compatible with NativeScript CLI v${Version.stringify(ExtensionVersionInfo.getMinSupportedNativeScriptVersion())} or greater. The currently installed NativeScript CLI is v${Version.stringify(CliVersionInfo.getInstalledCliVersion())}. You can update the NativeScript CLI by executing 'npm install -g nativescript'.`;
+            default:
+                return null;
+        }
+    }
 }
 
 export abstract class NSProject extends EventEmitter {
     private _projectPath: string;
     private _tnsOutputFileStream: fs.WriteStream;
+    private _cliVersionInfo: CliVersionInfo;
 
     constructor(projectPath: string, tnsOutputFilePath?: string) {
         super();
         this._projectPath = projectPath;
         this._tnsOutputFileStream = tnsOutputFilePath ? fs.createWriteStream(tnsOutputFilePath) : null;
+        this._cliVersionInfo = new CliVersionInfo();
     }
 
-    public projectPath(): string {
+    public getProjectPath(): string {
         return this._projectPath;
+    }
+
+    public getCliVersionInfo() {
+        return this._cliVersionInfo;
     }
 
     public abstract platform(): string;
 
     public abstract run(emulator: boolean): Promise<ChildProcess>;
 
+    public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<any>;
+
     protected spawnProcess(commandPath: string, commandArgs: string[], tnsOutput?: string): ChildProcess {
-        let child: ChildProcess = spawn(commandPath, commandArgs, { cwd: this.projectPath() });
+        let child: ChildProcess = spawn(commandPath, commandArgs, { cwd: this.getProjectPath() });
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
         return child;
@@ -219,10 +254,6 @@ export class AndroidProject extends NSProject {
          }
     }
 
-    public createConnection(): Promise<AndroidDebugConnection> {
-        return Promise.resolve(new AndroidDebugConnection());
-    }
-
     public getDebugPort(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<number> {
         //TODO: Call CLI to get the debug port
         //return Promise.resolve(40001);
@@ -308,185 +339,5 @@ class CommandBuilder {
     public buildAsString(): string {
         let result = this.build();
         return `${result.path} ` + result.args.join(' ');
-    }
-}
-
-class Version {
-    public static parse(versionStr: string): number[] {
-        if (versionStr === null) {
-            return null;
-        }
-        let version: number[] = versionStr.split('.').map<number>((str, index, array) => parseInt(str));
-        for(let i = version.length; i < 3; i++) {
-            version.push(0);
-        }
-        return version;
-    }
-
-    public static stringify(version: number[]): string {
-        return `${version[0]}.${version[1]}.${version[2]}`;
-    }
-
-    public static compareBySubminor(v1, v2): number {
-        return (v1[0] - v2[0] != 0) ? (v1[0] - v2[0]) : (v1[1] - v2[1] != 0) ? v1[1] - v2[1] : v1[2] - v2[2];
-    }
-}
-
-export class ExtensionVersionInfo {
-    private static extensionVersion: number[] = null;
-    private static minNativescriptCliVersion: number[] = null;
-    private static extensionId: string = '8d837914-d8fa-45b5-965d-f76ebd6dbf5c';
-    private static marketplaceQueryResult: Promise<any> = null;
-
-    private latestVersionMeta: any;
-    private timestamp: number;
-
-    private static initVersionsFromPackageJson() {
-        let packageJson = require('../../package.json');
-        this.extensionVersion = Version.parse(packageJson.version);
-        this.minNativescriptCliVersion = Version.parse(packageJson.minNativescriptCliVersion);
-    }
-
-    public static getExtensionVersion(): number[] {
-        if (this.extensionVersion === null) {
-            this.initVersionsFromPackageJson();
-        }
-        return this.extensionVersion;
-    }
-
-    public static getMinSupportedNativeScriptVersion(): number[] {
-        if (this.minNativescriptCliVersion === null) {
-            this.initVersionsFromPackageJson();
-        }
-        return this.minNativescriptCliVersion;
-    }
-
-    public static getMarketplaceExtensionData(): Promise<any> {
-        if (this.marketplaceQueryResult == null) {
-            this.marketplaceQueryResult = new Promise<any>((resolve, reject) => {
-                let postData: string = `{ filters: [{ criteria: [{ filterType: 4, value: "${ExtensionVersionInfo.extensionId}" }] }], flags: 262 }`;
-
-                let request = https.request({
-                    hostname: 'marketplace.visualstudio.com',
-                    path: '/_apis/public/gallery/extensionquery',
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json;api-version=2.2-preview.1',
-                        'Content-Type': 'application/json',
-                        'Transfer-Encoding': 'chunked',
-                        'Content-Length': Buffer.byteLength(postData)
-                    }
-                }, response => {
-                    if (response.statusCode != 200) {
-                        reject(`Unable to download data from Visual Studio Marketplace. Status code: ${response.statusCode}`);
-                        return;
-                    }
-                    let body = '';
-                    response.on('data', chunk => {
-                        body += chunk;
-                    });
-                    response.on('end', () => {
-                        resolve(JSON.parse(body));
-                    });
-                });
-
-                request.on('error', (e) => {
-                    reject(e);
-                });
-
-                request.end(postData);
-            });
-        }
-        return this.marketplaceQueryResult;
-    }
-
-    public static createFromMarketplace(): Promise<ExtensionVersionInfo> {
-        return this.getMarketplaceExtensionData()
-        .then(marketplaceData => {
-            let latestVersion = null;
-            try {
-                if (marketplaceData.results[0].extensions[0].extensionId == ExtensionVersionInfo.extensionId) {
-                    latestVersion = marketplaceData.results[0].extensions[0].versions[0];
-                }
-            } catch (e) { }
-            return new ExtensionVersionInfo(latestVersion);
-        });
-    }
-
-    constructor(latestVersionMeta: any, timestamp?: number) {
-        this.latestVersionMeta = latestVersionMeta;
-        this.timestamp = timestamp || Date.now();
-    }
-
-    public getLatestVersionMeta(): any {
-        return this.latestVersionMeta;
-    }
-
-    public isLatest(): boolean {
-        if (!this.getLatestVersionMeta()) {
-            return true;
-        }
-        return Version.compareBySubminor(ExtensionVersionInfo.getExtensionVersion(), Version.parse(this.getLatestVersionMeta().version)) >= 0;
-    }
-
-    public getTimestamp(): number {
-        return this.timestamp;
-    }
-}
-
-export enum CliState {
-    NotExisting,
-    OlderThanSupported,
-    Compatible
-}
-
-export class CliVersionInfo {
-    private static installedCliVersion: number[] = null;
-
-    private _state: CliState;
-
-    public static getInstalledCliVersion(): number[] {
-        if (this.installedCliVersion === null) {
-            // get the currently installed CLI version
-            let getVersionCommand: string = new CommandBuilder().appendParam('--version').buildAsString(); // tns --version
-            try {
-                let versionStr: string = execSync(getVersionCommand).toString().trim(); // execute it
-                this.installedCliVersion = versionStr ? Version.parse(versionStr) : null; // parse the version string
-            } catch(e) {
-                this.installedCliVersion = null;
-            }
-        }
-
-        return this.installedCliVersion;
-    }
-
-    constructor() {
-        let installedCliVersion: number[] = CliVersionInfo.getInstalledCliVersion();
-        if (installedCliVersion === null) {
-            this._state = CliState.NotExisting;
-        }
-        else {
-            let minSupportedCliVersion = ExtensionVersionInfo.getMinSupportedNativeScriptVersion();
-            this._state = Version.compareBySubminor(installedCliVersion, minSupportedCliVersion) < 0 ? CliState.OlderThanSupported : CliState.Compatible;
-        }
-    }
-
-    public getState(): CliState {
-        return this._state;
-    }
-
-    public isCompatible(): boolean {
-        return this._state === CliState.Compatible;
-    }
-
-    public getErrorMessage(): string {
-        switch (this._state) {
-            case CliState.NotExisting:
-                return `NativeScript CLI not found, please run 'npm install –g nativescript' to install it.`;
-            case CliState.OlderThanSupported:
-                return `The existing NativeScript extension is compatible with NativeScript CLI v${Version.stringify(ExtensionVersionInfo.getMinSupportedNativeScriptVersion())} or greater. The currently installed NativeScript CLI is v${Version.stringify(CliVersionInfo.getInstalledCliVersion())}. You can update the NativeScript CLI by executing 'npm install -g nativescript'.`;
-            default:
-                return null;
-        }
     }
 }

@@ -6,11 +6,12 @@ import {spawn, ChildProcess} from 'child_process';
 import * as path from 'path';
 import {Handles, StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from 'vscode-debugadapter';
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {WebKitConnection} from './webKitConnection';
-import {AndroidDebugConnection} from '../nativescript/android/androidDebugConnection';
+import {INSDebugConnection} from './connection/INSDebugConnection';
+import {IosConnection} from './connection/iosConnection';
+import {AndroidConnection} from './connection/androidConnection';
 import * as utils from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
-import * as ns from '../nativescript/nativescript';
+import * as ns from '../services/NsCliService';
 import {ILaunchRequestArgs, IAttachRequestArgs, IDebugAdapter, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IBreakpoint,
     IStackTraceResponseBody, IScopesResponseBody, IVariablesResponseBody, ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody} from './WebKitAdapterInterfaces';
 
@@ -37,7 +38,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     private _setBreakpointsRequestQ: Promise<any>;
 
     private _chromeProc: ChildProcess;
-    private _webKitConnection: ns.INSDebugConnection;
+    private _webKitConnection: INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
     private appRoot: string;
     private platform: string;
@@ -136,7 +137,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
         return iosProject.debug(args)
         .then((socketFilePath) => {
-            let iosConnection: WebKitConnection = new WebKitConnection();
+            let iosConnection: IosConnection = new IosConnection();
             this.setConnection(iosConnection, args);
             return iosConnection.attach(socketFilePath);
         });
@@ -149,7 +150,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
 
         this.onTnsOutputMessage("Getting debug port");
-        let androidConnection: AndroidDebugConnection = null;
+        let androidConnection: AndroidConnection = null;
 
         let runDebugCommand: Promise<any> = (args.request == 'launch') ? androidProject.debug(args) : Promise.resolve();
 
@@ -158,10 +159,8 @@ export class WebKitDebugAdapter implements IDebugAdapter {
             return androidProject.getDebugPort(args).then(debugPort => {
                 port = debugPort;
                 if (!thisAdapter._webKitConnection) {
-                    return androidProject.createConnection().then(connection => {
-                        androidConnection = connection;
-                        this.setConnection(connection, args);
-                    });
+                    androidConnection = new AndroidConnection();
+                    this.setConnection(androidConnection, args);
                 }
             }).then(() => {
                 this.onTnsOutputMessage("Attaching to debug application");
@@ -170,7 +169,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         });
     }
 
-    private setConnection(connection: ns.INSDebugConnection, args: IAttachRequestArgs | ILaunchRequestArgs) : ns.INSDebugConnection {
+    private setConnection(connection: INSDebugConnection, args: IAttachRequestArgs | ILaunchRequestArgs) : INSDebugConnection {
         connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
         connection.on('Debugger.resumed', () => this.onDebuggerResumed());
         connection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));

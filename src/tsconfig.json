@@ -13,10 +13,10 @@
         // typescript definitions
         "typings/main.d.ts",
         "custom-typings/es6-impl/es6-impl.d.ts",
-        "webkit/webKitProtocol.d.ts",
+        "debug-adapter/webKitProtocol.d.ts",
 
-        "./webkit/webKitDebug.ts",
-        "./nativescript/nsMain.ts",
+        "./debug-adapter/webKitDebug.ts",
+        "./main.ts",
         "./tests/adapter.test.ts"
     ]
 }

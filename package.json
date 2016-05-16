@@ -48,7 +48,7 @@
     "test-win": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/win.json ./out/tests",
     "test-custom": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/custom.json ./out/tests"
   },
-  "main": "./out/nativescript/nsMain",
+  "main": "./out/main",
   "activationEvents": [
     "*"
   ],

@@ -2,12 +2,14 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+// TODO: Some functions can be moved to common.
+
 import * as http from 'http';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
-import {ILaunchRequestArgs, IAttachRequestArgs} from '../webkit/WebKitAdapterInterfaces';
+import {ILaunchRequestArgs, IAttachRequestArgs} from './WebKitAdapterInterfaces';
 
 const DEFAULT_CHROME_PATH = {
     OSX: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',

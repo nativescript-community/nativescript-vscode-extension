@@ -7,10 +7,10 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 import {WebKitDebugAdapter} from './webKitDebugAdapter';
 import {Logger} from './utilities';
 
-import {AdapterProxy} from '../adapter/adapterProxy';
-import {LineNumberTransformer} from '../adapter/lineNumberTransformer';
-import {PathTransformer} from '../adapter/pathTransformer';
-import {SourceMapTransformer} from '../adapter/sourceMaps/sourceMapTransformer';
+import {AdapterProxy} from './adapter/adapterProxy';
+import {LineNumberTransformer} from './adapter/lineNumberTransformer';
+import {PathTransformer} from './adapter/pathTransformer';
+import {SourceMapTransformer} from './adapter/sourceMaps/sourceMapTransformer';
 
 export class WebKitDebugSession extends DebugSession {
     private _adapterProxy: AdapterProxy;

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as child from 'child_process';
-import * as ns from './nativescript';
+import * as ns from './services/NsCliService';
+import {ExtensionVersionInfo} from './services/ExtensionVersionInfo';
 
 function performVersionsCheck(context: vscode.ExtensionContext) {
     // Check the state of the existing NativeScript CLI
@@ -10,12 +11,12 @@ function performVersionsCheck(context: vscode.ExtensionContext) {
     }
     else {
         // Checks whether a new version of the extension is available
-        let extensionVersionPromise: Promise<ns.ExtensionVersionInfo> = null;
+        let extensionVersionPromise: Promise<ExtensionVersionInfo> = null;
 
         // Check the cache for extension version information
         let extensionVersion: any = context.globalState.get<any>('ExtensionVersionInfo');
         if (extensionVersion) {
-            let extensionVersionInfo = new ns.ExtensionVersionInfo(extensionVersion.latestVersionMetadata, extensionVersion.timestamp);
+            let extensionVersionInfo = new ExtensionVersionInfo(extensionVersion.latestVersionMetadata, extensionVersion.timestamp);
             if (extensionVersionInfo.getTimestamp() > Date.now() - 24 * 60 * 60 * 1000 /* Cache the version for a day */) {
                 extensionVersionPromise = Promise.resolve(extensionVersionInfo);
             }
@@ -23,7 +24,7 @@ function performVersionsCheck(context: vscode.ExtensionContext) {
 
         if (!extensionVersionPromise) {
             // Takes the slow path and checks for newer version in the VS Code Marketplace
-            extensionVersionPromise = ns.ExtensionVersionInfo.createFromMarketplace();
+            extensionVersionPromise = ExtensionVersionInfo.createFromMarketplace();
         }
         extensionVersionPromise.then(extensionInfo => {
             if (extensionInfo) {
