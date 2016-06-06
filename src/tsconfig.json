@@ -11,7 +11,7 @@
     },
     "files": [
         // typescript definitions
-        "typings/main.d.ts",
+        "typings/index.d.ts",
         "custom-typings/es6-impl/es6-impl.d.ts",
         "debug-adapter/webKitProtocol.d.ts",
 
