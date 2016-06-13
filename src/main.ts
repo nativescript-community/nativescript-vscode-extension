@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as child from 'child_process';
 import * as ns from './services/NsCliService';
 import {ExtensionVersionInfo} from './services/ExtensionVersionInfo';
+import {AnalyticsService} from './services/analytics/AnalyticsService';
 
 function performVersionsCheck(context: vscode.ExtensionContext) {
     // Check the state of the existing NativeScript CLI
@@ -37,7 +38,7 @@ function performVersionsCheck(context: vscode.ExtensionContext) {
     }
 }
 
-// this method is called when your extension is activated
+// this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
     performVersionsCheck(context);
 
@@ -64,6 +65,7 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Execute run command
             let emulator: boolean = (target === 'emulator');
+            AnalyticsService.getInstance().runRunCommand(project.platform(), emulator);
             return project.run(emulator)
             .then(tnsProcess => {
                 tnsProcess.on('error', err => {

@@ -5,7 +5,7 @@
             "name": "launch as server",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/../out/webkit/webKitDebug.js",
+            "program": "${workspaceRoot}/../out/debug-adapter/webKitDebug.js",
 			"runtimeArgs": ["--nolazy"],
             "args": [ "--server=4712" ],
             "stopOnEntry": true,
@@ -20,7 +20,7 @@
             // Path to VSCode executable
             "runtimeExecutable": "${execPath}",
             "args": [
-                "--extensionDevelopmentPath=${workspaceRoot}"
+                "--extensionDevelopmentPath=${workspaceRoot}/.."
             ],
             "stopOnEntry": false,
 			"sourceMaps": true,

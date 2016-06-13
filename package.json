@@ -26,8 +26,9 @@
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
     "source-map": "^0.5.3",
-    "vscode-debugprotocol": "^1.7.0",
-    "vscode-debugadapter": "^1.7.0"
+    "universal-analytics": "^0.3.11",
+    "vscode-debugadapter": "^1.7.0",
+    "vscode-debugprotocol": "^1.7.0"
   },
   "devDependencies": {
     "mocha": "^2.4.5",
@@ -87,7 +88,7 @@
             "typescript"
           ]
         },
-        "program": "./out/webkit/webKitDebug.js",
+        "program": "./out/debug-adapter/webKitDebug.js",
         "runtime": "node",
         "initialConfigurations": [
           {
