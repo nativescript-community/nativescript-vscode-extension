@@ -91,7 +91,6 @@ export class IosProject extends NSProject {
             .appendParam(this.platform())
             .tryAppendParam("--emulator", args.emulator)
             .tryAppendParam("--start", args.request === "attach")
-            .tryAppendParam("--debug-brk", args.request === "launch")
             .appendParam("--no-client")
             .appendParam(args.tnsArgs)
             .build();
@@ -166,7 +165,6 @@ export class AndroidProject extends NSProject {
                     .appendParam("debug")
                     .appendParam(this.platform())
                     .tryAppendParam("--emulator", args.emulator)
-                    .appendParam("--debug-brk")
                     .appendParam("--no-client")
                     .appendParam(args.tnsArgs)
                     .build();
