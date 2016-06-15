@@ -15,7 +15,7 @@ import * as ns from '../services/NsCliService';
 import {ILaunchRequestArgs, IAttachRequestArgs, IDebugAdapter, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IBreakpoint,
     IStackTraceResponseBody, IScopesResponseBody, IVariablesResponseBody, ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody} from './WebKitAdapterInterfaces';
 import {AnalyticsService} from '../services/analytics/AnalyticsService';
-
+import {ExtensionClient} from '../services/ipc/ExtensionClient';
 
 interface IScopeVarHandle {
     objectId: string;
@@ -115,7 +115,8 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private _attach(args: IAttachRequestArgs | ILaunchRequestArgs) {
-        AnalyticsService.getInstance().launchDebugger(args.request, args.platform, args.emulator);
+        ExtensionClient.setAppRoot(utils.getAppRoot(args));
+        ExtensionClient.getInstance().analyticsLaunchDebugger({ request: args.request, platform: args.platform, emulator: args.emulator });
         this.initDiagnosticLogging(args.request, args);
         this.appRoot = utils.getAppRoot(args);
         this.platform = args.platform;

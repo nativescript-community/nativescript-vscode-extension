@@ -3,6 +3,7 @@ import * as child from 'child_process';
 import * as ns from './services/NsCliService';
 import {ExtensionVersionInfo} from './services/ExtensionVersionInfo';
 import {AnalyticsService} from './services/analytics/AnalyticsService';
+import {ExtensionServer} from './services/ipc/ExtensionServer';
 
 function performVersionsCheck(context: vscode.ExtensionContext) {
     // Check the state of the existing NativeScript CLI
@@ -40,6 +41,7 @@ function performVersionsCheck(context: vscode.ExtensionContext) {
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
+    ExtensionServer.getInstance().start();
     performVersionsCheck(context);
 
     let runCommand = (project: ns.NSProject, options: string[]) => {
@@ -100,4 +102,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(runIosCommand);
     context.subscriptions.push(runAndroidCommand);
+}
+
+export function deactivate() {
+    ExtensionServer.getInstance().stop();
 }

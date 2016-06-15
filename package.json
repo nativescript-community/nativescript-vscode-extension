@@ -25,6 +25,7 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
+    "node-ipc": "^7.0.0",
     "source-map": "^0.5.3",
     "universal-analytics": "^0.3.11",
     "vscode-debugadapter": "^1.7.0",
