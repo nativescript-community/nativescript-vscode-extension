@@ -9,6 +9,8 @@ The NativeScript extension for Visual Studio Code aids your [NativeScript](https
 
 To install [NativeScript](https://www.nativescript.org/) and all its dependencies, follow the instructions in our [getting started guide](http://docs.nativescript.org/start/getting-started#getting-up-and-running).
 
+> Note: The VS Code extension requires [nativescript node module](https://www.npmjs.com/package/nativescript) to be globally installed. If you are using [nvm](https://github.com/creationix/nvm) to manage you node versions, make sure that `nativescript` is installed in your default nodeJS version. To check which is your default node version execute 'nvm ls' on the command prompt and you should see something like 'default -> 5.5.0 (-> v5.5.0)' in the output.
+
 ### Setup the extension
 
 Create NativeScript application by running `tns create MyApp` and open `MyApp` folder in Visual Studio Code. Open the Debug Panel, click the gear icon
