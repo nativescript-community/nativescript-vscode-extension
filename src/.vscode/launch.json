@@ -8,7 +8,7 @@
             "program": "${workspaceRoot}/../out/webkit/webKitDebug.js",
 			"runtimeArgs": ["--nolazy"],
             "args": [ "--server=4712" ],
-            "stopOnEntry": false,
+            "stopOnEntry": true,
             "sourceMaps": true,
             "outDir": "${workspaceRoot}/../out",
             "cwd": "${workspaceRoot}"

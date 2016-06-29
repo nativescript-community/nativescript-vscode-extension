@@ -1,4 +1,4 @@
-import {exec, execSync, ChildProcess} from 'child_process';
+import {spawn, execSync, ChildProcess} from 'child_process';
 import {EventEmitter} from 'events';
 import * as path from 'path';
 import * as https from 'https';
@@ -70,13 +70,16 @@ export class IosProject extends NSProject {
         }
 
         // build command to execute
-        let command: string = new CommandBuilder()
+        let command = new CommandBuilder()
             .appendParam("run")
             .appendParam(this.platform())
-            .tryAppendParam("--emulator", emulator)
+            .appendParamIf("--emulator", emulator)
             .build();
 
-        let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+        let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
+        child.stdout.setEncoding('utf8');
+        child.stderr.setEncoding('utf8');
+
         return Promise.resolve(child);
     }
 
@@ -86,11 +89,11 @@ export class IosProject extends NSProject {
         }
 
         // build command to execute
-        let command: string = new CommandBuilder()
+        let command = new CommandBuilder()
             .appendParam("debug")
             .appendParam(this.platform())
-            .tryAppendParam("--emulator", args.emulator)
-            .tryAppendParam("--start", args.request === "attach")
+            .appendParamIf("--emulator", args.emulator)
+            .appendParamIf("--start", args.request === "attach")
             .appendParam("--no-client")
             .appendParam(args.tnsArgs)
             .build();
@@ -101,7 +104,9 @@ export class IosProject extends NSProject {
 
         return new Promise<string>((resolve, reject) => {
             // run NativeScript CLI command
-            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+            let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
+            child.stdout.setEncoding('utf8');
+            child.stderr.setEncoding('utf8');
 
             child.stdout.on('data', (data) => {
                 let strData: string = data.toString();
@@ -119,7 +124,7 @@ export class IosProject extends NSProject {
                 this.emit('TNS.outputMessage', data, 'error');
             });
 
-            child.on('close', (code) => {
+            child.on('close', (code, signal) => {
                 reject("The debug process exited unexpectedly code:" + code);
             });
         });
@@ -142,13 +147,16 @@ export class AndroidProject extends NSProject {
 
     public run(emulator: boolean): Promise<ChildProcess> {
         // build command to execute
-        let command: string = new CommandBuilder()
+        let command = new CommandBuilder()
             .appendParam("run")
             .appendParam(this.platform())
-            .tryAppendParam("--emulator", emulator)
+            .appendParamIf("--emulator", emulator)
             .build();
 
-        let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+        let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
+        child.stdout.setEncoding('utf8');
+        child.stderr.setEncoding('utf8');
+
         return Promise.resolve(child);
     }
 
@@ -161,10 +169,10 @@ export class AndroidProject extends NSProject {
             let launched = false;
 
             return new Promise<void>((resolve, reject) => {
-                let command: string = new CommandBuilder()
+                let command = new CommandBuilder()
                     .appendParam("debug")
                     .appendParam(this.platform())
-                    .tryAppendParam("--emulator", args.emulator)
+                    .appendParamIf("--emulator", args.emulator)
                     .appendParam("--no-client")
                     .appendParam(args.tnsArgs)
                     .build();
@@ -172,7 +180,9 @@ export class AndroidProject extends NSProject {
                         Logger.log("tns  debug command: " + command);
 
                 // run NativeScript CLI command
-                let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+                let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
+                child.stdout.setEncoding('utf8');
+                child.stderr.setEncoding('utf8');
                 child.stdout.on('data', function(data) {
                     let strData: string = data.toString();
                     that.emit('TNS.outputMessage', data.toString(), 'log');
@@ -208,7 +218,7 @@ export class AndroidProject extends NSProject {
 
         //return Promise.resolve(40001);
 
-        let command: string = new CommandBuilder()
+        let command = new CommandBuilder()
             .appendParam("debug")
             .appendParam(this.platform())
             .appendParam("--get-port")
@@ -217,7 +227,10 @@ export class AndroidProject extends NSProject {
         let that = this;
         // run NativeScript CLI command
         return new Promise<number>((resolve, reject) => {
-            let child: ChildProcess = exec(command, { cwd: this.projectPath() });
+            let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
+            child.stdout.setEncoding('utf8');
+            child.stderr.setEncoding('utf8');
+
             child.stdout.on('data', function(data) {
                 that.emit('TNS.outputMessage', data.toString(), 'log');
 
@@ -256,26 +269,29 @@ export class AndroidProject extends NSProject {
 }
 
 class CommandBuilder {
-    private _command: string;
+    public static tnsPath: string = 'tns';
 
-    constructor() {
-        this._command = 'tns';
-    }
+    private _command: string[] = [];
 
-    public appendParam(parameter: string = ""): CommandBuilder {
-        this._command += " " + parameter;
+    public appendParam(parameter: string): CommandBuilder {
+        this._command.push(parameter);
         return this;
     }
 
-    public tryAppendParam(parameter: string = "", condtion: boolean): CommandBuilder {
+    public appendParamIf(parameter: string, condtion: boolean): CommandBuilder {
         if (condtion) {
-            this._command += " " + parameter;
+            this._command.push(parameter);
         }
         return this;
     }
 
-    public build(): string {
-        return this._command;
+    public build(): { path: string, args: string[] } {
+        return { path: CommandBuilder.tnsPath, args: this._command };
+    }
+
+    public buildAsString(): string {
+        let result = this.build();
+        return `${result.path} ` + result.args.join(' ');
     }
 }
 
@@ -416,7 +432,7 @@ export class CliVersionInfo {
     public static getInstalledCliVersion(): number[] {
         if (this.installedCliVersion === null) {
             // get the currently installed CLI version
-            let getVersionCommand: string = new CommandBuilder().appendParam('--version').build(); // tns --version
+            let getVersionCommand: string = new CommandBuilder().appendParam('--version').buildAsString(); // tns --version
             try {
                 let versionStr: string = execSync(getVersionCommand).toString().trim(); // execute it
                 this.installedCliVersion = versionStr ? Version.parse(versionStr) : null; // parse the version string
