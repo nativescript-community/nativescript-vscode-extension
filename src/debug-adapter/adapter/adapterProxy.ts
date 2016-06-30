@@ -2,9 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as utils from '../webkit/utilities';
+import * as utils from '../utilities';
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {IDebugTransformer, IDebugAdapter} from '../webkit/WebKitAdapterInterfaces';
+import {IDebugTransformer, IDebugAdapter} from '../WebKitAdapterInterfaces';
 
 export type EventHandler = (event: DebugProtocol.Event) => void;
 

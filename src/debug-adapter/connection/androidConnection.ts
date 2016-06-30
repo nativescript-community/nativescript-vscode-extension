@@ -1,9 +1,10 @@
 import * as http from 'http';
 import {EventEmitter} from 'events';
-import * as utils from '../../webkit/utilities';
-import {Logger} from '../../webkit/utilities';
+import * as utils from '../utilities';
+import {Logger} from '../utilities';
 import * as Net from 'net';
-import * as ns from '../nativescript'
+import * as ns from '../../services/NsCliService';
+import { INSDebugConnection } from './INSDebugConnection';
 
 
 interface IMessageWithId {
@@ -38,7 +39,6 @@ class Callbacks {
     }
 
 }
-
 
 class ResReqNetSocket extends EventEmitter {
     private _pendingRequests = new Map<number, any>();
@@ -213,7 +213,7 @@ class ResReqNetSocket extends EventEmitter {
 }
 
 
-export class AndroidDebugConnection implements ns.INSDebugConnection {
+export class AndroidConnection implements INSDebugConnection {
     private _nextId = 1;
     //private _socket: ResReqWebSocket;
     //private _socket: ResReqHttpSocket;

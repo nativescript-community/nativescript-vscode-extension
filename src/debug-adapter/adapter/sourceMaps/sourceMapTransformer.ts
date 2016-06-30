@@ -6,8 +6,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {ISourceMaps, SourceMaps} from './sourceMaps';
-import {ISetBreakpointsArgs, IDebugTransformer, ILaunchRequestArgs, IAttachRequestArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody} from '../../webkit/WebKitAdapterInterfaces';
-import * as utils from '../../webkit/utilities';
+import {ISetBreakpointsArgs, IDebugTransformer, ILaunchRequestArgs, IAttachRequestArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody} from '../../WebKitAdapterInterfaces';
+import * as utils from '../../utilities';
 
 interface IPendingBreakpoint {
     resolve: () => void;
