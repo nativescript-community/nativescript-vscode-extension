@@ -1,4 +1,5 @@
 import {spawn, execSync, ChildProcess} from 'child_process';
+import * as fs from 'fs';
 import {EventEmitter} from 'events';
 import * as path from 'path';
 import * as https from 'https';
@@ -39,10 +40,12 @@ export interface INSDebugConnection {
 
 export abstract class NSProject extends EventEmitter {
     private _projectPath: string;
+    private _tnsOutputFileStream: fs.WriteStream;
 
-    constructor(projectPath: string) {
+    constructor(projectPath: string, tnsOutputFilePath?: string) {
         super();
         this._projectPath = projectPath;
+        this._tnsOutputFileStream = tnsOutputFilePath ? fs.createWriteStream(tnsOutputFilePath) : null;
     }
 
     public projectPath(): string {
@@ -52,12 +55,25 @@ export abstract class NSProject extends EventEmitter {
     public abstract platform(): string;
 
     public abstract run(emulator: boolean): Promise<ChildProcess>;
+
+    protected spawnProcess(commandPath: string, commandArgs: string[], tnsOutput?: string): ChildProcess {
+        let child: ChildProcess = spawn(commandPath, commandArgs, { cwd: this.projectPath() });
+        child.stdout.setEncoding('utf8');
+        child.stderr.setEncoding('utf8');
+        return child;
+    }
+
+    protected writeToTnsOutputFile(message: string) {
+        if (this._tnsOutputFileStream) {
+            this._tnsOutputFileStream.write(message, 'utf8');
+        }
+    }
 }
 
 export class IosProject extends NSProject {
 
-    constructor(projectPath: string) {
-        super(projectPath);
+    constructor(projectPath: string, tnsOutputFilePath?: string) {
+        super(projectPath, tnsOutputFilePath);
     }
 
     public platform(): string {
@@ -76,10 +92,7 @@ export class IosProject extends NSProject {
             .appendParamIf("--emulator", emulator)
             .build();
 
-        let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
-        child.stdout.setEncoding('utf8');
-        child.stderr.setEncoding('utf8');
-
+        let child: ChildProcess = this.spawnProcess(command.path, command.args);
         return Promise.resolve(child);
     }
 
@@ -105,13 +118,12 @@ export class IosProject extends NSProject {
 
         return new Promise<string>((resolve, reject) => {
             // run NativeScript CLI command
-            let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
-            child.stdout.setEncoding('utf8');
-            child.stderr.setEncoding('utf8');
+            let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
 
             child.stdout.on('data', (data) => {
                 let strData: string = data.toString();
                 this.emit('TNS.outputMessage', strData, 'log');
+                this.writeToTnsOutputFile(strData);
                 if(!readyToConnect) {
                     let matches: RegExpMatchArray = strData.match(socketPathPattern);
                     if(matches && matches.length > 0) {
@@ -123,6 +135,7 @@ export class IosProject extends NSProject {
 
             child.stderr.on('data', (data) => {
                 this.emit('TNS.outputMessage', data, 'error');
+                this.writeToTnsOutputFile(data);
             });
 
             child.on('close', (code, signal) => {
@@ -138,8 +151,8 @@ export class IosProject extends NSProject {
 
 export class AndroidProject extends NSProject {
 
-    constructor(projectPath: string) {
-        super(projectPath);
+    constructor(projectPath: string, tnsOutputFilePath?: string) {
+        super(projectPath, tnsOutputFilePath);
     }
 
     public platform(): string {
@@ -154,10 +167,7 @@ export class AndroidProject extends NSProject {
             .appendParamIf("--emulator", emulator)
             .build();
 
-        let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
-        child.stdout.setEncoding('utf8');
-        child.stderr.setEncoding('utf8');
-
+        let child: ChildProcess = this.spawnProcess(command.path, command.args);
         return Promise.resolve(child);
     }
 
@@ -179,15 +189,14 @@ export class AndroidProject extends NSProject {
                     .appendParams(args.tnsArgs)
                     .build();
 
-                        Logger.log("tns  debug command: " + command);
+                Logger.log("tns  debug command: " + command);
 
                 // run NativeScript CLI command
-                let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
-                child.stdout.setEncoding('utf8');
-                child.stderr.setEncoding('utf8');
+                let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
                 child.stdout.on('data', function(data) {
                     let strData: string = data.toString();
                     that.emit('TNS.outputMessage', data.toString(), 'log');
+                    that.writeToTnsOutputFile(strData);
                     if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
                         launched = true;
 
@@ -200,7 +209,7 @@ export class AndroidProject extends NSProject {
 
                 child.stderr.on('data', function(data) {
                     that.emit('TNS.outputMessage', data.toString(), 'error');
-
+                    that.writeToTnsOutputFile(data);
                 });
 
                 child.on('close', function(code) {
@@ -229,12 +238,11 @@ export class AndroidProject extends NSProject {
         let that = this;
         // run NativeScript CLI command
         return new Promise<number>((resolve, reject) => {
-            let child: ChildProcess = spawn(command.path, command.args, { cwd: this.projectPath() });
-            child.stdout.setEncoding('utf8');
-            child.stderr.setEncoding('utf8');
+            let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
 
             child.stdout.on('data', function(data) {
                 that.emit('TNS.outputMessage', data.toString(), 'log');
+                that.writeToTnsOutputFile(data);
 
                 let regexp = new RegExp("(?:debug port: )([\\d]{5})");
 
@@ -261,6 +269,7 @@ export class AndroidProject extends NSProject {
 
             child.stderr.on('data', function(data) {
                 that.emit('TNS.outputMessage', data.toString(), 'error');
+                that.writeToTnsOutputFile(data);
             });
 
             child.on('close', function(code) {
@@ -280,7 +289,7 @@ class CommandBuilder {
         return this;
     }
 
-    public appendParams(parameters: string[]): CommandBuilder {
+    public appendParams(parameters: string[] = []): CommandBuilder {
         parameters.forEach(param => this.appendParam(param));
         return this;
     }

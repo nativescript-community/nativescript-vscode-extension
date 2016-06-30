@@ -131,7 +131,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private _attachIos(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
-        let iosProject : ns.IosProject = new ns.IosProject(this.appRoot);
+        let iosProject : ns.IosProject = new ns.IosProject(this.appRoot, args.tnsOutput);
         iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
 
         return iosProject.debug(args)
@@ -143,7 +143,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     }
 
     private _attachAndroid(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
-        let androidProject: ns.AndroidProject = new ns.AndroidProject(this.appRoot);
+        let androidProject: ns.AndroidProject = new ns.AndroidProject(this.appRoot, args.tnsOutput);
         let thisAdapter: WebKitDebugAdapter = this;
 
         androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));

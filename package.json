@@ -191,6 +191,11 @@
                 },
                 "default": []
               },
+              "tnsOutput": {
+                "type": "string",
+                "description": "Path to file where the output of the CLI to redirected.",
+                "default": null
+              },
               "appRoot": {
                 "type": "string",
                 "description": "The path to the root folder of the application relative to the current working directory.",
@@ -236,6 +241,11 @@
                   "type": "string"
                 },
                 "default": []
+              },
+              "tnsOutput": {
+                "type": "string",
+                "description": "Path to file where the output of the CLI to redirected.",
+                "default": null
               },
               "appRoot": {
                 "type": "string",

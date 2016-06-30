@@ -11,6 +11,7 @@ export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments
     emulator?:boolean;
     request: string;
     tnsArgs?: string[];
+    tnsOutput?: string;
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments {
@@ -21,6 +22,7 @@ export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments
     emulator?:boolean;
     request: string;
     tnsArgs?: string[];
+    tnsOutput?: string;
 }
 
 export interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArguments {
