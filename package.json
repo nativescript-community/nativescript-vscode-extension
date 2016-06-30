@@ -1,7 +1,7 @@
 {
   "name": "nativescript",
-  "version": "0.2.1",
-  "minNativescriptCliVersion": "1.6",
+  "version": "0.3.0",
+  "minNativescriptCliVersion": "2.1",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
   "description": "NativeScript support for Visual Studio Code",
