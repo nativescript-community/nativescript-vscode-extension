@@ -96,7 +96,7 @@ export class IosProject extends NSProject {
             .appendParamIf("--start", args.request === "attach")
             .appendParamIf("--debug-brk", args.request === "launch")
             .appendParam("--no-client")
-            .appendParam(args.tnsArgs)
+            .appendParams(args.tnsArgs)
             .build();
 
         let socketPathPrefix = 'socket-file-location: ';
@@ -176,7 +176,7 @@ export class AndroidProject extends NSProject {
                     .appendParamIf("--emulator", args.emulator)
                     .appendParam("--debug-brk")
                     .appendParam("--no-client")
-                    .appendParam(args.tnsArgs)
+                    .appendParams(args.tnsArgs)
                     .build();
 
                         Logger.log("tns  debug command: " + command);
@@ -224,7 +224,7 @@ export class AndroidProject extends NSProject {
             .appendParam("debug")
             .appendParam(this.platform())
             .appendParam("--get-port")
-            .appendParam(args.tnsArgs)
+            .appendParams(args.tnsArgs)
             .build();
         let that = this;
         // run NativeScript CLI command
@@ -277,6 +277,11 @@ class CommandBuilder {
 
     public appendParam(parameter: string): CommandBuilder {
         this._command.push(parameter);
+        return this;
+    }
+
+    public appendParams(parameters: string[]): CommandBuilder {
+        parameters.forEach(param => this.appendParam(param));
         return this;
     }
 

@@ -184,9 +184,12 @@
                 "default": []
               },
               "tnsArgs": {
-                "type": "string",
+                "type": "array",
                 "description": "Optional arguments passed to the NativeScript CLI executable.",
-                "default": null
+                "items": {
+                  "type": "string"
+                },
+                "default": []
               },
               "appRoot": {
                 "type": "string",
@@ -227,9 +230,12 @@
                 "default": []
               },
               "tnsArgs": {
-                "type": "string",
+                "type": "array",
                 "description": "Optional arguments passed to the NativeScript CLI executable.",
-                "default": null
+                "items": {
+                  "type": "string"
+                },
+                "default": []
               },
               "appRoot": {
                 "type": "string",

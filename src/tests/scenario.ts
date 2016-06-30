@@ -57,7 +57,7 @@ export class Scenario {
             appRoot: appRoot,
             sourceMaps: true,
             emulator: emulator,
-            tnsArgs: `${process.env.DeviceId ? `--device ${process.env.DeviceId}` : ''}`
+            tnsArgs: process.env.DeviceId ? ['--device', process.env.DeviceId] : []
         };
         return args;
     }
@@ -69,8 +69,8 @@ export class Scenario {
             appRoot: appRoot,
             sourceMaps: true,
             emulator: emulator,
-            tnsArgs: `${process.env.DeviceId ? `--device ${process.env.DeviceId}` : ''}`
-        }
+            tnsArgs: process.env.DeviceId ? ['--device', process.env.DeviceId] : []
+        };
         return args;
     }
 
