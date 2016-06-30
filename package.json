@@ -27,6 +27,7 @@
   "dependencies": {
     "node-ipc": "^7.0.0",
     "source-map": "^0.5.3",
+    "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master",
     "universal-analytics": "^0.3.11",
     "vscode-debugadapter": "^1.7.0",
     "vscode-debugprotocol": "^1.7.0"
@@ -43,7 +44,7 @@
   "scripts": {
     "postinstall": "node ./node_modules/vscode/bin/install && cd src && typings install",
     "clean": "git clean -fdx",
-    "build": "tsc -p ./src",
+    "build": "tsc -p ./src && cp ./src/services/analytics/EqatecMonitor.min.js ./out/services/analytics/EqatecMonitor.min.js",
     "package": "vsce package",
     "launch-as-server": "node --nolazy ./out/webkit/webKitDebug.js --server=4712",
     "test-mac": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/mac.json ./out/tests",
@@ -55,6 +56,17 @@
     "*"
   ],
   "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "NativeScript Extension Configurations",
+      "properties": {
+        "nativescript.analytics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enables the extension tracking."
+        }
+      }
+    },
     "commands": [
       {
         "command": "nativescript.runIos",

@@ -9,11 +9,11 @@ export class GUAService {
     private _getBasePayload: () => any;
 
     constructor(trackingId: string, baseInfo: AnalyticsBaseInfo) {
-        this._visitor = ua(trackingId);
+        this._visitor = ua(trackingId, baseInfo.userId, { requestOptions: {}, strictCidFormat: false });
         this._getBasePayload = () => {
             return {
                 uid: baseInfo.userId,
-                dh: baseInfo.hostname,
+                dh: 'ns-vs-extension.org',
                 cd5: baseInfo.cliVersion,
                 cd6: OperatingSystem[baseInfo.operatingSystem],
                 cd7: baseInfo.extensionVersion

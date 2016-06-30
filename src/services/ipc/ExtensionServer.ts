@@ -66,6 +66,4 @@ export class ExtensionServer {
     public runRunCommand(args: extProtocol.AnalyticsRunRunCommandArgs): Promise<any> {
         return AnalyticsService.getInstance().runRunCommand(args.platform, args.emulator);
     }
-
-
 }

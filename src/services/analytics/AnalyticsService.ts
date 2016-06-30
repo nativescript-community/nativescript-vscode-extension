@@ -1,6 +1,8 @@
 import * as os from 'os';
+import * as vscode from 'vscode';
 import { Version } from '../../common/Version';
 import { GUAService } from './GUAService';
+import { TelerikAnalyticsService } from './TelerikAnalyticsService';
 import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
 import { ExtensionVersionInfo } from '../ExtensionVersionInfo';
 import * as ns from '../NsCliService';
@@ -10,6 +12,8 @@ export class AnalyticsService {
 
     private _baseInfo: AnalyticsBaseInfo;
     private _gua: GUAService;
+    private _ta: TelerikAnalyticsService;
+    private _analyticsEnabled: boolean;
 
     public static getInstance(): AnalyticsService {
         if (!this._instance) {
@@ -34,6 +38,7 @@ export class AnalyticsService {
     }
 
     constructor() {
+        this._analyticsEnabled = vscode.workspace.getConfiguration('nativescript').get('analytics.enabled') as boolean;
         let operatingSystem = OperatingSystem.Other;
         switch(process.platform) {
             case 'win32': { operatingSystem = OperatingSystem.Windows; break; }
@@ -46,22 +51,36 @@ export class AnalyticsService {
             cliVersion: Version.stringify(ns.CliVersionInfo.getInstalledCliVersion()),
             extensionVersion: Version.stringify(ExtensionVersionInfo.getExtensionVersion()),
             operatingSystem: operatingSystem,
-            userId: AnalyticsService.generateMachineId(),
-            hostname: 'ns-vs-extension.org'
+            userId: AnalyticsService.generateMachineId()
         };
 
-        this._gua = new GUAService('UA-111455-29', this._baseInfo);
+        if(this._analyticsEnabled) {
+            this._gua = new GUAService('UA-111455-29', this._baseInfo);
+            this._ta = new TelerikAnalyticsService('b8b2e51f188f43e9b0dfb899f7b71cc6', this._baseInfo);
+        }
     }
 
     public launchDebugger(request: string, platform: string, emulator: boolean): Promise<any> {
-        try {
-            return this._gua.launchDebugger(request, platform, emulator);
-        } catch(e) {}
+        if(this._analyticsEnabled) {
+            try {
+                return Promise.all([
+                    this._gua.launchDebugger(request, platform, emulator),
+                    this._ta.launchDebugger(request, platform, emulator)
+                ]);
+            } catch(e) {}
+        }
+        return Promise.resolve();
     }
 
     public runRunCommand(platform: string, emulator: boolean): Promise<any> {
-        try {
-            return this._gua.runRunCommand(platform, emulator);
-        } catch(e) {}
+        if(this._analyticsEnabled) {
+            try {
+                return Promise.all([
+                    this._gua.runRunCommand(platform, emulator),
+                    this._ta.runRunCommand(platform, emulator)
+                ]);
+            } catch(e) {}
+        }
+        return Promise.resolve();
     }
 }
