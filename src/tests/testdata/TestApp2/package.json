@@ -1,14 +1,20 @@
 {
-	"nativescript": {
-		"id": "org.nativescript.TestApp2",
-		"tns-ios": {
-			"version": "1.7.0"
-		},
-		"tns-android": {
-			"version": "1.7.1"
-		}
-	},
-	"dependencies": {
-		"tns-core-modules": "1.7.1"
-	}
+  "nativescript": {
+    "id": "org.nativescript.TestApp2",
+    "tns-ios": {
+      "version": "2.1.0"
+    },
+    "tns-android": {
+      "version": "2.1.1"
+    }
+  },
+  "dependencies": {
+    "tns-core-modules": "1.7.1"
+  },
+  "devDependencies": {
+    "babel-traverse": "6.10.4",
+    "babel-types": "6.11.1",
+    "babylon": "6.8.2",
+    "lazy": "1.0.11"
+  }
 }
