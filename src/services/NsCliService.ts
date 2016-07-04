@@ -92,7 +92,8 @@ export abstract class NSProject extends EventEmitter {
     public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<any>;
 
     protected spawnProcess(commandPath: string, commandArgs: string[], tnsOutput?: string): ChildProcess {
-        let child: ChildProcess = spawn(commandPath, commandArgs, { cwd: this.getProjectPath() });
+        let options = { cwd: this.getProjectPath(), shell: true };
+        let child: ChildProcess = spawn(commandPath, commandArgs, options);
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
         return child;
