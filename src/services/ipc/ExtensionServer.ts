@@ -1,4 +1,6 @@
 import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as extProtocol from './ExtensionProtocol';
@@ -17,13 +19,18 @@ export class ExtensionServer {
         return this._instance;
     }
 
+    public static getTempFilePathForDirectory(directoryPath: string) {
+        let fileName: string = 'vsc-ns-ext-' + crypto.createHash('md5').update(directoryPath).digest("hex") + '.sock';
+        return path.join(os.tmpdir(), fileName);
+    }
+
     constructor() {
         this._isRunning = false;
     }
 
     public getPipeHandlePath(): string {
         return vscode.workspace.rootPath ?
-            path.join(vscode.workspace.rootPath, 'temp-nativescript-vscode-extension-pipe-handle') :
+            ExtensionServer.getTempFilePathForDirectory(vscode.workspace.rootPath) :
             null;
     }
 

@@ -1,4 +1,6 @@
 import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
 import * as extProtocol from './ExtensionProtocol';
 let ipc = require('node-ipc');
 
@@ -22,6 +24,11 @@ export class ExtensionClient {
         return this._appRoot;
     }
 
+    public static getTempFilePathForDirectory(directoryPath: string) {
+        let fileName: string = 'vsc-ns-ext-' + crypto.createHash('md5').update(directoryPath).digest("hex") + '.sock';
+        return path.join(os.tmpdir(), fileName);
+    }
+
     public static setAppRoot(appRoot: string) {
         this._appRoot = appRoot;
     }
@@ -40,7 +47,7 @@ export class ExtensionClient {
         this._ipcClientInitialized = new Promise((res, rej) => {
             ipc.connectTo(
                 'extHost',
-                path.join(ExtensionClient.getAppRoot(), 'temp-nativescript-vscode-extension-pipe-handle'),
+                ExtensionClient.getTempFilePathForDirectory(ExtensionClient.getAppRoot()),
                 () => {
                     ipc.of.extHost.on('connect', () => {
                         res();
