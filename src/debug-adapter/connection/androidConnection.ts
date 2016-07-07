@@ -606,7 +606,11 @@ export class AndroidConnection implements INSDebugConnection {
                 }
 
                 let source = undefined;
-                if (response.result)
+                if (Array.isArray(response))
+                {
+                    source = response[0].source;
+                }
+                else if (response.result)
                 {
                     source = response.result[0].source;
                 }
