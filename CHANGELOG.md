@@ -1,3 +1,13 @@
+0.3.0
+=====
+
+## What's New
+- [Google Analytics and Telerik Analytics monitoring of the extension](https://github.com/NativeScript/nativescript-vscode-extension/pull/54)
+
+## Bug Fixes
+ - [Launch on Android Emulator doesn't work if emulator is not started on beforehand](https://github.com/NativeScript/nativescript-vscode-extension/issues/44)
+ - [Handle Console.messageRepeatCountUpdated event](https://github.com/NativeScript/nativescript-vscode-extension/issues/36)
+
 0.2.1
 =====
 
