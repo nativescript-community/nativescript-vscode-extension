@@ -225,7 +225,7 @@ export class AndroidProject extends NSProject {
                     .appendParams(args.tnsArgs)
                     .build();
 
-                Logger.log("tns  debug command: " + command);
+                Logger.log("tns  command: " + command.path + " " + command.args);
 
                 // run NativeScript CLI command
                 let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
@@ -253,6 +253,48 @@ export class AndroidProject extends NSProject {
                 });
             });
          }
+         else if (args.request === "livesync") {
+            let that = this;
+            let synced = false;
+
+            return new Promise<void>((resolve, reject) => {
+                let command = new CommandBuilder()
+                    .appendParam("livesync")
+                    .appendParam(this.platform())
+                    .appendParam("--justlaunch")
+                    .appendParams(args.tnsArgs)
+                    .build();
+
+                Logger.log("tns command: " + command.path + " " + command.args);
+
+                // run NativeScript CLI command
+                let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
+                child.stdout.on('data', function(data) {
+                    let strData: string = data.toString();
+                    that.emit('TNS.outputMessage', data.toString(), 'log');
+                    that.writeToTnsOutputFile(strData);
+                    if (!synced && args.request === "livesync" && strData.indexOf('Successfully synced application') > -1) {
+                        synced = true;
+
+                        //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
+                        setTimeout(() => {
+                            resolve();
+                        }, 500);
+                    }
+                });
+
+                child.stderr.on('data', function(data) {
+                    that.emit('TNS.outputMessage', data.toString(), 'error');
+                    that.writeToTnsOutputFile(data);
+                });
+
+                child.on('close', function(code) {
+                    setTimeout(() => {
+                          reject("The debug process exited unexpectedly code:" + code);
+                        }, 3000);
+                });
+            });
+         }
     }
 
     public getDebugPort(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<number> {
@@ -264,6 +306,7 @@ export class AndroidProject extends NSProject {
         let command = new CommandBuilder()
             .appendParam("debug")
             .appendParam(this.platform())
+            //.appendParam("--start")
             .appendParam("--get-port")
             .appendParams(args.tnsArgs)
             .build();
@@ -312,7 +355,7 @@ export class AndroidProject extends NSProject {
 }
 
 class CommandBuilder {
-    public static tnsPath: string = 'tns';
+    public static tnsPath: string = 'C:\\Work\\nativescript\\nativescript-cli\\bin\\tns';
 
     private _command: string[] = [];
 

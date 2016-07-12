@@ -155,7 +155,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         this.onTnsOutputMessage("Getting debug port");
         let androidConnection: AndroidConnection = null;
 
-        let runDebugCommand: Promise<any> = (args.request == 'launch') ? androidProject.debug(args) : Promise.resolve();
+        let runDebugCommand: Promise<any> = (args.request == 'launch' || args.request == 'livesync') ? androidProject.debug(args) : Promise.resolve();
 
         return runDebugCommand.then(_ => {
             let port: number;
