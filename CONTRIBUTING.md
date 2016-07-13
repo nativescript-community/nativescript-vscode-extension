@@ -11,7 +11,7 @@ To avoid a conflict, delete the installed extension at `~/.vscode/extensions/Tel
 
 ### Then...
 * `cd` to the folder you just cloned
-* Run `npm install -g gulp` and `npm install`
+* Run `npm -g install gulp` and `npm install`
 * Run `gulp build`
 
 
