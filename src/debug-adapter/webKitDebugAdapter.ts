@@ -138,7 +138,11 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         let iosProject : ns.IosProject = new ns.IosProject(this.appRoot, args.tnsOutput);
         iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
 
-        return iosProject.debug(args)
+        let debugArgs = args;
+        debugArgs.request = "attach";
+        debugArgs.tnsArgs = ["--start"];
+
+        return iosProject.debug(args).then(_=> iosProject.debug(debugArgs))
         .then((socketFilePath) => {
             let iosConnection: IosConnection = new IosConnection();
             this.setConnection(iosConnection, args);
