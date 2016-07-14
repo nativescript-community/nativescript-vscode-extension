@@ -56,6 +56,7 @@ export class TelerikAnalyticsService {
             this._eqatecMonitor.stop();
         });
         this._eqatecMonitor.trackFeature(`CLIVersion.${baseInfo.cliVersion}`);
+        this._eqatecMonitor.trackFeature(`ExtensionVersion.${baseInfo.extensionVersion}`);
     }
 
     public launchDebugger(request: string, platform: string, emulator: boolean): Promise<any> {
