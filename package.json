@@ -105,84 +105,70 @@
         "runtime": "node",
         "initialConfigurations": [
           {
-            "name": "Launch on iOS Device",
+            "name": "Launch on iOS",
             "type": "nativescript",
             "platform": "ios",
             "request": "launch",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "emulator": false
+            "emulator": false,
+            "rebuild": false
           },
           {
-            "name": "Attach on iOS Device",
-            "type": "nativescript",
-            "platform": "ios",
-            "request": "attach",
-            "appRoot": "${workspaceRoot}",
-            "sourceMaps": true,
-            "diagnosticLogging": false,
-            "emulator": false
-          },
-          {
-            "name": "Launch on iOS Emulator",
+            "name": "Rebuild and launch on iOS",
             "type": "nativescript",
             "platform": "ios",
             "request": "launch",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "emulator": true
+            "emulator": false,
+            "rebuild": true
           },
           {
-            "name": "Attach on iOS Emulator",
+            "name": "Rebuild and attach on iOS",
             "type": "nativescript",
             "platform": "ios",
             "request": "attach",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "emulator": true
+            "emulator": false,
+            "rebuild": true
           },
           {
-            "name": "Launch on Android Device",
+            "name": "Launch on Android",
             "type": "nativescript",
             "platform": "android",
             "request": "launch",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "emulator": false
+            "emulator": false,
+            "rebuild": false
           },
           {
-            "name": "Launch on Android Emulator",
+            "name": "Rebuild and launch on Android",
             "type": "nativescript",
             "platform": "android",
             "request": "launch",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "emulator": true
+            "emulator": false,
+            "rebuild": true
           },
           {
-            "name": "Attach on Android Device",
+            "name": "Rebuild and attach on Android",
             "type": "nativescript",
             "platform": "android",
             "request": "attach",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "diagnosticLogging": false,
-            "emulator": false
-          },
-          {
-            "name": "Attach on Android Emulator",
-            "type": "nativescript",
-            "platform": "android",
-            "request": "attach",
-            "appRoot": "${workspaceRoot}",
-            "sourceMaps": true,
-            "diagnosticLogging": false,
-            "emulator": true
+            "emulator": false,
+            "rebuild": true
           }
         ],
         "configurationAttributes": {
@@ -234,6 +220,11 @@
                 "type": "boolean",
                 "description": "Whether the app to run in emulator or on a physical device.",
                 "default": false
+              },
+              "rebuild": {
+                "type": "boolean",
+                "description": "Whether the app should be rebuild before start.",
+                "default": true
               }
             }
           },

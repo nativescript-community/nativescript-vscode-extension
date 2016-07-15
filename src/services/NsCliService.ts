@@ -144,6 +144,7 @@ export class IosProject extends NSProject {
             .appendParamIf("--emulator", args.emulator)
             .appendParamIf("--start", args.request === "attach")
             .appendParamIf("--debug-brk", args.request === "launch")
+            .appendParamIf("--no-rebuild", !args.rebuild)
             .appendParam("--no-client")
             .appendParams(args.tnsArgs)
             .build();
@@ -155,12 +156,19 @@ export class IosProject extends NSProject {
         return new Promise<string>((resolve, reject) => {
             // run NativeScript CLI command
             let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
+            let synced = false;
 
             child.stdout.on('data', (data) => {
                 let strData: string = data.toString();
                 this.emit('TNS.outputMessage', strData, 'log');
                 this.writeToTnsOutputFile(strData);
-                if(!readyToConnect) {
+                if (!synced && !args.rebuild && strData.indexOf('Successfully synced application') > -1) {
+                    synced = true;
+                    //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
+                    setTimeout(() => {
+                        resolve();
+                    }, 500);
+                } else if(!readyToConnect) {
                     let matches: RegExpMatchArray = strData.match(socketPathPattern);
                     if(matches && matches.length > 0) {
                         readyToConnect = true;
@@ -175,7 +183,13 @@ export class IosProject extends NSProject {
             });
 
             child.on('close', (code, signal) => {
-                reject("The debug process exited unexpectedly code:" + code);
+                if (!args.rebuild) {
+                    setTimeout(() => {
+                        reject("The debug process exited unexpectedly code:" + code);
+                    }, 3000);
+                } else {
+                    reject("The debug process exited unexpectedly code:" + code);
+                }
             });
         });
     }
@@ -220,6 +234,7 @@ export class AndroidProject extends NSProject {
                     .appendParam("debug")
                     .appendParam(this.platform())
                     .appendParamIf("--emulator", args.emulator)
+                    .appendParamIf("--no-rebuild", args.rebuild !== true)
                     .appendParam("--debug-brk")
                     .appendParam("--no-client")
                     .appendParams(args.tnsArgs)
@@ -233,13 +248,14 @@ export class AndroidProject extends NSProject {
                     let strData: string = data.toString();
                     that.emit('TNS.outputMessage', data.toString(), 'log');
                     that.writeToTnsOutputFile(strData);
-                    if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
-                        launched = true;
-
-                        //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
-                        setTimeout(() => {
-                            resolve();
-                        }, 500);
+                    if (!launched) {
+                         if (args.request === "launch" && ((strData.indexOf('# NativeScript Debugger started #') > -1) || strData.indexOf('Successfully synced application') > -1)) {
+                             launched = true;
+                             //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
+                             setTimeout(() => {
+                                 resolve();
+                             }, 500);
+                         }
                     }
                 });
 
@@ -249,7 +265,14 @@ export class AndroidProject extends NSProject {
                 });
 
                 child.on('close', function(code) {
-                    reject("The debug process exited unexpectedly code:" + code);
+                    if (!args.rebuild) {
+                         setTimeout(() => {
+                          reject("The debug process exited unexpectedly code:" + code);
+                        }, 3000);
+                    }
+                    else {
+                        reject("The debug process exited unexpectedly code:" + code);
+                    }
                 });
             });
          }
