@@ -1,6 +1,6 @@
 {
   "name": "nativescript",
-  "version": "0.3.0",
+  "version": "0.3.0-livesync",
   "minNativescriptCliVersion": "2.1",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
@@ -187,6 +187,57 @@
         ],
         "configurationAttributes": {
           "launch": {
+            "required": [],
+            "properties": {
+              "runtimeArgs": {
+                "type": "array",
+                "description": "Optional arguments passed to the runtime executable.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "tnsArgs": {
+                "type": "array",
+                "description": "Optional arguments passed to the NativeScript CLI executable.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "tnsOutput": {
+                "type": "string",
+                "description": "Path to file where the output of the CLI to redirected.",
+                "default": null
+              },
+              "appRoot": {
+                "type": "string",
+                "description": "The path to the root folder of the application relative to the current working directory.",
+                "default": null
+              },
+              "sourceMaps": {
+                "type": "boolean",
+                "description": "Use JavaScript source maps (if they exist).",
+                "default": true
+              },
+              "diagnosticLogging": {
+                "type": "boolean",
+                "description": "When true, the adapter logs its own diagnostic info to the console",
+                "default": false
+              },
+              "platform": {
+                "type": "string",
+                "description": "NativeScript platform",
+                "default": null
+              },
+              "emulator": {
+                "type": "boolean",
+                "description": "Whether the app to run in emulator or on a physical device.",
+                "default": false
+              }
+            }
+          },
+          "livesync": {
             "required": [],
             "properties": {
               "runtimeArgs": {

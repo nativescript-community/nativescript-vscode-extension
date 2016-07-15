@@ -138,7 +138,11 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         let iosProject : ns.IosProject = new ns.IosProject(this.appRoot, args.tnsOutput);
         iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
 
-        return iosProject.debug(args)
+        let debugArgs = args;
+        debugArgs.request = "attach";
+        debugArgs.tnsArgs = ["--start"];
+
+        return iosProject.debug(args).then(_=> iosProject.debug(debugArgs))
         .then((socketFilePath) => {
             let iosConnection: IosConnection = new IosConnection();
             this.setConnection(iosConnection, args);
@@ -155,7 +159,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         this.onTnsOutputMessage("Getting debug port");
         let androidConnection: AndroidConnection = null;
 
-        let runDebugCommand: Promise<any> = (args.request == 'launch') ? androidProject.debug(args) : Promise.resolve();
+        let runDebugCommand: Promise<any> = (args.request == 'launch' || args.request == 'livesync') ? androidProject.debug(args) : Promise.resolve();
 
         return runDebugCommand.then(_ => {
             let port: number;

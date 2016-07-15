@@ -139,12 +139,13 @@ export class IosProject extends NSProject {
 
         // build command to execute
         let command = new CommandBuilder()
-            .appendParam("debug")
+            .appendParam(args.request === "livesync" ? args.request : "debug")
             .appendParam(this.platform())
             .appendParamIf("--emulator", args.emulator)
             .appendParamIf("--start", args.request === "attach")
             .appendParamIf("--debug-brk", args.request === "launch")
             .appendParam("--no-client")
+            //.appendParam("--debug")
             .appendParams(args.tnsArgs)
             .build();
 
@@ -155,6 +156,7 @@ export class IosProject extends NSProject {
         return new Promise<string>((resolve, reject) => {
             // run NativeScript CLI command
             let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
+            let synced = false;
 
             child.stdout.on('data', (data) => {
                 let strData: string = data.toString();
@@ -162,7 +164,14 @@ export class IosProject extends NSProject {
                 this.writeToTnsOutputFile(strData);
                 if(!readyToConnect) {
                     let matches: RegExpMatchArray = strData.match(socketPathPattern);
-                    if(matches && matches.length > 0) {
+                    if (!synced && args.request === "livesync" && strData.indexOf('Successfully synced application') > -1) {
+                        synced = true;
+                        //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
+                        setTimeout(() => {
+                            resolve();
+                        }, 500);
+                    }
+                    else if(matches && matches.length > 0) {
                         readyToConnect = true;
                         resolve(matches[0].substr(socketPathPrefix.length));
                     }
@@ -175,7 +184,13 @@ export class IosProject extends NSProject {
             });
 
             child.on('close', (code, signal) => {
-                reject("The debug process exited unexpectedly code:" + code);
+                if (args.request =='livesync') {
+                    setTimeout(() => {
+                        reject("The debug process exited unexpectedly code:" + code);
+                    }, 3000);
+                } else {
+                    reject("The debug process exited unexpectedly code:" + code);
+                }
             });
         });
     }
@@ -211,13 +226,13 @@ export class AndroidProject extends NSProject {
         if (args.request === "attach") {
             return Promise.resolve<void>();
         }
-        else if (args.request === "launch") {
+        else if (args.request === "launch" || args.request === "livesync") {
             let that = this;
             let launched = false;
 
             return new Promise<void>((resolve, reject) => {
                 let command = new CommandBuilder()
-                    .appendParam("debug")
+                    .appendParam(args.request === "livesync" ? args.request : "debug")
                     .appendParam(this.platform())
                     .appendParamIf("--emulator", args.emulator)
                     .appendParam("--debug-brk")
@@ -225,7 +240,7 @@ export class AndroidProject extends NSProject {
                     .appendParams(args.tnsArgs)
                     .build();
 
-                Logger.log("tns  debug command: " + command);
+                Logger.log("tns  command: " + command.path + " " + command.args);
 
                 // run NativeScript CLI command
                 let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
@@ -233,13 +248,15 @@ export class AndroidProject extends NSProject {
                     let strData: string = data.toString();
                     that.emit('TNS.outputMessage', data.toString(), 'log');
                     that.writeToTnsOutputFile(strData);
-                    if (!launched && args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
-                        launched = true;
-
-                        //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
-                        setTimeout(() => {
-                            resolve();
-                        }, 500);
+                    if (!launched) {
+                        if ((args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) ||
+                            (args.request === "livesync" && strData.indexOf('Successfully synced application') > -1)) {
+                            launched = true;
+                            //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
+                            setTimeout(() => {
+                                resolve();
+                            }, 500);
+                        }
                     }
                 });
 
@@ -249,7 +266,14 @@ export class AndroidProject extends NSProject {
                 });
 
                 child.on('close', function(code) {
-                    reject("The debug process exited unexpectedly code:" + code);
+                    if (args.request === "livesync") {
+                         setTimeout(() => {
+                          reject("The debug process exited unexpectedly code:" + code);
+                        }, 3000);
+                    }
+                    else {
+                        reject("The debug process exited unexpectedly code:" + code);
+                    }
                 });
             });
          }
@@ -264,6 +288,7 @@ export class AndroidProject extends NSProject {
         let command = new CommandBuilder()
             .appendParam("debug")
             .appendParam(this.platform())
+            //.appendParam("--start")
             .appendParam("--get-port")
             .appendParams(args.tnsArgs)
             .build();
