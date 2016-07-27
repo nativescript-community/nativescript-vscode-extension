@@ -12,6 +12,7 @@ export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments
     request: string;
     tnsArgs?: string[];
     tnsOutput?: string;
+    rebuild?: boolean;
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments {
