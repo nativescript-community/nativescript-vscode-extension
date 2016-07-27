@@ -24,7 +24,6 @@ export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments
     request: string;
     tnsArgs?: string[];
     tnsOutput?: string;
-    rebuild?: boolean;
 }
 
 export interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArguments {

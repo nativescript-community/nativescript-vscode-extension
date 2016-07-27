@@ -137,6 +137,7 @@ export class IosProject extends NSProject {
             return Promise.reject('iOS platform is supported only on OS X.');
         }
 
+        let rebuild = (args.request == "launch") ? (args as ILaunchRequestArgs).rebuild : true;
         // build command to execute
         let command = new CommandBuilder()
             .appendParam("debug")
@@ -144,36 +145,43 @@ export class IosProject extends NSProject {
             .appendParamIf("--emulator", args.emulator)
             .appendParamIf("--start", args.request === "attach")
             .appendParamIf("--debug-brk", args.request === "launch")
-            .appendParamIf("--no-rebuild", !args.rebuild)
+            .appendParamIf("--no-rebuild", !rebuild)
             .appendParam("--no-client")
             .appendParams(args.tnsArgs)
             .build();
 
         let socketPathPrefix = 'socket-file-location: ';
         let socketPathPattern: RegExp = new RegExp(socketPathPrefix + '.*\.sock');
-        let readyToConnect: boolean = false;
+
+        let isSocketOpened = (cliOutput: string): string => {
+            let matches: RegExpMatchArray = cliOutput.match(socketPathPattern);
+            if(matches && matches.length > 0) {
+                return matches[0].substr(socketPathPrefix.length);
+            }
+            return null;
+        };
+
+        let isAppSynced = (cliOutput: string) => {
+            return cliOutput.indexOf('Successfully synced application') > -1;
+        };
 
         return new Promise<string>((resolve, reject) => {
             // run NativeScript CLI command
             let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
-            let synced = false;
+
+            let appSynced = false;
+            let socketPath: string = null;
 
             child.stdout.on('data', (data) => {
-                let strData: string = data.toString();
-                this.emit('TNS.outputMessage', strData, 'log');
-                this.writeToTnsOutputFile(strData);
-                if (!synced && !args.rebuild && strData.indexOf('Successfully synced application') > -1) {
-                    synced = true;
-                    //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
-                    setTimeout(() => {
-                        resolve();
-                    }, 500);
-                } else if(!readyToConnect) {
-                    let matches: RegExpMatchArray = strData.match(socketPathPattern);
-                    if(matches && matches.length > 0) {
-                        readyToConnect = true;
-                        resolve(matches[0].substr(socketPathPrefix.length));
-                    }
+                let cliOutput: string = data.toString();
+                this.emit('TNS.outputMessage', cliOutput, 'log');
+                this.writeToTnsOutputFile(cliOutput);
+
+                socketPath = socketPath || isSocketOpened(cliOutput);
+                appSynced = rebuild ? false : (appSynced || isAppSynced(cliOutput));
+
+                if ((rebuild && socketPath) || (!rebuild && socketPath && appSynced)) {
+                    resolve(socketPath);
                 }
             });
 
@@ -183,13 +191,7 @@ export class IosProject extends NSProject {
             });
 
             child.on('close', (code, signal) => {
-                if (!args.rebuild) {
-                    setTimeout(() => {
-                        reject("The debug process exited unexpectedly code:" + code);
-                    }, 3000);
-                } else {
-                    reject("The debug process exited unexpectedly code:" + code);
-                }
+                reject("The debug process exited unexpectedly code:" + code);
             });
         });
     }
@@ -221,11 +223,12 @@ export class AndroidProject extends NSProject {
         return Promise.resolve(child);
     }
 
-    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
-        if (args.request === "attach") {
+    public debug(params: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+        if (params.request === "attach") {
             return Promise.resolve<void>();
         }
-        else if (args.request === "launch") {
+        else if (params.request === "launch") {
+            let args: ILaunchRequestArgs = params as ILaunchRequestArgs;
             let that = this;
             let launched = false;
 
