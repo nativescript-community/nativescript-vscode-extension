@@ -146,6 +146,7 @@ export class IosProject extends NSProject {
             .appendParamIf("--start", args.request === "attach")
             .appendParamIf("--debug-brk", args.request === "launch")
             .appendParamIf("--no-rebuild", !rebuild)
+            .appendParamIf("--syncAllFiles", args.request === "launch" && !rebuild && (args as ILaunchRequestArgs).syncAllFiles)
             .appendParam("--no-client")
             .appendParams(args.tnsArgs)
             .build();

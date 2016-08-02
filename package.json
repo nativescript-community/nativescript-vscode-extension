@@ -113,7 +113,8 @@
             "sourceMaps": true,
             "diagnosticLogging": false,
             "emulator": false,
-            "rebuild": false
+            "rebuild": false,
+            "syncAllFiles": false
           },
           {
             "name": "Launch on iOS",
@@ -223,6 +224,11 @@
                 "type": "boolean",
                 "description": "Whether the app should be rebuild before start.",
                 "default": true
+              },
+              "syncAllFiles": {
+                "type": "boolean",
+                "description": "Whether to sync files from node_modules folder.",
+                "default": false
               }
             }
           },
