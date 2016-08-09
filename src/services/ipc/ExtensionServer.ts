@@ -67,10 +67,10 @@ export class ExtensionServer {
     }
 
     public analyticsLaunchDebugger(args: extProtocol.AnalyticsLaunchDebuggerArgs): Promise<any> {
-        return AnalyticsService.getInstance().launchDebugger(args.request, args.platform, args.emulator);
+        return AnalyticsService.getInstance().launchDebugger(args.request, args.platform);
     }
 
     public runRunCommand(args: extProtocol.AnalyticsRunRunCommandArgs): Promise<any> {
-        return AnalyticsService.getInstance().runRunCommand(args.platform, args.emulator);
+        return AnalyticsService.getInstance().runRunCommand(args.platform);
     }
 }

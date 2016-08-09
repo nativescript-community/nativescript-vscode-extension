@@ -87,7 +87,7 @@ export abstract class NSProject extends EventEmitter {
 
     public abstract platform(): string;
 
-    public abstract run(emulator: boolean): Promise<ChildProcess>;
+    public abstract run(): Promise<ChildProcess>;
 
     public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<any>;
 
@@ -116,7 +116,7 @@ export class IosProject extends NSProject {
         return 'ios';
     }
 
-    public run(emulator: boolean): Promise<ChildProcess> {
+    public run(): Promise<ChildProcess> {
         if (!this.isOSX()) {
             return Promise.reject('iOS platform is only supported on OS X.');
         }
@@ -125,7 +125,6 @@ export class IosProject extends NSProject {
         let command = new CommandBuilder()
             .appendParam("run")
             .appendParam(this.platform())
-            .appendParamIf("--emulator", emulator)
             .build();
 
         let child: ChildProcess = this.spawnProcess(command.path, command.args);
@@ -212,12 +211,11 @@ export class AndroidProject extends NSProject {
         return 'android';
     }
 
-    public run(emulator: boolean): Promise<ChildProcess> {
+    public run(): Promise<ChildProcess> {
         // build command to execute
         let command = new CommandBuilder()
             .appendParam("run")
             .appendParam(this.platform())
-            .appendParamIf("--emulator", emulator)
             .build();
 
         let child: ChildProcess = this.spawnProcess(command.path, command.args);

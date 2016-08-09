@@ -116,7 +116,8 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
     private _attach(args: IAttachRequestArgs | ILaunchRequestArgs) {
         ExtensionClient.setAppRoot(utils.getAppRoot(args));
-        ExtensionClient.getInstance().analyticsLaunchDebugger({ request: args.request, platform: args.platform, emulator: args.emulator });
+        let analyticsRequest = (args.request == "launch" && !(args as ILaunchRequestArgs).rebuild) ? "sync" : args.request;
+        ExtensionClient.getInstance().analyticsLaunchDebugger({ request: analyticsRequest, platform: args.platform });
         this.initDiagnosticLogging(args.request, args);
         this.appRoot = utils.getAppRoot(args);
         this.platform = args.platform;

@@ -21,17 +21,17 @@ export class GUAService {
         };
     }
 
-    public launchDebugger(request: string, platform: string, emulator: boolean): Promise<any> {
+    public launchDebugger(request: string, platform: string): Promise<any> {
         let payload = this._getBasePayload();
         payload.ec = 'vscode-extension-debug'; // event category
-        payload.ea = `debug-${request}-on-${platform}-${emulator ? 'emulator' : 'device'}`; // event action
+        payload.ea = `debug-${request}-on-${platform}`; // event action
         return this.sendEvent(payload);
     }
 
-    public runRunCommand(platform: string, emulator: boolean): Promise<any> {
+    public runRunCommand(platform: string): Promise<any> {
         let payload = this._getBasePayload();
         payload.ec = 'vscode-extension-command'; // event category
-        payload.ea = `command-run-on-${platform}-${emulator ? 'emulator' : 'device'}`; // event action
+        payload.ea = `command-run-on-${platform}`; // event action
         return this.sendEvent(payload);
     }
 

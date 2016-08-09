@@ -60,24 +60,24 @@ export class AnalyticsService {
         }
     }
 
-    public launchDebugger(request: string, platform: string, emulator: boolean): Promise<any> {
+    public launchDebugger(request: string, platform: string): Promise<any> {
         if(this._analyticsEnabled) {
             try {
                 return Promise.all([
-                    this._gua.launchDebugger(request, platform, emulator),
-                    this._ta.launchDebugger(request, platform, emulator)
+                    this._gua.launchDebugger(request, platform),
+                    this._ta.launchDebugger(request, platform)
                 ]);
             } catch(e) {}
         }
         return Promise.resolve();
     }
 
-    public runRunCommand(platform: string, emulator: boolean): Promise<any> {
+    public runRunCommand(platform: string): Promise<any> {
         if(this._analyticsEnabled) {
             try {
                 return Promise.all([
-                    this._gua.runRunCommand(platform, emulator),
-                    this._ta.runRunCommand(platform, emulator)
+                    this._gua.runRunCommand(platform),
+                    this._ta.runRunCommand(platform)
                 ]);
             } catch(e) {}
         }

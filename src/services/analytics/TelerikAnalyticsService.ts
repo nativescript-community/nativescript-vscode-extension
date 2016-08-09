@@ -59,13 +59,13 @@ export class TelerikAnalyticsService {
         this._eqatecMonitor.trackFeature(`ExtensionVersion.${baseInfo.extensionVersion}`);
     }
 
-    public launchDebugger(request: string, platform: string, emulator: boolean): Promise<any> {
-        this._eqatecMonitor.trackFeature(`${capitalizeFirstLetter(request)}.${capitalizeFirstLetter(platform)}.${emulator ? 'Emulator' : 'Device'}`);
+    public launchDebugger(request: string, platform: string): Promise<any> {
+        this._eqatecMonitor.trackFeature(`${capitalizeFirstLetter(request)}.${capitalizeFirstLetter(platform)}`);
         return Promise.resolve();
     }
 
-    public runRunCommand(platform: string, emulator: boolean): Promise<any> {
-        this._eqatecMonitor.trackFeature(`Run.${capitalizeFirstLetter(platform)}.${emulator ? 'Emulator' : 'Device'}`);
+    public runRunCommand(platform: string): Promise<any> {
+        this._eqatecMonitor.trackFeature(`Run.${capitalizeFirstLetter(platform)}`);
         return Promise.resolve();
     }
 }

@@ -44,60 +44,46 @@ export function activate(context: vscode.ExtensionContext) {
     ExtensionServer.getInstance().start();
     performVersionsCheck(context);
 
-    let runCommand = (project: ns.NSProject, options: string[]) => {
+    let runCommand = (project: ns.NSProject) => {
         if (vscode.workspace.rootPath === undefined) {
             vscode.window.showErrorMessage('No workspace opened.');
             return;
         }
 
-        vscode.window.showQuickPick(options)
-        .then(target => {
-            if(target == undefined) {
-                return; // e.g. if the user presses escape button
-            }
+        // Show output channel
+        let runChannel: vscode.OutputChannel = vscode.window.createOutputChannel(`Run on ${project.platform()}`);
+        runChannel.clear();
+        runChannel.show(vscode.ViewColumn.Two);
 
-            // Move the selected option to be the first element in order to keep the last selected option at the top of the list
-            options.splice(options.indexOf(target), 1);
-            options.unshift(target);
+        AnalyticsService.getInstance().runRunCommand(project.platform());
 
-            // Show output channel
-            let runChannel: vscode.OutputChannel = vscode.window.createOutputChannel(`Run on ${project.platform()}`);
-            runChannel.clear();
-            runChannel.show(vscode.ViewColumn.Two);
-
-            // Execute run command
-            let emulator: boolean = (target === 'emulator');
-            AnalyticsService.getInstance().runRunCommand(project.platform(), emulator);
-            return project.run(emulator)
-            .then(tnsProcess => {
-                tnsProcess.on('error', err => {
-                    vscode.window.showErrorMessage('Unexpected error executing NativeScript Run command.');
-                });
-                tnsProcess.stderr.on('data', data => {
-                    runChannel.append(data);
-                });
-                tnsProcess.stdout.on('data', data => {
-                    runChannel.append(data);
-                });
-                tnsProcess.on('exit', exitCode => {
-                    tnsProcess.stdout.removeAllListeners('data');
-                    tnsProcess.stderr.removeAllListeners('data');
-                });
-                tnsProcess.on('close', exitCode => {
-                    runChannel.hide();
-                });
+        return project.run()
+        .then(tnsProcess => {
+            tnsProcess.on('error', err => {
+                vscode.window.showErrorMessage('Unexpected error executing NativeScript Run command.');
+            });
+            tnsProcess.stderr.on('data', data => {
+                runChannel.append(data);
+            });
+            tnsProcess.stdout.on('data', data => {
+                runChannel.append(data);
+            });
+            tnsProcess.on('exit', exitCode => {
+                tnsProcess.stdout.removeAllListeners('data');
+                tnsProcess.stderr.removeAllListeners('data');
+            });
+            tnsProcess.on('close', exitCode => {
+                runChannel.hide();
             });
         });
     };
 
-    let iosRunOptions = ['device', 'emulator'];
     let runIosCommand = vscode.commands.registerCommand('nativescript.runIos', () => {
-        return runCommand(new ns.IosProject(vscode.workspace.rootPath), iosRunOptions);
+        return runCommand(new ns.IosProject(vscode.workspace.rootPath));
     });
 
-    let androidRunOptions = ['device', 'emulator'];
     let runAndroidCommand = vscode.commands.registerCommand('nativescript.runAndroid', () => {
-        return runCommand(new ns.AndroidProject(vscode.workspace.rootPath), androidRunOptions);
+        return runCommand(new ns.AndroidProject(vscode.workspace.rootPath));
     });
 
     context.subscriptions.push(runIosCommand);

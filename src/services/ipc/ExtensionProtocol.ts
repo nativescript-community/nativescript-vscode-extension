@@ -12,10 +12,8 @@ export interface Response {
 export interface AnalyticsLaunchDebuggerArgs {
     request: string;
     platform: string;
-    emulator: boolean;
 }
 
 export interface AnalyticsRunRunCommandArgs {
     platform: string;
-    emulator: boolean;
 }
