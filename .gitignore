@@ -9,3 +9,4 @@ src/tests/testdata/**/node_modules
 src/tests/testdata/**/platforms
 npm-debug.log
 nativescript-*.vsix
+/.vscode/
