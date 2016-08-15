@@ -1,3 +1,11 @@
+0.3.1
+=====
+
+## What's New
+- [Added 'Sync' configuration](https://github.com/NativeScript/nativescript-vscode-extension/pull/65)
+This PR adds `Sync on iOS`/ `Sync on Android` debug configuration. The `sync` operation is the same as `launch` with the only difference that it livesyncs your app instead of fully build it. This makes the deployment much faster and the experience - much better.
+
+
 0.3.0
 =====
 
