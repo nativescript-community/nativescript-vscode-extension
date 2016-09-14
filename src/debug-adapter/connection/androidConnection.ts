@@ -52,6 +52,8 @@ class ResReqNetSocket extends EventEmitter {
     private lastError: string;
     private callbacks: Callbacks;
     private isRunning: boolean;
+    private isMessageFlushLoopStarted = false;
+    private hasNewDataMessage = false;
 
     public attach(port: number, url: string, timeout: number = 10000) {
         var that = this;
@@ -183,6 +185,17 @@ class ResReqNetSocket extends EventEmitter {
         if (this.connected) {
             Logger.log('To target: ' + data);
             this.conn.write('Content-Length: ' + data.length + '\r\n\r\n' + data);
+            this.hasNewDataMessage = true;
+             if (!this.isMessageFlushLoopStarted) {
+                this.isMessageFlushLoopStarted = true;
+                setInterval(() => {
+                    if (this.hasNewDataMessage) {
+                        let msg = 'FLUSH BUFFERS';
+                        this.conn.write('Content-Length: ' + msg.length + '\r\n\r\n' + msg);
+                        this.hasNewDataMessage = false;
+                    }
+                }, 200);
+            }
         }
     }
 
