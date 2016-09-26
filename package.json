@@ -229,6 +229,11 @@
                 "type": "boolean",
                 "description": "Whether to sync files from node_modules folder.",
                 "default": false
+              },
+              "nativescriptCliPath": {
+                "type": "string",
+                "description": "Path to the nativescript CLI to be used by the NativeScript extension.",
+                "default": "tns"
               }
             }
           },
@@ -280,6 +285,11 @@
                 "type": "boolean",
                 "description": "Whether the app to run in emulator or on a physical device.",
                 "default": false
+              },
+              "nativescriptCliPath": {
+                "type": "string",
+                "description": "Path to the nativescript CLI to be used by the NativeScript extension.",
+                "default": "tns"
               }
             }
           }

@@ -138,7 +138,7 @@ export class IosProject extends NSProject {
 
         let rebuild = (args.request == "launch") ? (args as ILaunchRequestArgs).rebuild : true;
         // build command to execute
-        let command = new CommandBuilder()
+        let command = new CommandBuilder(args.nativescriptCliPath)
             .appendParam("debug")
             .appendParam(this.platform())
             .appendParamIf("--emulator", args.emulator)
@@ -232,7 +232,7 @@ export class AndroidProject extends NSProject {
             let launched = false;
 
             return new Promise<void>((resolve, reject) => {
-                let command = new CommandBuilder()
+                let command = new CommandBuilder(args.nativescriptCliPath)
                     .appendParam("debug")
                     .appendParam(this.platform())
                     .appendParamIf("--emulator", args.emulator)
@@ -286,7 +286,7 @@ export class AndroidProject extends NSProject {
 
         //return Promise.resolve(40001);
 
-        let command = new CommandBuilder()
+        let command = new CommandBuilder(args.nativescriptCliPath)
             .appendParam("debug")
             .appendParam(this.platform())
             .appendParam("--get-port")
@@ -337,9 +337,13 @@ export class AndroidProject extends NSProject {
 }
 
 class CommandBuilder {
-    public static tnsPath: string = 'tns';
 
+    private _tnsPath: string;
     private _command: string[] = [];
+
+    constructor(tnsPath?: string) {
+        this._tnsPath =  tnsPath || "tns";
+    }
 
     public appendParam(parameter: string): CommandBuilder {
         this._command.push(parameter);
@@ -359,7 +363,7 @@ class CommandBuilder {
     }
 
     public build(): { path: string, args: string[] } {
-        return { path: CommandBuilder.tnsPath, args: this._command };
+        return { path: this._tnsPath, args: this._command };
     }
 
     public buildAsString(): string {
