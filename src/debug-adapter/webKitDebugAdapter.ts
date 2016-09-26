@@ -73,7 +73,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         this._eventHandler = eventHandler;
     }
 
-    public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilites | Promise<DebugProtocol.Capabilites> {
+    public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities | Promise<DebugProtocol.Capabilities> {
         // Cache to log if diagnostic logging is enabled later
         this._initArgs = args;
         return {
