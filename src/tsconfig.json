@@ -7,7 +7,8 @@
         "noImplicitAny": false,
         "removeComments": false,
         "preserveConstEnums": true,
-        "outDir": "../out"
+        "outDir": "../out",
+        "allowJs": true
     },
     "files": [
         // typescript definitions
@@ -17,6 +18,7 @@
 
         "./debug-adapter/webKitDebug.ts",
         "./main.ts",
-        "./tests/adapter.test.ts"
+        "./tests/adapter.test.ts",
+        "./services/analytics/EqatecMonitor.min.js"
     ]
 }
