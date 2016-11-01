@@ -187,7 +187,7 @@ export class IosProject extends NSProject {
 
             child.stderr.on('data', (data) => {
                 this.emit('TNS.outputMessage', data, 'error');
-                this.writeToTnsOutputFile(data);
+                this.writeToTnsOutputFile(data.toString());
             });
 
             child.on('close', (code, signal) => {
@@ -263,7 +263,7 @@ export class AndroidProject extends NSProject {
 
                 child.stderr.on('data', function(data) {
                     that.emit('TNS.outputMessage', data.toString(), 'error');
-                    that.writeToTnsOutputFile(data);
+                    that.writeToTnsOutputFile(data.toString());
                 });
 
                 child.on('close', function(code) {
@@ -299,7 +299,7 @@ export class AndroidProject extends NSProject {
 
             child.stdout.on('data', function(data) {
                 that.emit('TNS.outputMessage', data.toString(), 'log');
-                that.writeToTnsOutputFile(data);
+                that.writeToTnsOutputFile(data.toString());
 
                 let regexp = new RegExp("(?:debug port: )([\\d]{5})");
 
@@ -326,7 +326,7 @@ export class AndroidProject extends NSProject {
 
             child.stderr.on('data', function(data) {
                 that.emit('TNS.outputMessage', data.toString(), 'error');
-                that.writeToTnsOutputFile(data);
+                that.writeToTnsOutputFile(data.toString());
             });
 
             child.on('close', function(code) {

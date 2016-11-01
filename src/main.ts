@@ -63,10 +63,10 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showErrorMessage('Unexpected error executing NativeScript Run command.');
             });
             tnsProcess.stderr.on('data', data => {
-                runChannel.append(data);
+                runChannel.append(data.toString());
             });
             tnsProcess.stdout.on('data', data => {
-                runChannel.append(data);
+                runChannel.append(data.toString());
             });
             tnsProcess.on('exit', exitCode => {
                 tnsProcess.stdout.removeAllListeners('data');

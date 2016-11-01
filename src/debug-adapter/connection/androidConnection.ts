@@ -77,15 +77,15 @@ class ResReqNetSocket extends EventEmitter {
                 that.conn.on('error', e => {
                     console.error('socket error: ' + e.toString());
 
-                    if (e.code == 'ECONNREFUSED') {
-                        e.helpString = 'Is node running with --debug port ' + port + '?';
-                    } else if (e.code == 'ECONNRESET') {
-                        e.helpString = 'Check there is no other debugger client attached to port ' + port + '.';
+                    if ((<any>e).code == 'ECONNREFUSED') {
+                        (<any>e).helpString = 'Is node running with --debug port ' + port + '?';
+                    } else if ((<any>e).code == 'ECONNRESET') {
+                        (<any>e).helpString = 'Check there is no other debugger client attached to port ' + port + '.';
                     }
 
                     that.lastError = e.toString();
-                    if (e.helpString) {
-                        that.lastError += '. ' + e.helpString;
+                    if ((<any>e).helpString) {
+                        that.lastError += '. ' + (<any>e).helpString;
                     }
 
                     that.emit('error', e);

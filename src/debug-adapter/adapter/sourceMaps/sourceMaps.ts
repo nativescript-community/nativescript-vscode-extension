@@ -520,7 +520,7 @@ class SourceMap {
 	/*
 	 * finds the nearest source location for the given location in the generated file.
 	 */
-	public originalPositionFor(line: number, column: number, bias: Bias = Bias.GREATEST_LOWER_BOUND): SourceMap.MappedPosition {
+	public originalPositionFor(line: number, column: number, bias: Bias = Bias.GREATEST_LOWER_BOUND): sourceMap.MappedPosition {
 
 		const mp = this._smc.originalPositionFor(<any>{
 			line: line,
@@ -538,7 +538,7 @@ class SourceMap {
 	/*
 	 * finds the nearest location in the generated file for the given source location.
 	 */
-	public generatedPositionFor(src: string, line: number, column: number, bias = Bias.GREATEST_LOWER_BOUND): SourceMap.Position {
+	public generatedPositionFor(src: string, line: number, column: number, bias = Bias.GREATEST_LOWER_BOUND): sourceMap.Position {
         if (this._sourcesAreURLs) {
             src = 'file:///' + src;
         } else if (this._absSourceRoot) {

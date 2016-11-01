@@ -12,11 +12,11 @@ describe('The adapter', () => {
     let config: TestsConfig = context.getTestsConfig();
 
     console.log(`Tests Configuration: ${JSON.stringify(config)}`);
-    
+
     function waitFor(miliseconds) {
         return new Promise(r => setTimeout(r, miliseconds));
     }
-    
+
     function iosOrAndroid(platform, iosValue, androidValue) {
         return platform == 'ios' ? iosValue : androidValue;
     }
@@ -289,7 +289,7 @@ describe('The adapter', () => {
             let appRoot = context.getAppPath('JsApp');
             let filePath = path.join(appRoot, 'app', 'main-view-model.js');
             let bpLine = 14;
-            
+
             let firstStepExpected = iosOrAndroid(platform, { path: filePath, line: 3, column: 19 }, { path: filePath, line: 4, column: 4 });
             let secondStepExpected = iosOrAndroid(platform, { path: filePath, line: 4, column: 4 }, { path: filePath, line: 7, column: 8 });
 
@@ -410,7 +410,7 @@ describe('The adapter', () => {
                 });
             });
 		});
-        
+
         // iOS specifc tests
         if (platform == 'ios') {
             it(`${meta} should not hang on evaluating watch expression on call frame with unknown source`, () => {
@@ -418,15 +418,15 @@ describe('The adapter', () => {
 
                 let scenario = new Scenario(dc);
                 scenario.launchRequestArgs = Scenario.getDefaultLaunchArgs(platform, appRoot, config.emulator);
-                
-                
+
+
                 return Promise.all<any>([
                     scenario.start(),
                     scenario.client.onNextTime('stopped').then(e => {
                         return scenario.client.stackTraceRequest({ threadId: e.body.threadId }).then(response => {
                             let callFrame = response.body.stackFrames.filter(callFrame => !callFrame.source.path && !callFrame.source.sourceReference)[0];
                             return scenario.client.evaluateRequest({ expression: 'Math.random()', frameId: callFrame.id, context: 'watch' }).then(response => {
-                                assert.fail(undefined, undefined, 'Evaluate request should fail');
+                                assert.fail(undefined, undefined, 'Evaluate request should fail', undefined);
                             }, response => {
                                 assert.equal(response.message, '-', 'error message mismatch');
                             });
