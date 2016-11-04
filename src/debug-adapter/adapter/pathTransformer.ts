@@ -5,18 +5,17 @@
 import * as utils from '../utilities';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import * as path from 'path';
-import {ISetBreakpointsArgs, IDebugTransformer, ILaunchRequestArgs, IAttachRequestArgs, IStackTraceResponseBody} from '../WebKitAdapterInterfaces';
 
 interface IPendingBreakpoint {
     resolve: () => void;
     reject: (e: Error) => void;
-    args: ISetBreakpointsArgs;
+    args: DebugProtocol.ISetBreakpointsArgs;
 }
 
 /**
  * Converts a local path from Code to a path on the target.
  */
-export class PathTransformer implements IDebugTransformer {
+export class PathTransformer implements DebugProtocol.IDebugTransformer {
     private _webRoot: string;
     private _platform: string;
     private _clientPathToWebkitUrl = new Map<string, string>();
@@ -24,18 +23,18 @@ export class PathTransformer implements IDebugTransformer {
     private _pendingBreakpointsByPath = new Map<string, IPendingBreakpoint>();
     private inferedDeviceRoot :string = null;
 
-    public launch(args: ILaunchRequestArgs): void {
+    public launch(args: DebugProtocol.ILaunchRequestArgs): void {
         this._webRoot = utils.getAppRoot(args);
         this._platform = args.platform;
         this.inferedDeviceRoot = (this._platform === 'ios') ? 'file://' : this.inferedDeviceRoot;
     }
 
-    public attach(args: IAttachRequestArgs): void {
+    public attach(args: DebugProtocol.IAttachRequestArgs): void {
         this._webRoot = utils.getAppRoot(args);
         this._platform = args.platform;
     }
 
-    public setBreakpoints(args: ISetBreakpointsArgs): Promise<void> {
+    public setBreakpoints(args: DebugProtocol.ISetBreakpointsArgs): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (!args.source.path) {
                 resolve();
@@ -125,7 +124,7 @@ export class PathTransformer implements IDebugTransformer {
         }
     }
 
-    public stackTraceResponse(response: IStackTraceResponseBody): void {
+    public stackTraceResponse(response: DebugProtocol.IStackTraceResponseBody): void {
         response.stackFrames.forEach(frame => {
             // Try to resolve the url to a path in the workspace. If it's not in the workspace,
             // just use the script.url as-is. It will be resolved or cleared by the SourceMapTransformer.

@@ -3,12 +3,11 @@
  *--------------------------------------------------------*/
 
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {IDebugTransformer, ISetBreakpointsResponseBody, IStackTraceResponseBody} from '../WebKitAdapterInterfaces';
 
 /**
  * Converts from 1 based lines on the client side to 0 based lines on the target side
  */
-export class LineNumberTransformer implements IDebugTransformer  {
+export class LineNumberTransformer implements DebugProtocol.IDebugTransformer  {
     private _targetLinesStartAt1: boolean;
     private _clientLinesStartAt1: boolean;
 
@@ -24,11 +23,11 @@ export class LineNumberTransformer implements IDebugTransformer  {
         args.lines = args.lines.map(line => this.convertClientLineToTarget(line));
     }
 
-    public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
+    public setBreakpointsResponse(response: DebugProtocol.ISetBreakpointsResponseBody): void {
         response.breakpoints.forEach(bp => bp.line = this.convertTargetLineToClient(bp.line));
     }
 
-    public stackTraceResponse(response: IStackTraceResponseBody): void {
+    public stackTraceResponse(response: DebugProtocol.IStackTraceResponseBody): void {
         response.stackFrames.forEach(frame => frame.line = this.convertTargetLineToClient(frame.line));
     }
 

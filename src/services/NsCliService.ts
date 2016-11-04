@@ -5,8 +5,8 @@ import * as path from 'path';
 import * as https from 'https';
 import {Version} from '../common/Version';
 import {Logger} from '../debug-adapter/utilities';
-import {ILaunchRequestArgs, IAttachRequestArgs} from '../debug-adapter/WebKitAdapterInterfaces';
 import {ExtensionVersionInfo} from './ExtensionVersionInfo';
+import {DebugProtocol} from 'vscode-debugprotocol';
 
 export enum CliVersionState {
     NotExisting,
@@ -89,7 +89,7 @@ export abstract class NSProject extends EventEmitter {
 
     public abstract run(): Promise<ChildProcess>;
 
-    public abstract debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<any>;
+    public abstract debug(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<any>;
 
     protected spawnProcess(commandPath: string, commandArgs: string[], tnsOutput?: string): ChildProcess {
         let options = { cwd: this.getProjectPath(), shell: true };
@@ -131,12 +131,12 @@ export class IosProject extends NSProject {
         return Promise.resolve(child);
     }
 
-    public debug(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<string> {
+    public debug(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<string> {
         if (!this.isOSX()) {
             return Promise.reject('iOS platform is supported only on OS X.');
         }
 
-        let rebuild = (args.request == "launch") ? (args as ILaunchRequestArgs).rebuild : true;
+        let rebuild = (args.request == "launch") ? (args as DebugProtocol.ILaunchRequestArgs).rebuild : true;
         // build command to execute
         let command = new CommandBuilder(args.nativescriptCliPath)
             .appendParam("debug")
@@ -145,7 +145,7 @@ export class IosProject extends NSProject {
             .appendParamIf("--start", args.request === "attach")
             .appendParamIf("--debug-brk", args.request === "launch")
             .appendParamIf("--no-rebuild", !rebuild)
-            .appendParamIf("--syncAllFiles", args.request === "launch" && !rebuild && (args as ILaunchRequestArgs).syncAllFiles)
+            .appendParamIf("--syncAllFiles", args.request === "launch" && !rebuild && (args as DebugProtocol.ILaunchRequestArgs).syncAllFiles)
             .appendParam("--no-client")
             .appendParams(args.tnsArgs)
             .build();
@@ -222,12 +222,12 @@ export class AndroidProject extends NSProject {
         return Promise.resolve(child);
     }
 
-    public debug(params: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+    public debug(params: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
         if (params.request === "attach") {
             return Promise.resolve<void>();
         }
         else if (params.request === "launch") {
-            let args: ILaunchRequestArgs = params as ILaunchRequestArgs;
+            let args: DebugProtocol.ILaunchRequestArgs = params as DebugProtocol.ILaunchRequestArgs;
             let that = this;
             let launched = false;
 
@@ -280,7 +280,7 @@ export class AndroidProject extends NSProject {
          }
     }
 
-    public getDebugPort(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<number> {
+    public getDebugPort(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<number> {
         //TODO: Call CLI to get the debug port
         //return Promise.resolve(40001);
 

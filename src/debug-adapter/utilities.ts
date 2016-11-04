@@ -9,7 +9,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
-import {ILaunchRequestArgs, IAttachRequestArgs} from './WebKitAdapterInterfaces';
+import {DebugProtocol} from 'vscode-debugprotocol';
 
 const DEFAULT_CHROME_PATH = {
     OSX: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -458,7 +458,7 @@ export function errP(msg: any): Promise<any> {
 /**
  * Calculates the appRoot from a launch/attach request. The appRoot is the root directory of the NativeScript app.
  */
-export function getAppRoot(args: ILaunchRequestArgs | IAttachRequestArgs): string {
+export function getAppRoot(args: DebugProtocol.ILaunchRequestArgs | DebugProtocol.IAttachRequestArgs): string {
     return (args.appRoot && path.isAbsolute(args.appRoot)) ? args.appRoot : '';
 }
 

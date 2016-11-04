@@ -4,14 +4,13 @@
 
 import * as utils from '../utilities';
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {IDebugTransformer, IDebugAdapter} from '../WebKitAdapterInterfaces';
 
 export type EventHandler = (event: DebugProtocol.Event) => void;
 
 export class AdapterProxy {
     private static INTERNAL_EVENTS = ['scriptParsed', 'clearClientContext', 'clearTargetContext'];
 
-    public constructor(private _requestTransformers: IDebugTransformer[], private _debugAdapter: IDebugAdapter, private _eventHandler: EventHandler) {
+    public constructor(private _requestTransformers: DebugProtocol.IDebugTransformer[], private _debugAdapter: DebugProtocol.IDebugAdapter, private _eventHandler: EventHandler) {
         this._debugAdapter.registerEventHandler(event => this.onAdapterEvent(event));
     }
 

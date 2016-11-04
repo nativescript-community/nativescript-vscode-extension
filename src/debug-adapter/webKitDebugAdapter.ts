@@ -12,8 +12,6 @@ import {AndroidConnection} from './connection/androidConnection';
 import * as utils from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
 import * as ns from '../services/NsCliService';
-import {ILaunchRequestArgs, IAttachRequestArgs, IDebugAdapter, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IBreakpoint,
-    IStackTraceResponseBody, IScopesResponseBody, IVariablesResponseBody, ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody} from './WebKitAdapterInterfaces';
 import {AnalyticsService} from '../services/analytics/AnalyticsService';
 import {ExtensionClient} from '../services/ipc/ExtensionClient';
 
@@ -22,7 +20,7 @@ interface IScopeVarHandle {
     thisObj?: WebKitProtocol.Runtime.RemoteObject;
 }
 
-export class WebKitDebugAdapter implements IDebugAdapter {
+export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private static THREAD_ID = 1;
     private static EXCEPTION_VALUE_ID = 'EXCEPTION_VALUE_ID';
 
@@ -98,15 +96,15 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
     }
 
-    public launch(args: ILaunchRequestArgs): Promise<void> {
+    public launch(args: DebugProtocol.ILaunchRequestArgs): Promise<void> {
         return this._attach(args);
     }
 
-    public attach(args: IAttachRequestArgs): Promise<void> {
+    public attach(args: DebugProtocol.IAttachRequestArgs): Promise<void> {
         return this._attach(args);
     }
 
-    private initDiagnosticLogging(name: string, args: IAttachRequestArgs | ILaunchRequestArgs): void {
+    private initDiagnosticLogging(name: string, args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
         if (args.diagnosticLogging) {
             utils.Logger.enableDiagnosticLogging();
             utils.Logger.log(`initialize(${JSON.stringify(this._initArgs) })`);
@@ -114,9 +112,9 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private _attach(args: IAttachRequestArgs | ILaunchRequestArgs) {
+    private _attach(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs) {
         ExtensionClient.setAppRoot(utils.getAppRoot(args));
-        let analyticsRequest = (args.request == "launch" && !(args as ILaunchRequestArgs).rebuild) ? "sync" : args.request;
+        let analyticsRequest = (args.request == "launch" && !(args as DebugProtocol.ILaunchRequestArgs).rebuild) ? "sync" : args.request;
         ExtensionClient.getInstance().analyticsLaunchDebugger({ request: analyticsRequest, platform: args.platform });
         this.initDiagnosticLogging(args.request, args);
         this.appRoot = utils.getAppRoot(args);
@@ -135,7 +133,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
             });
     }
 
-    private _attachIos(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+    private _attachIos(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
         let iosProject : ns.IosProject = new ns.IosProject(this.appRoot, args.tnsOutput);
         iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
 
@@ -147,7 +145,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         });
     }
 
-    private _attachAndroid(args: IAttachRequestArgs | ILaunchRequestArgs): Promise<void> {
+    private _attachAndroid(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
         let androidProject: ns.AndroidProject = new ns.AndroidProject(this.appRoot, args.tnsOutput);
         let thisAdapter: WebKitDebugAdapter = this;
 
@@ -173,7 +171,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         });
     }
 
-    private setConnection(connection: INSDebugConnection, args: IAttachRequestArgs | ILaunchRequestArgs) : INSDebugConnection {
+    private setConnection(connection: INSDebugConnection, args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs) : INSDebugConnection {
         connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
         connection.on('Debugger.resumed', () => this.onDebuggerResumed());
         connection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));
@@ -189,7 +187,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         return connection;
     }
 
-    private onConnected(args: IAttachRequestArgs | ILaunchRequestArgs): void {
+    private onConnected(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
         this.onTnsOutputMessage("Debugger connected");
     }
 
@@ -352,7 +350,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         return Promise.resolve<void>();
     }
 
-    public setBreakpoints(args: ISetBreakpointsArgs): Promise<ISetBreakpointsResponseBody> {
+    public setBreakpoints(args: DebugProtocol.ISetBreakpointsArgs): Promise<DebugProtocol.ISetBreakpointsResponseBody> {
         let targetScriptUrl: string;
         if (args.source.path) {
             targetScriptUrl = args.source.path;
@@ -399,7 +397,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         });
     }
 
-    private _addBreakpoints(url: string, breakpoints: ISetBreakpointsArgs): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse[]> {
+    private _addBreakpoints(url: string, breakpoints: DebugProtocol.ISetBreakpointsArgs): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse[]> {
         // Call setBreakpoint for all breakpoints in the script simultaneously
         const responsePs = breakpoints.breakpoints
             .map((b, i) => this._webKitConnection.debugger_setBreakpointByUrl(url, breakpoints.lines[i], breakpoints.cols ? breakpoints.cols[i] : 0, b.condition));
@@ -408,7 +406,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         return Promise.all(responsePs);
     }
 
-    private _webkitBreakpointResponsesToODPBreakpoints(url: string, responses: WebKitProtocol.Debugger.SetBreakpointByUrlResponse[], requestLines: number[]): IBreakpoint[] {
+    private _webkitBreakpointResponsesToODPBreakpoints(url: string, responses: WebKitProtocol.Debugger.SetBreakpointByUrlResponse[], requestLines: number[]): DebugProtocol.IBreakpoint[] {
         // Don't cache errored responses
         const committedBpIds = responses
             .filter(response => !response.error)
@@ -423,14 +421,14 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 // The output list needs to be the same length as the input list, so map errors to
                 // unverified breakpoints.
                 if (response.error || !response.result.locations.length) {
-                    return <IBreakpoint>{
+                    return <DebugProtocol.IBreakpoint>{
                         verified: !response.error,
                         line: requestLines[i],
                         column: 0
                     };
                 }
 
-                return <IBreakpoint>{
+                return <DebugProtocol.IBreakpoint>{
                     verified: true,
                     line: response.result.locations[0].lineNumber,
                     column: response.result.locations[0].columnNumber
@@ -481,7 +479,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
             .then(() => { });
     }
 
-    public stackTrace(args: DebugProtocol.StackTraceArguments): IStackTraceResponseBody {
+    public stackTrace(args: DebugProtocol.StackTraceArguments): DebugProtocol.IStackTraceResponseBody {
         // Only process at the requested number of frames, if 'levels' is specified
         let stack = this._currentStack;
         if (args.levels) {
@@ -551,7 +549,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         return { stackFrames };
     }
 
-    public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
+    public scopes(args: DebugProtocol.ScopesArguments): DebugProtocol.IScopesResponseBody {
         const scopes = this._currentStack[args.frameId].scopeChain.map((scope: WebKitProtocol.Debugger.Scope, i: number) => {
             const scopeHandle: IScopeVarHandle = { objectId: scope.object.objectId };
             if (i === 0) {
@@ -569,7 +567,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         return { scopes };
     }
 
-    public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
+    public variables(args: DebugProtocol.VariablesArguments): Promise<DebugProtocol.IVariablesResponseBody> {
         const handle = this._variableHandles.get(args.variablesReference);
         if (handle.objectId === WebKitDebugAdapter.EXCEPTION_VALUE_ID) {
             // If this is the special marker for an exception value, create a fake property descriptor so the usual route can be used
@@ -607,7 +605,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         }
     }
 
-    public source(args: DebugProtocol.SourceArguments): Promise<ISourceResponseBody> {
+    public source(args: DebugProtocol.SourceArguments): Promise<DebugProtocol.ISourceResponseBody> {
         return this._webKitConnection.debugger_getScriptSource(sourceReferenceToScriptId(args.sourceReference)).then(webkitResponse => {
             if (webkitResponse.error) {
                 throw new Error(webkitResponse.error.message);
@@ -616,7 +614,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         });
     }
 
-    public threads(): IThreadsResponseBody {
+    public threads(): DebugProtocol.IThreadsResponseBody {
         return {
             threads: [
                 {
@@ -627,7 +625,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         };
     }
 
-    public evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
+    public evaluate(args: DebugProtocol.EvaluateArguments): Promise<DebugProtocol.IEvaluateResponseBody> {
         let evalPromise: Promise<any>;
         if (this.paused) {
             const callFrame = this._currentStack[args.frameId];

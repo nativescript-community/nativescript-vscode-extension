@@ -1,6 +1,5 @@
 import * as http from 'http';
 import {EventEmitter} from 'events';
-import * as utils from '../utilities';
 import {Logger} from '../utilities';
 import * as Net from 'net';
 import * as ns from '../../services/NsCliService';

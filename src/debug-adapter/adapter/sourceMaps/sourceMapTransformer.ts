@@ -6,41 +6,40 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {ISourceMaps, SourceMaps} from './sourceMaps';
-import {ISetBreakpointsArgs, IDebugTransformer, ILaunchRequestArgs, IAttachRequestArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody} from '../../WebKitAdapterInterfaces';
 import * as utils from '../../utilities';
 
 interface IPendingBreakpoint {
     resolve: () => void;
     reject: (e: Error) => void;
-    args: ISetBreakpointsArgs;
+    args: DebugProtocol.ISetBreakpointsArgs;
     requestSeq: number;
 }
 
 /**
  * If sourcemaps are enabled, converts from source files on the client side to runtime files on the target side
  */
-export class SourceMapTransformer implements IDebugTransformer {
+export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
     private _sourceMaps: ISourceMaps;
-    private _requestSeqToSetBreakpointsArgs: Map<number, ISetBreakpointsArgs>;
+    private _requestSeqToSetBreakpointsArgs: Map<number, DebugProtocol.ISetBreakpointsArgs>;
     private _allRuntimeScriptPaths: Set<string>;
     private _pendingBreakpointsByPath = new Map<string, IPendingBreakpoint>();
     private _webRoot: string;
     private _authoredPathsToMappedBPLines: Map<string, number[]>;
     private _authoredPathsToMappedBPCols: Map<string, number[]>;
 
-    public launch(args: ILaunchRequestArgs): void {
+    public launch(args: DebugProtocol.ILaunchRequestArgs): void {
         this.init(args);
     }
 
-    public attach(args: IAttachRequestArgs): void {
+    public attach(args: DebugProtocol.IAttachRequestArgs): void {
         this.init(args);
     }
 
-    private init(args: ILaunchRequestArgs | IAttachRequestArgs): void {
+    private init(args: DebugProtocol.ILaunchRequestArgs | DebugProtocol.IAttachRequestArgs): void {
         if (args.sourceMaps) {
             this._webRoot = utils.getAppRoot(args);
             this._sourceMaps = new SourceMaps(this._webRoot);
-            this._requestSeqToSetBreakpointsArgs = new Map<number, ISetBreakpointsArgs>();
+            this._requestSeqToSetBreakpointsArgs = new Map<number, DebugProtocol.ISetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();
             this._authoredPathsToMappedBPLines = new Map<string, number[]>();
             this._authoredPathsToMappedBPCols = new Map<string, number[]>();
@@ -54,7 +53,7 @@ export class SourceMapTransformer implements IDebugTransformer {
     /**
      * Apply sourcemapping to the setBreakpoints request path/lines
      */
-    public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number): Promise<void> {
+    public setBreakpoints(args: DebugProtocol.ISetBreakpointsArgs, requestSeq: number): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this._sourceMaps && args.source.path && path.extname(args.source.path) !== ".js") {
                 const argsPath = args.source.path;
@@ -120,7 +119,7 @@ export class SourceMapTransformer implements IDebugTransformer {
     /**
      * Apply sourcemapping back to authored files from the response
      */
-    public setBreakpointsResponse(response: ISetBreakpointsResponseBody, requestSeq: number): void {
+    public setBreakpointsResponse(response: DebugProtocol.ISetBreakpointsResponseBody, requestSeq: number): void {
         if (this._sourceMaps && this._requestSeqToSetBreakpointsArgs.has(requestSeq)) {
             const args = this._requestSeqToSetBreakpointsArgs.get(requestSeq);
             if (args.authoredPath) {
@@ -154,7 +153,7 @@ export class SourceMapTransformer implements IDebugTransformer {
     /**
      * Apply sourcemapping to the stacktrace response
      */
-    public stackTraceResponse(response: IStackTraceResponseBody): void {
+    public stackTraceResponse(response: DebugProtocol.IStackTraceResponseBody): void {
         if (this._sourceMaps) {
             response.stackFrames.forEach(stackFrame => {
                 const mapped = this._sourceMaps.MapToSource(stackFrame.source.path, stackFrame.line, stackFrame.column);

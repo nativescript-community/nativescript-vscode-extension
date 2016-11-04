@@ -14,7 +14,8 @@
         // typescript definitions
         "custom-typings/es6-impl/es6-impl.d.ts",
         "custom-typings/universal-analytics/ua.d.ts",
-        "debug-adapter/webKitProtocol.d.ts",
+        "custom-typings/debugProtocolExtensions.d.ts",
+        "custom-typings/webKitProtocol.d.ts",
 
         "./debug-adapter/webKitDebug.ts",
         "./main.ts",
