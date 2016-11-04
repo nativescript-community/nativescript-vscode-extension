@@ -13,7 +13,7 @@ import * as ns from '../../services/NsCliService';
 interface IMessageWithId {
     id: number;
     method: string;
-    params?: string[];
+    params?: any;
 }
 
 export class PacketStream extends stream.Transform {
@@ -148,8 +148,8 @@ export class IosConnection implements INSDebugConnection {
         this._socket = new ResReqTcpSocket();
     }
 
-    public on(eventName: string, handler: (msg: any) => void): void {
-        this._socket.on(eventName, handler);
+    public on(eventName: string, eventHandler: (eventParams: any) => void): void {
+        this._socket.on(eventName, eventHandler);
     }
 
     /**
@@ -223,11 +223,11 @@ export class IosConnection implements INSDebugConnection {
         return this.sendMessage('Runtime.evaluate', <WebKitProtocol.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
     }
 
-    private sendMessage(method: any, params?: any): Promise<WebKitProtocol.Response> {
+    private sendMessage(method: string, params?: any): Promise<WebKitProtocol.Response> {
         return this._socket.sendMessage({
             id: this._nextId++,
-            method,
-            params
+            method: method,
+            params: params
         });
     }
 }

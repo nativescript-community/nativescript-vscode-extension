@@ -1,7 +1,6 @@
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
-import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as extProtocol from './ExtensionProtocol';
 import {AnalyticsService} from '../analytics/AnalyticsService';
