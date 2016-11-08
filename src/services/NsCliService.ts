@@ -251,7 +251,7 @@ export class AndroidProject extends NSProject {
                     that.emit('TNS.outputMessage', data.toString(), 'log');
                     that.writeToTnsOutputFile(strData);
                     if (!launched) {
-                         if (args.request === "launch" && ((strData.indexOf('# NativeScript Debugger started #') > -1) || strData.indexOf('Successfully synced application') > -1)) {
+                         if (args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
                              launched = true;
                              //wait a little before trying to connect, this gives a changes for adb to be able to connect to the debug socket
                              setTimeout(() => {
