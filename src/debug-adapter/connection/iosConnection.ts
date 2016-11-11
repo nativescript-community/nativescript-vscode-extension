@@ -158,9 +158,13 @@ export class IosConnection implements INSDebugConnection {
     public attach(filePath: string): Promise<void> {
         Logger.log('Attempting to attach to path ' + filePath);
         return utils.retryAsync(() => this._attach(filePath), 6000)
-            .then(() => this.sendMessage('Debugger.enable'))
-            .then(() => this.sendMessage('Console.enable'))
-            .then(() => { });
+            .then(() => {
+                Promise.all<WebKitProtocol.Response>([
+                    this.sendMessage('Debugger.enable'),
+                    this.sendMessage('Console.enable'),
+                    this.sendMessage('Debugger.setBreakpointsActive', {active: true})
+                ]);
+            });
     }
 
     public _attach(filePath: string): Promise<void> {
