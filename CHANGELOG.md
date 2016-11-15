@@ -1,3 +1,11 @@
+0.4.0
+=====
+
+## What's New
+- [Bug fix: Android API level 24](https://github.com/NativeScript/nativescript-vscode-extension/pull/79)
+- [Bug fix: Sync on Android configuration](https://github.com/NativeScript/nativescript-vscode-extension/pull/89)
+- [Bug fix: Support for iOS Runtime v2.4](https://github.com/NativeScript/nativescript-vscode-extension/commit/506766e4347a91e8c651e2da644ed14285e2a3f4)
+
 0.3.1
 =====
 
