@@ -2,15 +2,15 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 
 declare module 'vscode-debugprotocol' {
     namespace DebugProtocol {
+
+        type RequestArguments = LaunchRequestArguments | AttachRequestArguments;
+
         interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments {
             platform: string;
             appRoot?: string;
-            runtimeArgs?: string[];
-            runtimeExecutable?: string;
             stopOnEntry?: boolean;
             sourceMaps?: boolean;
             diagnosticLogging?: boolean;
-            emulator?:boolean;
             request: string;
             tnsArgs?: string[];
             tnsOutput?: string;
@@ -24,7 +24,6 @@ declare module 'vscode-debugprotocol' {
             appRoot?: string;
             sourceMaps?: boolean;
             diagnosticLogging?: boolean;
-            emulator?:boolean;
             request: string;
             tnsArgs?: string[];
             tnsOutput?: string;
