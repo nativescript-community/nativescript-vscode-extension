@@ -7,7 +7,7 @@ import * as stream from 'stream';
 import {EventEmitter} from 'events';
 import {INSDebugConnection} from './INSDebugConnection';
 import * as utils from '../utilities';
-import {Logger} from '../utilities';
+import {Logger} from '../../services/Logger';
 import * as ns from '../../services/NsCliService';
 
 interface IMessageWithId {

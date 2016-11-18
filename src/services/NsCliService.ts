@@ -4,7 +4,7 @@ import {EventEmitter} from 'events';
 import * as path from 'path';
 import * as https from 'https';
 import {Version} from '../common/Version';
-import {Logger} from '../debug-adapter/utilities';
+import {Logger, Handlers, Tags} from '../services/Logger';
 import {ExtensionVersionInfo} from './ExtensionVersionInfo';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
@@ -67,13 +67,11 @@ export class CliVersionInfo {
 
 export abstract class NSProject extends EventEmitter {
     private _projectPath: string;
-    private _tnsOutputFileStream: fs.WriteStream;
     private _cliVersionInfo: CliVersionInfo;
 
     constructor(projectPath: string, tnsOutputFilePath?: string) {
         super();
         this._projectPath = projectPath;
-        this._tnsOutputFileStream = tnsOutputFilePath ? fs.createWriteStream(tnsOutputFilePath) : null;
         this._cliVersionInfo = new CliVersionInfo();
     }
 
@@ -97,12 +95,6 @@ export abstract class NSProject extends EventEmitter {
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
         return child;
-    }
-
-    protected writeToTnsOutputFile(message: string) {
-        if (this._tnsOutputFileStream) {
-            this._tnsOutputFileStream.write(message, 'utf8');
-        }
     }
 }
 
@@ -174,8 +166,7 @@ export class IosProject extends NSProject {
 
             child.stdout.on('data', (data) => {
                 let cliOutput: string = data.toString();
-                this.emit('TNS.outputMessage', cliOutput, 'log');
-                this.writeToTnsOutputFile(cliOutput);
+                Logger.log(cliOutput, Tags.FrontendMessage);
 
                 socketPath = socketPath || isSocketOpened(cliOutput);
                 appSynced = rebuild ? false : (appSynced || isAppSynced(cliOutput));
@@ -186,8 +177,7 @@ export class IosProject extends NSProject {
             });
 
             child.stderr.on('data', (data) => {
-                this.emit('TNS.outputMessage', data, 'error');
-                this.writeToTnsOutputFile(data.toString());
+                Logger.error(data.toString(), Tags.FrontendMessage);
             });
 
             child.on('close', (code, signal) => {
@@ -248,8 +238,7 @@ export class AndroidProject extends NSProject {
                 let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
                 child.stdout.on('data', function(data) {
                     let strData: string = data.toString();
-                    that.emit('TNS.outputMessage', data.toString(), 'log');
-                    that.writeToTnsOutputFile(strData);
+                    Logger.log(data.toString(), Tags.FrontendMessage);
                     if (!launched) {
                          if (args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
                              launched = true;
@@ -262,8 +251,7 @@ export class AndroidProject extends NSProject {
                 });
 
                 child.stderr.on('data', function(data) {
-                    that.emit('TNS.outputMessage', data.toString(), 'error');
-                    that.writeToTnsOutputFile(data.toString());
+                    Logger.error(data.toString(), Tags.FrontendMessage);
                 });
 
                 child.on('close', function(code) {
@@ -298,8 +286,7 @@ export class AndroidProject extends NSProject {
             let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
 
             child.stdout.on('data', function(data) {
-                that.emit('TNS.outputMessage', data.toString(), 'log');
-                that.writeToTnsOutputFile(data.toString());
+                Logger.log(data.toString(), Tags.FrontendMessage);
 
                 let regexp = new RegExp("(?:debug port: )([\\d]{5})");
 
@@ -325,8 +312,7 @@ export class AndroidProject extends NSProject {
             });
 
             child.stderr.on('data', function(data) {
-                that.emit('TNS.outputMessage', data.toString(), 'error');
-                that.writeToTnsOutputFile(data.toString());
+                Logger.error(data.toString(), Tags.FrontendMessage);
             });
 
             child.on('close', function(code) {

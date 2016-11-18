@@ -1,11 +1,8 @@
-/*---------------------------------------------------------
- * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
 import {OutputEvent, DebugSession, ErrorDestination} from 'vscode-debugadapter';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {WebKitDebugAdapter} from './webKitDebugAdapter';
-import {Logger} from './utilities';
+import {Logger, Handlers, LoggerHandler} from '../services/Logger';
 
 import {AdapterProxy} from './adapter/adapterProxy';
 import {LineNumberTransformer} from './adapter/lineNumberTransformer';
@@ -18,7 +15,12 @@ export class WebKitDebugSession extends DebugSession {
     public constructor(targetLinesStartAt1: boolean, isServer: boolean = false) {
         super(targetLinesStartAt1, isServer);
 
-        Logger.init(isServer, msg => this.sendEvent(new OutputEvent(`  ›${msg}\n`)));
+        // Logging on the std streams is only allowed when running in server mode, because otherwise it goes through
+        // the same channel that Code uses to communicate with the adapter, which can cause communication issues.
+        if (isServer) {
+            Logger.addHandler(Handlers.stdStreamsHandler);
+        }
+
         process.removeAllListeners('unhandledRejection');
         process.addListener('unhandledRejection', reason => {
             Logger.log(`******** ERROR! Unhandled promise rejection: ${reason}`);

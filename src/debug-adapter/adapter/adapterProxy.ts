@@ -3,6 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as utils from '../utilities';
+import {Logger} from '../../services/Logger';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 export type EventHandler = (event: DebugProtocol.Event) => void;
@@ -77,7 +78,7 @@ export class AdapterProxy {
                 this._eventHandler(event);
             }
         } catch (e) {
-            utils.Logger.log('Error handling adapter event: ' + (e ? e.stack : ''));
+            Logger.error('Error handling adapter event: ' + (e ? e.stack : ''));
         }
     }
 }

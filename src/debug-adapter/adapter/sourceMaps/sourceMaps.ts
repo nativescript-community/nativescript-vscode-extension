@@ -10,7 +10,7 @@ import * as FS from 'fs';
 import {SourceMapConsumer} from 'source-map';
 import * as PathUtils from './pathUtilities';
 import * as utils from '../../utilities';
-import {Logger} from '../../utilities';
+import {Logger} from '../../../services/Logger';
 
 
 export interface MappingResult {

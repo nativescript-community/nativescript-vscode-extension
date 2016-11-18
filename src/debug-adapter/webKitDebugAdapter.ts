@@ -2,6 +2,8 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as os from 'os';
+import * as fs from 'fs';
 import {spawn, ChildProcess} from 'child_process';
 import * as path from 'path';
 import {Handles, StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from 'vscode-debugadapter';
@@ -14,6 +16,7 @@ import {formatConsoleMessage} from './consoleHelper';
 import * as ns from '../services/NsCliService';
 import {AnalyticsService} from '../services/analytics/AnalyticsService';
 import {ExtensionClient} from '../services/ipc/ExtensionClient';
+import {Logger, LoggerHandler, Handlers, Tags} from '../services/Logger';
 
 interface IScopeVarHandle {
     objectId: string;
@@ -41,12 +44,18 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private _eventHandler: (event: DebugProtocol.Event) => void;
     private appRoot: string;
     private platform: string;
-    private isAttached: boolean;
     private _lastOutputEvent: OutputEvent;
+    private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`  ›${args.message}\n`, args.type.toString()));
 
     public constructor() {
         this._variableHandles = new Handles<IScopeVarHandle>();
         this._overlayHelper = new utils.DebounceHelper(/*timeoutMs=*/200);
+
+        // Messages tagged with a special tag are sent to the frontend through the debugging protocol
+        Logger.addHandler(this._loggerFrontendHandler, [Tags.FrontendMessage]);
+        Logger.log(`OS: ${os.platform()} ${os.arch()}`);
+        Logger.log('Node version: ' + process.version);
+        Logger.log('Adapter version: ' + require('../../package.json').version);
 
         this.clearEverything();
     }
@@ -104,30 +113,34 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         return this._attach(args);
     }
 
-    private initDiagnosticLogging(name: string, args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
+    private configureLoggingForRequest(name: string, args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
         if (args.diagnosticLogging) {
-            utils.Logger.enableDiagnosticLogging();
-            utils.Logger.log(`initialize(${JSON.stringify(this._initArgs) })`);
-            utils.Logger.log(`${name}(${JSON.stringify(args) })`);
+            // The logger frontend handler is initially configured to handle messages with LoggerTagFrontendMessage tag only.
+            // We remove the handler and add it again for all messages.
+            Logger.removeHandler(this._loggerFrontendHandler);
+            Logger.addHandler(this._loggerFrontendHandler);
         }
+        if (args.tnsOutput) {
+            Logger.addHandler(Handlers.createStreamHandler(fs.createWriteStream(args.tnsOutput)));
+        }
+        Logger.log(`initialize(${JSON.stringify(this._initArgs) })`);
+        Logger.log(`${name}(${JSON.stringify(args) })`);
     }
 
     private _attach(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs) {
         ExtensionClient.setAppRoot(utils.getAppRoot(args));
         let analyticsRequest = (args.request == "launch" && !(args as DebugProtocol.ILaunchRequestArgs).rebuild) ? "sync" : args.request;
         ExtensionClient.getInstance().analyticsLaunchDebugger({ request: analyticsRequest, platform: args.platform });
-        this.initDiagnosticLogging(args.request, args);
+        this.configureLoggingForRequest(args.request, args);
         this.appRoot = utils.getAppRoot(args);
         this.platform = args.platform;
-        this.isAttached = false;
 
         return ((args.platform == 'ios') ? this._attachIos(args) : this._attachAndroid(args))
             .then(() => {
-                this.isAttached = true;
                 this.fireEvent(new InitializedEvent());
             },
             e => {
-                this.onTnsOutputMessage("Command failed: " + e, "error");
+                Logger.error("Command failed: " + e, Tags.FrontendMessage);
                 this.clearEverything();
                 return utils.errP(e);
             });
@@ -135,7 +148,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
     private _attachIos(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
         let iosProject : ns.IosProject = new ns.IosProject(this.appRoot, args.tnsOutput);
-        iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
 
         return iosProject.debug(args)
         .then((socketFilePath) => {
@@ -149,9 +161,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         let androidProject: ns.AndroidProject = new ns.AndroidProject(this.appRoot, args.tnsOutput);
         let thisAdapter: WebKitDebugAdapter = this;
 
-        androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
-
-        this.onTnsOutputMessage("Getting debug port");
+        Logger.log("Getting debug port");
         let androidConnection: AndroidConnection = null;
 
         let runDebugCommand: Promise<any> = (args.request == 'launch') ? androidProject.debug(args) : Promise.resolve();
@@ -165,7 +175,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                     this.setConnection(androidConnection, args);
                 }
             }).then(() => {
-                this.onTnsOutputMessage("Attaching to debug application");
+                Logger.log("Attaching to debug application");
                 return androidConnection.attach(port, 'localhost');
             });
         });
@@ -188,23 +198,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private onConnected(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
-        this.onTnsOutputMessage("Debugger connected");
-    }
-
-    private onTnsOutputMessage(message: string, level: string = "log"): void {
-        utils.Logger.log(message);
-
-        if (!this.isAttached) {
-            let messageParams: WebKitProtocol.Console.MessageAddedParams = {
-                message: {
-                    level: level,
-                    type: 'log',
-                    text: message
-                }
-            };
-
-            this.onConsoleMessage(messageParams);
-        }
+        Logger.log("Debugger connected");
     }
 
     private fireEvent(event: DebugProtocol.Event): void {
@@ -218,18 +212,17 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             this.fireEvent(new TerminatedEvent());
         }
 
-        this.onTnsOutputMessage("Terminating debug session");
+        Logger.log("Terminating debug session");
         this.clearEverything();
     }
 
     private clearEverything(): void {
         this.clearClientContext();
         this.clearTargetContext();
-        this.isAttached = false;
         this._chromeProc = null;
 
         if (this._webKitConnection) {
-            this.onTnsOutputMessage("Closing debug connection");
+            Logger.log("Closing debug connection");
 
             this._webKitConnection.close();
             this._webKitConnection = null;

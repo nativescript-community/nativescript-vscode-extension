@@ -6,7 +6,7 @@
 
 import * as Path from 'path';
 import * as URL from 'url';
-
+import {Logger} from '../../../services/Logger';
 import * as utils from '../../utilities';
 
 export function getPathRoot(p: string) {
@@ -83,16 +83,16 @@ export function getAbsSourceRoot(sourceRoot: string, webRoot: string, generatedP
             }
         }
 
-        utils.Logger.log(`SourceMap: resolved sourceRoot ${sourceRoot} -> ${absSourceRoot}`);
+        Logger.log(`SourceMap: resolved sourceRoot ${sourceRoot} -> ${absSourceRoot}`);
     } else {
         if (Path.isAbsolute(generatedPath)) {
             absSourceRoot = Path.dirname(generatedPath);
-            utils.Logger.log(`SourceMap: no sourceRoot specified, using script dirname: ${absSourceRoot}`);
+            Logger.log(`SourceMap: no sourceRoot specified, using script dirname: ${absSourceRoot}`);
         } else {
             // runtime script is not on disk, resolve the sourceRoot location on disk
             const scriptPathDirname = Path.dirname(URL.parse(generatedPath).pathname);
             absSourceRoot =  Path.join(webRoot, scriptPathDirname);
-            utils.Logger.log(`SourceMap: no sourceRoot specified, using webRoot + script path dirname: ${absSourceRoot}`);
+            Logger.log(`SourceMap: no sourceRoot specified, using webRoot + script path dirname: ${absSourceRoot}`);
         }
     }
 

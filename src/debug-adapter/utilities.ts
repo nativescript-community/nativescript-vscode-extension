@@ -137,66 +137,6 @@ export function retryAsync(fn: () => Promise<any>, timeoutMs: number): Promise<a
     return tryUntilTimeout();
 }
 
-/**
- * Holds a singleton to manage access to console.log.
- * Logging is only allowed when running in server mode, because otherwise it goes through the same channel that Code uses to
- * communicate with the adapter, which can cause communication issues.
- */
-export class Logger {
-    private static _logger: Logger;
-    private _isServer: boolean;
-    private _diagnosticLogCallback: (msg: string) => void;
-    private _diagnosticLoggingEnabled: boolean;
-
-    public static log(msg: string, forceDiagnosticLogging = false): void {
-        if (this._logger) this._logger._log(msg, forceDiagnosticLogging);
-    }
-
-    public static init(isServer: boolean, logCallback: (msg: string) => void): void {
-        if (!this._logger) {
-            this._logger = new Logger(isServer);
-            this._logger._diagnosticLogCallback = logCallback;
-
-            if (isServer) {
-                Logger.logVersionInfo();
-            }
-        }
-    }
-
-    public static enableDiagnosticLogging(): void {
-        if (this._logger) {
-            this._logger._diagnosticLoggingEnabled = true;
-            if (!this._logger._isServer) {
-                Logger.logVersionInfo();
-            }
-        }
-    }
-
-    public static logVersionInfo(): void {
-        Logger.log(`OS: ${os.platform() } ${os.arch() }`);
-        Logger.log('Node version: ' + process.version);
-        Logger.log('Adapter version: ' + require('../../package.json').version);
-    }
-
-    constructor(isServer: boolean) {
-        this._isServer = isServer;
-    }
-
-    private _log(msg: string, forceDiagnosticLogging: boolean): void {
-        if (this._isServer || this._diagnosticLoggingEnabled || forceDiagnosticLogging) {
-            this._sendLog(msg);
-        }
-    }
-
-    private _sendLog(msg: string): void {
-        if (this._isServer) {
-            console.log(msg);
-        } else if (this._diagnosticLogCallback) {
-            this._diagnosticLogCallback(msg);
-        }
-    }
-}
-
 function tryFindSourcePathInNSProject(nsProjectPath: string, additionalFileExtension: string, resorcePath: string) : string {
     let guesses = [];
     const pathParts = resorcePath.split(path.sep);
