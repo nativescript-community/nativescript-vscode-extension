@@ -9,31 +9,6 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
-import {DebugProtocol} from 'vscode-debugprotocol';
-
-const DEFAULT_CHROME_PATH = {
-    OSX: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    WIN: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    WINx86: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-    LINUX: '/usr/bin/google-chrome'
-};
-
-export function getBrowserPath(): string {
-    const platform = getPlatform();
-    if (platform === Platform.OSX) {
-        return existsSync(DEFAULT_CHROME_PATH.OSX) ? DEFAULT_CHROME_PATH.OSX : null;
-    } else if (platform === Platform.Windows) {
-        if (existsSync(DEFAULT_CHROME_PATH.WINx86)) {
-            return DEFAULT_CHROME_PATH.WINx86;
-        } else if (existsSync(DEFAULT_CHROME_PATH.WIN)) {
-            return DEFAULT_CHROME_PATH.WIN;
-        } else {
-            return null;
-        }
-    } else {
-        return existsSync(DEFAULT_CHROME_PATH.LINUX) ? DEFAULT_CHROME_PATH.LINUX : null;
-    }
-}
 
 export const enum Platform {
     Windows, OSX, Linux
@@ -362,13 +337,6 @@ export function errP(msg: any): Promise<any> {
     }
 
     return Promise.reject(e);
-}
-
-/**
- * Calculates the appRoot from a launch/attach request. The appRoot is the root directory of the NativeScript app.
- */
-export function getAppRoot(args: DebugProtocol.ILaunchRequestArgs | DebugProtocol.IAttachRequestArgs): string {
-    return (args.appRoot && path.isAbsolute(args.appRoot)) ? args.appRoot : '';
 }
 
 /**

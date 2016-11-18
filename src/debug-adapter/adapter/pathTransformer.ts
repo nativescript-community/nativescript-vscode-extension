@@ -17,7 +17,7 @@ interface IPendingBreakpoint {
  * Converts a local path from Code to a path on the target.
  */
 export class PathTransformer implements DebugProtocol.IDebugTransformer {
-    private _webRoot: string;
+    private _appRoot: string;
     private _platform: string;
     private _clientPathToWebkitUrl = new Map<string, string>();
     private _webkitUrlToClientPath = new Map<string, string>();
@@ -25,13 +25,13 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
     private inferedDeviceRoot :string = null;
 
     public launch(args: DebugProtocol.ILaunchRequestArgs): void {
-        this._webRoot = utils.getAppRoot(args);
+        this._appRoot = args.appRoot;
         this._platform = args.platform;
         this.inferedDeviceRoot = (this._platform === 'ios') ? 'file://' : this.inferedDeviceRoot;
     }
 
     public attach(args: DebugProtocol.IAttachRequestArgs): void {
-        this._webRoot = utils.getAppRoot(args);
+        this._appRoot = args.appRoot;
         this._platform = args.platform;
     }
 
@@ -56,7 +56,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
                 resolve();
             }
             else if (this.inferedDeviceRoot) {
-                let inferedUrl = url.replace(this._webRoot, this.inferedDeviceRoot).replace(/\\/g, "/");
+                let inferedUrl = url.replace(this._appRoot, this.inferedDeviceRoot).replace(/\\/g, "/");
 
                 //change device path if {N} core module or {N} module
                 if (inferedUrl.indexOf("/node_modules/tns-core-modules/") != -1)
@@ -96,7 +96,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
         const webkitUrl: string = event.body.scriptUrl;
         if (!this.inferedDeviceRoot && this._platform === "android")
         {
-            this.inferedDeviceRoot = utils.inferDeviceRoot(this._webRoot, this._platform, webkitUrl);
+            this.inferedDeviceRoot = utils.inferDeviceRoot(this._appRoot, this._platform, webkitUrl);
              Logger.log("\n\n\n ***Inferred device root: " + this.inferedDeviceRoot + "\n\n\n");
 
             if (this.inferedDeviceRoot.indexOf("/data/user/0/") != -1)
@@ -105,12 +105,12 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
             }
         }
 
-        const clientPath = utils.webkitUrlToClientPath(this._webRoot, this._platform, webkitUrl);
+        const clientPath = utils.webkitUrlToClientPath(this._appRoot, this._platform, webkitUrl);
 
         if (!clientPath) {
-            Logger.log(`Paths.scriptParsed: could not resolve ${webkitUrl} to a file in the workspace. webRoot: ${this._webRoot}`);
+            Logger.log(`Paths.scriptParsed: could not resolve ${webkitUrl} to a file in the workspace. webRoot: ${this._appRoot}`);
         } else {
-            Logger.log(`Paths.scriptParsed: resolved ${webkitUrl} to ${clientPath}. webRoot: ${this._webRoot}`);
+            Logger.log(`Paths.scriptParsed: resolved ${webkitUrl} to ${clientPath}. webRoot: ${this._appRoot}`);
             this._clientPathToWebkitUrl.set(clientPath, webkitUrl);
             this._webkitUrlToClientPath.set(webkitUrl, clientPath);
 
@@ -132,7 +132,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
             if (frame.source && frame.source.path) {
                 const clientPath = this._webkitUrlToClientPath.has(frame.source.path) ?
                     this._webkitUrlToClientPath.get(frame.source.path) :
-                    utils.webkitUrlToClientPath(this._webRoot, this._platform, frame.source.path);
+                    utils.webkitUrlToClientPath(this._appRoot, this._platform, frame.source.path);
                 // Incoming stackFrames have sourceReference and path set. If the path was resolved to a file in the workspace,
                 // clear the sourceReference since it's not needed.
                 if (clientPath) {

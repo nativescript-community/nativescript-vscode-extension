@@ -122,11 +122,11 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private _attach(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs) {
-        ExtensionClient.setAppRoot(utils.getAppRoot(args));
+        ExtensionClient.setAppRoot(args.appRoot);
         let analyticsRequest = (args.request == "launch" && !(args as DebugProtocol.ILaunchRequestArgs).rebuild) ? "sync" : args.request;
         ExtensionClient.getInstance().analyticsLaunchDebugger({ request: analyticsRequest, platform: args.platform });
         this.configureLoggingForRequest(args.request, args);
-        this.appRoot = utils.getAppRoot(args);
+        this.appRoot = args.appRoot;
         this.platform = args.platform;
 
         return ((args.platform == 'ios') ? this._attachIos(args) : this._attachAndroid(args))
