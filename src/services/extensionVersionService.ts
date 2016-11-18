@@ -1,9 +1,9 @@
-import {Version} from '../common/Version';
 import * as https from 'https';
+import {Version} from './version';
 
-export class ExtensionVersionInfo {
-    private static extensionVersion: number[] = null;
-    private static minNativescriptCliVersion: number[] = null;
+export class ExtensionVersionService {
+    private static extensionVersion: Version = null;
+    private static minNativescriptCliVersion: Version = null;
     private static extensionId: string = '8d837914-d8fa-45b5-965d-f76ebd6dbf5c';
     private static marketplaceQueryResult: Promise<any> = null;
 
@@ -16,14 +16,14 @@ export class ExtensionVersionInfo {
         this.minNativescriptCliVersion = Version.parse(packageJson.minNativescriptCliVersion);
     }
 
-    public static getExtensionVersion(): number[] {
+    public static getExtensionVersion(): Version {
         if (this.extensionVersion === null) {
             this.initVersionsFromPackageJson();
         }
         return this.extensionVersion;
     }
 
-    public static getMinSupportedNativeScriptVersion(): number[] {
+    public static getMinSupportedNativeScriptVersion(): Version {
         if (this.minNativescriptCliVersion === null) {
             this.initVersionsFromPackageJson();
         }
@@ -33,7 +33,7 @@ export class ExtensionVersionInfo {
     public static getMarketplaceExtensionData(): Promise<any> {
         if (this.marketplaceQueryResult == null) {
             this.marketplaceQueryResult = new Promise<any>((resolve, reject) => {
-                let postData: string = `{ filters: [{ criteria: [{ filterType: 4, value: "${ExtensionVersionInfo.extensionId}" }] }], flags: 262 }`;
+                let postData: string = `{ filters: [{ criteria: [{ filterType: 4, value: "${ExtensionVersionService.extensionId}" }] }], flags: 262 }`;
 
                 let request = https.request({
                     hostname: 'marketplace.visualstudio.com',
@@ -69,16 +69,16 @@ export class ExtensionVersionInfo {
         return this.marketplaceQueryResult;
     }
 
-    public static createFromMarketplace(): Promise<ExtensionVersionInfo> {
+    public static createFromMarketplace(): Promise<ExtensionVersionService> {
         return this.getMarketplaceExtensionData()
         .then(marketplaceData => {
             let latestVersion = null;
             try {
-                if (marketplaceData.results[0].extensions[0].extensionId == ExtensionVersionInfo.extensionId) {
+                if (marketplaceData.results[0].extensions[0].extensionId == ExtensionVersionService.extensionId) {
                     latestVersion = marketplaceData.results[0].extensions[0].versions[0];
                 }
             } catch (e) { }
-            return new ExtensionVersionInfo(latestVersion);
+            return new ExtensionVersionService(latestVersion);
         });
     }
 
@@ -95,7 +95,7 @@ export class ExtensionVersionInfo {
         if (!this.getLatestVersionMeta()) {
             return true;
         }
-        return Version.compareBySubminor(ExtensionVersionInfo.getExtensionVersion(), Version.parse(this.getLatestVersionMeta().version)) >= 0;
+        return ExtensionVersionService.getExtensionVersion().compareBySubminorTo(Version.parse(this.getLatestVersionMeta().version)) >= 0;
     }
 
     public getTimestamp(): number {

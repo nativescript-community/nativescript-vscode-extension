@@ -1,10 +1,10 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
-import { Version } from '../../common/Version';
+import { Version } from '../version';
 import { GUAService } from './GUAService';
 import { TelerikAnalyticsService } from './TelerikAnalyticsService';
 import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
-import { ExtensionVersionInfo } from '../ExtensionVersionInfo';
+import { ExtensionVersionService } from '../ExtensionVersionService';
 import * as ns from '../NsCliService';
 
 export class AnalyticsService {
@@ -48,8 +48,8 @@ export class AnalyticsService {
         };
 
         this._baseInfo = {
-            cliVersion: Version.stringify(ns.CliVersionInfo.getInstalledCliVersion()),
-            extensionVersion: Version.stringify(ExtensionVersionInfo.getExtensionVersion()),
+            cliVersion: ns.CliVersionInfo.getInstalledCliVersion().toString(),
+            extensionVersion: ExtensionVersionService.getExtensionVersion().toString(),
             operatingSystem: operatingSystem,
             userId: AnalyticsService.generateMachineId()
         };

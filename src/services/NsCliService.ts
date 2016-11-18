@@ -3,9 +3,9 @@ import * as fs from 'fs';
 import {EventEmitter} from 'events';
 import * as path from 'path';
 import * as https from 'https';
-import {Version} from '../common/Version';
+import {Version} from './version';
 import {Logger, Handlers, Tags} from '../services/Logger';
-import {ExtensionVersionInfo} from './ExtensionVersionInfo';
+import {ExtensionVersionService} from './ExtensionVersionService';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 export enum CliVersionState {
@@ -15,11 +15,11 @@ export enum CliVersionState {
 }
 
 export class CliVersionInfo {
-    private static installedCliVersion: number[] = null;
+    private static installedCliVersion: Version = null;
 
     private _state: CliVersionState;
 
-    public static getInstalledCliVersion(): number[] {
+    public static getInstalledCliVersion(): Version {
         if (this.installedCliVersion === null) {
             // get the currently installed CLI version
             let getVersionCommand: string = new CommandBuilder().appendParam('--version').buildAsString(); // tns --version
@@ -35,13 +35,13 @@ export class CliVersionInfo {
     }
 
     constructor() {
-        let installedCliVersion: number[] = CliVersionInfo.getInstalledCliVersion();
+        let installedCliVersion: Version = CliVersionInfo.getInstalledCliVersion();
         if (installedCliVersion === null) {
             this._state = CliVersionState.NotExisting;
         }
         else {
-            let minSupportedCliVersion = ExtensionVersionInfo.getMinSupportedNativeScriptVersion();
-            this._state = Version.compareBySubminor(installedCliVersion, minSupportedCliVersion) < 0 ? CliVersionState.OlderThanSupported : CliVersionState.Compatible;
+            let minSupportedCliVersion = ExtensionVersionService.getMinSupportedNativeScriptVersion();
+            this._state = installedCliVersion.compareBySubminorTo(minSupportedCliVersion) < 0 ? CliVersionState.OlderThanSupported : CliVersionState.Compatible;
         }
     }
 
@@ -58,7 +58,7 @@ export class CliVersionInfo {
             case CliVersionState.NotExisting:
                 return `NativeScript CLI not found, please run 'npm -g install nativescript' to install it.`;
             case CliVersionState.OlderThanSupported:
-                return `The existing NativeScript extension is compatible with NativeScript CLI v${Version.stringify(ExtensionVersionInfo.getMinSupportedNativeScriptVersion())} or greater. The currently installed NativeScript CLI is v${Version.stringify(CliVersionInfo.getInstalledCliVersion())}. You can update the NativeScript CLI by executing 'npm install -g nativescript'.`;
+                return `The existing NativeScript extension is compatible with NativeScript CLI v${ExtensionVersionService.getMinSupportedNativeScriptVersion()} or greater. The currently installed NativeScript CLI is v${CliVersionInfo.getInstalledCliVersion()}. You can update the NativeScript CLI by executing 'npm install -g nativescript'.`;
             default:
                 return null;
         }

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as child from 'child_process';
 import * as ns from './services/NsCliService';
-import {ExtensionVersionInfo} from './services/ExtensionVersionInfo';
+import {ExtensionVersionService} from './services/ExtensionVersionService';
 import {AnalyticsService} from './services/analytics/AnalyticsService';
 import {ExtensionServer} from './services/ipc/ExtensionServer';
 
@@ -13,12 +13,12 @@ function performVersionsCheck(context: vscode.ExtensionContext) {
     }
     else {
         // Checks whether a new version of the extension is available
-        let extensionVersionPromise: Promise<ExtensionVersionInfo> = null;
+        let extensionVersionPromise: Promise<ExtensionVersionService> = null;
 
         // Check the cache for extension version information
         let extensionVersion: any = context.globalState.get<any>('ExtensionVersionInfo');
         if (extensionVersion) {
-            let extensionVersionInfo = new ExtensionVersionInfo(extensionVersion.latestVersionMetadata, extensionVersion.timestamp);
+            let extensionVersionInfo = new ExtensionVersionService(extensionVersion.latestVersionMetadata, extensionVersion.timestamp);
             if (extensionVersionInfo.getTimestamp() > Date.now() - 24 * 60 * 60 * 1000 /* Cache the version for a day */) {
                 extensionVersionPromise = Promise.resolve(extensionVersionInfo);
             }
@@ -26,7 +26,7 @@ function performVersionsCheck(context: vscode.ExtensionContext) {
 
         if (!extensionVersionPromise) {
             // Takes the slow path and checks for newer version in the VS Code Marketplace
-            extensionVersionPromise = ExtensionVersionInfo.createFromMarketplace();
+            extensionVersionPromise = ExtensionVersionService.createFromMarketplace();
         }
         extensionVersionPromise.then(extensionInfo => {
             if (extensionInfo) {
