@@ -29,17 +29,13 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
     private _initArgs: DebugProtocol.InitializeRequestArguments;
 
-    private _clientAttached: boolean;
     private _variableHandles: Handles<IScopeVarHandle>;
     private _currentStack: WebKitProtocol.Debugger.CallFrame[];
     private _committedBreakpointsByUrl: Map<string, WebKitProtocol.Debugger.BreakpointId[]>;
-    private _overlayHelper: utils.DebounceHelper;
     private _exceptionValueObject: WebKitProtocol.Runtime.RemoteObject;
     private _expectingResumedEvent: boolean;
     private _scriptsById: Map<WebKitProtocol.Debugger.ScriptId, WebKitProtocol.Debugger.Script>;
     private _setBreakpointsRequestQ: Promise<any>;
-
-    private _chromeProc: ChildProcess;
     private _webKitConnection: INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
     private appRoot: string;
@@ -49,7 +45,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
     public constructor() {
         this._variableHandles = new Handles<IScopeVarHandle>();
-        this._overlayHelper = new utils.DebounceHelper(/*timeoutMs=*/200);
 
         // Messages tagged with a special tag are sent to the frontend through the debugging protocol
         Logger.addHandler(this._loggerFrontendHandler, [Tags.FrontendMessage]);
@@ -72,7 +67,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private clearClientContext(): void {
-        this._clientAttached = false;
         this.fireEvent({ seq: 0, type: 'event',  event: 'clearClientContext'});
     }
 
@@ -208,9 +202,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private terminateSession(): void {
-        if (this._clientAttached) {
-            this.fireEvent(new TerminatedEvent());
-        }
+        //this.fireEvent(new TerminatedEvent());
 
         Logger.log("Terminating debug session");
         this.clearEverything();
@@ -219,7 +211,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private clearEverything(): void {
         this.clearClientContext();
         this.clearTargetContext();
-        this._chromeProc = null;
 
         if (this._webKitConnection) {
             Logger.log("Closing debug connection");
@@ -333,11 +324,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     public disconnect(): Promise<void> {
-        if (this._chromeProc) {
-            this._chromeProc.kill('SIGINT');
-            this._chromeProc = null;
-        }
-
         this.clearEverything();
 
         return Promise.resolve<void>();
