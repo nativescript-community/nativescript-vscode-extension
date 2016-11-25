@@ -10,7 +10,7 @@ import * as FS from 'fs';
 import {SourceMapConsumer} from 'source-map';
 import * as PathUtils from './pathUtilities';
 import * as utils from '../../utilities';
-import {Logger} from '../../../services/Logger';
+import {DebugAdapterServices as Services} from '../../../services/services/debugAdapterServices';
 
 
 export interface MappingResult {
@@ -191,7 +191,7 @@ export class SourceMaps implements ISourceMaps {
                 const matches = SourceMaps.SOURCE_MAPPING_MATCHER.exec(line);
                 if (matches && matches.length === 2) {
                     const uri = matches[1].trim();
-                    Logger.log(`_findSourceMapUrlInFile: source map url at end of generated file '${generatedFilePath}''`);
+                    Services.logger.log(`_findSourceMapUrlInFile: source map url at end of generated file '${generatedFilePath}''`);
                     return uri;
                 }
             }
@@ -329,7 +329,7 @@ export class SourceMaps implements ISourceMaps {
         }
 
         if (!FS.existsSync(generatedFilePath)) {
-            Logger.log("findGeneratedToSourceMappingSync: can't find the sourceMapping for file: " + generatedFilePath);
+            Services.logger.log("findGeneratedToSourceMappingSync: can't find the sourceMapping for file: " + generatedFilePath);
             return null;
         }
 
@@ -379,7 +379,7 @@ export class SourceMaps implements ISourceMaps {
                 }
             }
             catch (e) {
-                Logger.log(`can't parse inlince sourcemap. exception while processing data url (${e.stack})`);
+                Services.logger.log(`can't parse inlince sourcemap. exception while processing data url (${e.stack})`);
             }
         }
 
@@ -390,14 +390,14 @@ export class SourceMaps implements ISourceMaps {
         let contentsP: Promise<string>;
         if (utils.isURL(mapPath)) {
             contentsP = utils.getURL(mapPath).catch(e => {
-                Logger.log(`SourceMaps.createSourceMap: Could not download map from ${mapPath}`);
+                Services.logger.log(`SourceMaps.createSourceMap: Could not download map from ${mapPath}`);
                 return null;
             });
         } else {
             contentsP = new Promise((resolve, reject) => {
                 FS.readFile(mapPath, (err, data) => {
                     if (err) {
-                        Logger.log(`SourceMaps.createSourceMap: Could not read map from ${mapPath}`);
+                        Services.logger.log(`SourceMaps.createSourceMap: Could not read map from ${mapPath}`);
                         resolve(null);
                     } else {
                         resolve(data);
@@ -412,7 +412,7 @@ export class SourceMaps implements ISourceMaps {
                     // Throws for invalid contents JSON
                     return new SourceMap(pathToGenerated, contents, this._webRoot);
                 } catch (e) {
-                    Logger.log(`SourceMaps.createSourceMap: exception while processing sourcemap: ${e.stack}`);
+                    Services.logger.log(`SourceMaps.createSourceMap: exception while processing sourcemap: ${e.stack}`);
                     return null;
                 }
             } else {
@@ -427,7 +427,7 @@ export class SourceMaps implements ISourceMaps {
             // Throws for invalid contents JSON
             return new SourceMap(pathToGenerated, contents, this._webRoot);
         } catch (e) {
-            Logger.log(`SourceMaps.createSourceMap: exception while processing sourcemap: ${e.stack}`);
+            Services.logger.log(`SourceMaps.createSourceMap: exception while processing sourcemap: ${e.stack}`);
             return null;
         }
 	}
@@ -452,7 +452,7 @@ class SourceMap {
      * webRoot - an absolute path
      */
 	public constructor(generatedPath: string, json: string, webRoot: string) {
-        Logger.log(`SourceMap: creating SM for ${generatedPath}`)
+        Services.logger.log(`SourceMap: creating SM for ${generatedPath}`)
 		this._generatedPath = generatedPath;
         this._webRoot = webRoot;
 

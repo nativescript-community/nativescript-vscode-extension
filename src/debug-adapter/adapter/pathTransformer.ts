@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as utils from '../utilities';
-import {Logger} from '../../services/Logger';
+import {DebugAdapterServices as Services} from '../../services/services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import * as path from 'path';
 
@@ -44,7 +44,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
 
             if (utils.isURL(args.source.path)) {
                 // already a url, use as-is
-                Logger.log(`Paths.setBP: ${args.source.path} is already a URL`);
+                Services.logger.log(`Paths.setBP: ${args.source.path} is already a URL`);
                 resolve();
                 return;
             }
@@ -52,7 +52,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
             const url = utils.canonicalizeUrl(args.source.path);
             if (this._clientPathToWebkitUrl.has(url)) {
                 args.source.path = this._clientPathToWebkitUrl.get(url);
-                Logger.log(`Paths.setBP: Resolved ${url} to ${args.source.path}`);
+                Services.logger.log(`Paths.setBP: Resolved ${url} to ${args.source.path}`);
                 resolve();
             }
             else if (this.inferedDeviceRoot) {
@@ -72,11 +72,11 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
                 inferedUrl = inferedUrl.replace(`.${this._platform}.`, '.');
 
                 args.source.path = inferedUrl;
-                Logger.log(`Paths.setBP: Resolved (by infering) ${url} to ${args.source.path}`);
+                Services.logger.log(`Paths.setBP: Resolved (by infering) ${url} to ${args.source.path}`);
                 resolve();
             }
             else {
-                Logger.log(`Paths.setBP: No target url cached for client path: ${url}, waiting for target script to be loaded.`);
+                Services.logger.log(`Paths.setBP: No target url cached for client path: ${url}, waiting for target script to be loaded.`);
                 args.source.path = url;
                 this._pendingBreakpointsByPath.set(args.source.path, { resolve, reject, args });
             }
@@ -97,7 +97,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
         if (!this.inferedDeviceRoot && this._platform === "android")
         {
             this.inferedDeviceRoot = utils.inferDeviceRoot(this._appRoot, this._platform, webkitUrl);
-             Logger.log("\n\n\n ***Inferred device root: " + this.inferedDeviceRoot + "\n\n\n");
+             Services.logger.log("\n\n\n ***Inferred device root: " + this.inferedDeviceRoot + "\n\n\n");
 
             if (this.inferedDeviceRoot.indexOf("/data/user/0/") != -1)
             {
@@ -108,9 +108,9 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
         const clientPath = utils.webkitUrlToClientPath(this._appRoot, this._platform, webkitUrl);
 
         if (!clientPath) {
-            Logger.log(`Paths.scriptParsed: could not resolve ${webkitUrl} to a file in the workspace. webRoot: ${this._appRoot}`);
+            Services.logger.log(`Paths.scriptParsed: could not resolve ${webkitUrl} to a file in the workspace. webRoot: ${this._appRoot}`);
         } else {
-            Logger.log(`Paths.scriptParsed: resolved ${webkitUrl} to ${clientPath}. webRoot: ${this._appRoot}`);
+            Services.logger.log(`Paths.scriptParsed: resolved ${webkitUrl} to ${clientPath}. webRoot: ${this._appRoot}`);
             this._clientPathToWebkitUrl.set(clientPath, webkitUrl);
             this._webkitUrlToClientPath.set(webkitUrl, clientPath);
 
@@ -118,7 +118,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
         }
 
         if (this._pendingBreakpointsByPath.has(event.body.scriptUrl)) {
-            Logger.log(`Paths.scriptParsed: Resolving pending breakpoints for ${event.body.scriptUrl}`);
+            Services.logger.log(`Paths.scriptParsed: Resolving pending breakpoints for ${event.body.scriptUrl}`);
             const pendingBreakpoint = this._pendingBreakpointsByPath.get(event.body.scriptUrl);
             this._pendingBreakpointsByPath.delete(event.body.scriptUrl);
             this.setBreakpoints(pendingBreakpoint.args).then(pendingBreakpoint.resolve, pendingBreakpoint.reject);

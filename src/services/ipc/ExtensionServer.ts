@@ -3,20 +3,11 @@ import * as os from 'os';
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import * as extProtocol from './ExtensionProtocol';
-import {AnalyticsService} from '../analytics/AnalyticsService';
+import {ExtensionHostServices as Services} from '../services/extensionHostServices';
 let ipc = require('node-ipc');
 
 export class ExtensionServer {
-    private static _instance: ExtensionServer;
-
     private _isRunning: boolean;
-
-    public static getInstance() {
-        if (!this._instance) {
-            this._instance = new ExtensionServer();
-        }
-        return this._instance;
-    }
 
     public static getTempFilePathForDirectory(directoryPath: string) {
         let fileName: string = 'vsc-ns-ext-' + crypto.createHash('md5').update(directoryPath).digest("hex") + '.sock';
@@ -66,10 +57,10 @@ export class ExtensionServer {
     }
 
     public analyticsLaunchDebugger(args: extProtocol.AnalyticsLaunchDebuggerArgs): Promise<any> {
-        return AnalyticsService.getInstance().launchDebugger(args.request, args.platform);
+        return Services.analyticsService.launchDebugger(args.request, args.platform);
     }
 
     public runRunCommand(args: extProtocol.AnalyticsRunRunCommandArgs): Promise<any> {
-        return AnalyticsService.getInstance().runRunCommand(args.platform);
+        return Services.analyticsService.runRunCommand(args.platform);
     }
 }

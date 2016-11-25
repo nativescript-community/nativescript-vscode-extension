@@ -4,45 +4,25 @@ import * as ns from './services/NsCliService';
 import {ExtensionVersionService} from './services/ExtensionVersionService';
 import {AnalyticsService} from './services/analytics/AnalyticsService';
 import {ExtensionServer} from './services/ipc/ExtensionServer';
+import {ExtensionHostServices as Services} from './services/services/extensionHostServices';
 
-function performVersionsCheck(context: vscode.ExtensionContext) {
-    // Check the state of the existing NativeScript CLI
+// this method is called when the extension is activated
+export function activate(context: vscode.ExtensionContext) {
+    Services.globalState = context.globalState;
+    Services.extensionServer.start();
+
+    // Check for newer extension version
+    Services.extensionVersionService.isLatestInstalled.then(result => {
+        if (!result.result) {
+            vscode.window.showWarningMessage(result.error);
+        }
+    });
+
+    // Check if NativeScript CLI is installed globally and if it is compatible with the extension version
     let cliInfo: ns.CliVersionInfo = new ns.CliVersionInfo();
     if (cliInfo.getErrorMessage() !== null) {
         vscode.window.showErrorMessage(cliInfo.getErrorMessage());
     }
-    else {
-        // Checks whether a new version of the extension is available
-        let extensionVersionPromise: Promise<ExtensionVersionService> = null;
-
-        // Check the cache for extension version information
-        let extensionVersion: any = context.globalState.get<any>('ExtensionVersionInfo');
-        if (extensionVersion) {
-            let extensionVersionInfo = new ExtensionVersionService(extensionVersion.latestVersionMetadata, extensionVersion.timestamp);
-            if (extensionVersionInfo.getTimestamp() > Date.now() - 24 * 60 * 60 * 1000 /* Cache the version for a day */) {
-                extensionVersionPromise = Promise.resolve(extensionVersionInfo);
-            }
-        }
-
-        if (!extensionVersionPromise) {
-            // Takes the slow path and checks for newer version in the VS Code Marketplace
-            extensionVersionPromise = ExtensionVersionService.createFromMarketplace();
-        }
-        extensionVersionPromise.then(extensionInfo => {
-            if (extensionInfo) {
-                context.globalState.update('ExtensionVersionInfo', { latestVersionMetadata: extensionInfo.getLatestVersionMeta(), timestamp: extensionInfo.getTimestamp() }); // save in cache
-                if (!extensionInfo.isLatest()) {
-                    vscode.window.showWarningMessage(`A new version of the NativeScript extension is available. Run "Extensions: Show Outdated Extensions" command and select "NativeScript" to update to v${extensionInfo.getLatestVersionMeta().version}.`);
-                }
-            }
-        }, error => { /* In case of error behave as if the extension verison is latest */ });
-    }
-}
-
-// this method is called when the extension is activated
-export function activate(context: vscode.ExtensionContext) {
-    ExtensionServer.getInstance().start();
-    performVersionsCheck(context);
 
     let runCommand = (project: ns.NSProject) => {
         if (vscode.workspace.rootPath === undefined) {
@@ -55,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
         runChannel.clear();
         runChannel.show(vscode.ViewColumn.Two);
 
-        AnalyticsService.getInstance().runRunCommand(project.platform());
+        Services.analyticsService.runRunCommand(project.platform());
 
         return project.run()
         .then(tnsProcess => {
@@ -91,5 +71,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    ExtensionServer.getInstance().stop();
+    Services.extensionServer.stop();
 }

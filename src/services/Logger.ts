@@ -19,56 +19,49 @@ type TaggedLoggerHandler = { handler: LoggerHandler, tags: string[] };
  * The logger is a singleton.
  */
 export class Logger {
-    private static _instance: Logger;
-
     private _handlers: TaggedLoggerHandler[];
 
     constructor() {
         this._handlers = [];
     }
 
-    private static get instance(): Logger {
-        this._instance = this._instance || new Logger();
-        return this._instance;
-    }
-
-    private static handleMessage(message: string, type: LoggerMessageType = LoggerMessageType.Log, tag: string = null) {
-        for (let handler of this.instance._handlers) {
+    private handleMessage(message: string, type: LoggerMessageType = LoggerMessageType.Log, tag: string = null) {
+        for (let handler of this._handlers) {
             if (!handler.tags || handler.tags.length == 0 || handler.tags.indexOf(tag) > -1) {
                 handler.handler({ message: message, type: type });
             }
         }
     }
 
-    public static log(message: string, tag: string = null): void {
+    public log(message: string, tag: string = null): void {
         this.handleMessage(message, LoggerMessageType.Log, tag);
     }
 
-    public static info(message: string, tag: string = null): void {
+    public info(message: string, tag: string = null): void {
         this.handleMessage(message, LoggerMessageType.Info, tag);
     }
 
-    public static warn(message: string, tag: string = null): void {
+    public warn(message: string, tag: string = null): void {
         this.handleMessage(message, LoggerMessageType.Warning, tag);
     }
 
-    public static error(message: string, tag: string = null): void {
+    public error(message: string, tag: string = null): void {
         this.handleMessage(message, LoggerMessageType.Error, tag);
     }
 
-    public static addHandler(handler: LoggerHandler, tags: string[] = null) {
+    public addHandler(handler: LoggerHandler, tags: string[] = null) {
         tags = tags || [];
-        this.instance._handlers.push({ handler: handler, tags: tags });
+        this._handlers.push({ handler: handler, tags: tags });
     }
 
     /**
      * Removes all occurrence of this handler, ignoring the associated tags
      */
-    public static removeHandler(handlerToRemove: LoggerHandler) {
-        let i = this.instance._handlers.length;
+    public removeHandler(handlerToRemove: LoggerHandler) {
+        let i = this._handlers.length;
         while (i--) {
-            if (this.instance._handlers[i].handler == handlerToRemove) {
-                this.instance._handlers.splice(i, 1);
+            if (this._handlers[i].handler == handlerToRemove) {
+                this._handlers.splice(i, 1);
             }
         }
     }

@@ -1,8 +1,7 @@
 import * as http from 'http';
 import {EventEmitter} from 'events';
-import {Logger} from '../../services/Logger';
+import {DebugAdapterServices as Services} from '../../services/services/debugAdapterServices';
 import * as Net from 'net';
-import * as ns from '../../services/NsCliService';
 import { INSDebugConnection } from './INSDebugConnection';
 
 
@@ -137,7 +136,7 @@ class ResReqNetSocket extends EventEmitter {
                 this.debugBuffer = b.toString('utf8', this.msg.contentLength, b.length);
                 if (this.msg.body.length > 0) {
                     obj = JSON.parse(this.msg.body);
-                    Logger.log('From target(' + (obj.type ? obj.type : '') + '): ' + this.msg.body);
+                    Services.logger.log('From target(' + (obj.type ? obj.type : '') + '): ' + this.msg.body);
                     if (typeof obj.running === 'boolean') {
                         this.isRunning = obj.running;
                     }
@@ -182,7 +181,7 @@ class ResReqNetSocket extends EventEmitter {
 
     public send(data) {
         if (this.connected) {
-            Logger.log('To target: ' + data);
+            Services.logger.log('To target: ' + data);
             this.conn.write('Content-Length: ' + data.length + '\r\n\r\n' + data);
             this.hasNewDataMessage = true;
              if (!this.isMessageFlushLoopStarted) {
@@ -438,7 +437,7 @@ export class AndroidConnection implements INSDebugConnection {
     }
 
     public attach(port: number, url?: string): Promise<void> {
-        Logger.log('Attempting to attach on port ' + port);
+        Services.logger.log('Attempting to attach on port ' + port);
         return this._attach(port, url);
         //.then(() => this.sendMessage('Console.enable'))
     }

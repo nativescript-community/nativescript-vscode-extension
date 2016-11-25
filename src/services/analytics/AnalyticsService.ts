@@ -8,19 +8,10 @@ import { ExtensionVersionService } from '../ExtensionVersionService';
 import * as ns from '../NsCliService';
 
 export class AnalyticsService {
-    private static _instance: AnalyticsService;
-
     private _baseInfo: AnalyticsBaseInfo;
     private _gua: GUAService;
     private _ta: TelerikAnalyticsService;
     private _analyticsEnabled: boolean;
-
-    public static getInstance(): AnalyticsService {
-        if (!this._instance) {
-            this._instance = new AnalyticsService();
-        }
-        return this._instance;
-    }
 
     public static generateMachineId(): string {
         let machineId = '';
@@ -49,7 +40,7 @@ export class AnalyticsService {
 
         this._baseInfo = {
             cliVersion: ns.CliVersionInfo.getInstalledCliVersion().toString(),
-            extensionVersion: ExtensionVersionService.getExtensionVersion().toString(),
+            extensionVersion: require('../../../package.json').version,
             operatingSystem: operatingSystem,
             userId: AnalyticsService.generateMachineId()
         };
@@ -79,7 +70,7 @@ export class AnalyticsService {
                     this._gua.runRunCommand(platform),
                     this._ta.runRunCommand(platform)
                 ]);
-            } catch(e) {}
+            } catch(e) { }
         }
         return Promise.resolve();
     }

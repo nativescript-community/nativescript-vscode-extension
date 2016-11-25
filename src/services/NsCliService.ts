@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as https from 'https';
 import {Version} from './version';
 import {Logger, Handlers, Tags} from '../services/Logger';
+import {Services} from '../services/services/services';
 import {ExtensionVersionService} from './ExtensionVersionService';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
@@ -34,13 +35,17 @@ export class CliVersionInfo {
         return this.installedCliVersion;
     }
 
+    private static getMinNativeScriptCliVersionSupported(): Version {
+        return Version.parse(require('../../package.json').minNativescriptCliVersion);
+    }
+
     constructor() {
         let installedCliVersion: Version = CliVersionInfo.getInstalledCliVersion();
         if (installedCliVersion === null) {
             this._state = CliVersionState.NotExisting;
         }
         else {
-            let minSupportedCliVersion = ExtensionVersionService.getMinSupportedNativeScriptVersion();
+            let minSupportedCliVersion = CliVersionInfo.getMinNativeScriptCliVersionSupported();
             this._state = installedCliVersion.compareBySubminorTo(minSupportedCliVersion) < 0 ? CliVersionState.OlderThanSupported : CliVersionState.Compatible;
         }
     }
@@ -58,7 +63,7 @@ export class CliVersionInfo {
             case CliVersionState.NotExisting:
                 return `NativeScript CLI not found, please run 'npm -g install nativescript' to install it.`;
             case CliVersionState.OlderThanSupported:
-                return `The existing NativeScript extension is compatible with NativeScript CLI v${ExtensionVersionService.getMinSupportedNativeScriptVersion()} or greater. The currently installed NativeScript CLI is v${CliVersionInfo.getInstalledCliVersion()}. You can update the NativeScript CLI by executing 'npm install -g nativescript'.`;
+                return `The existing NativeScript extension is compatible with NativeScript CLI v${CliVersionInfo.getMinNativeScriptCliVersionSupported()} or greater. The currently installed NativeScript CLI is v${CliVersionInfo.getInstalledCliVersion()}. You can update the NativeScript CLI by executing 'npm install -g nativescript'.`;
             default:
                 return null;
         }
@@ -165,7 +170,7 @@ export class IosProject extends NSProject {
 
             child.stdout.on('data', (data) => {
                 let cliOutput: string = data.toString();
-                Logger.log(cliOutput, Tags.FrontendMessage);
+                Services.logger.log(cliOutput, Tags.FrontendMessage);
 
                 socketPath = socketPath || isSocketOpened(cliOutput);
                 appSynced = rebuild ? false : (appSynced || isAppSynced(cliOutput));
@@ -176,7 +181,7 @@ export class IosProject extends NSProject {
             });
 
             child.stderr.on('data', (data) => {
-                Logger.error(data.toString(), Tags.FrontendMessage);
+                Services.logger.error(data.toString(), Tags.FrontendMessage);
             });
 
             child.on('close', (code, signal) => {
@@ -230,13 +235,13 @@ export class AndroidProject extends NSProject {
                     .appendParams(args.tnsArgs)
                     .build();
 
-                Logger.log("tns  debug command: " + command);
+                Services.logger.log("tns  debug command: " + command);
 
                 // run NativeScript CLI command
                 let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
                 child.stdout.on('data', function(data) {
                     let strData: string = data.toString();
-                    Logger.log(data.toString(), Tags.FrontendMessage);
+                    Services.logger.log(data.toString(), Tags.FrontendMessage);
                     if (!launched) {
                          if (args.request === "launch" && strData.indexOf('# NativeScript Debugger started #') > -1) {
                              launched = true;
@@ -249,7 +254,7 @@ export class AndroidProject extends NSProject {
                 });
 
                 child.stderr.on('data', function(data) {
-                    Logger.error(data.toString(), Tags.FrontendMessage);
+                    Services.logger.error(data.toString(), Tags.FrontendMessage);
                 });
 
                 child.on('close', function(code) {
@@ -284,7 +289,7 @@ export class AndroidProject extends NSProject {
             let child: ChildProcess = this.spawnProcess(command.path, command.args, args.tnsOutput);
 
             child.stdout.on('data', function(data) {
-                Logger.log(data.toString(), Tags.FrontendMessage);
+                Services.logger.log(data.toString(), Tags.FrontendMessage);
 
                 let regexp = new RegExp("(?:debug port: )([\\d]{5})");
 
@@ -299,10 +304,10 @@ export class AndroidProject extends NSProject {
                 }
 
                 if (portNumberMatch) {
-                    Logger.log("port number match '" + portNumberMatch + "'");
+                    Services.logger.log("port number match '" + portNumberMatch + "'");
                     let portNumber = parseInt(portNumberMatch);
                     if (portNumber) {
-                        Logger.log("port number " + portNumber);
+                        Services.logger.log("port number " + portNumber);
                         child.stdout.removeAllListeners('data');
                         resolve(portNumber);
                     }
@@ -310,7 +315,7 @@ export class AndroidProject extends NSProject {
             });
 
             child.stderr.on('data', function(data) {
-                Logger.error(data.toString(), Tags.FrontendMessage);
+                Services.logger.error(data.toString(), Tags.FrontendMessage);
             });
 
             child.on('close', function(code) {
