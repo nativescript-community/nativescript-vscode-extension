@@ -87,7 +87,7 @@ export abstract class NSProject extends EventEmitter {
 
     public abstract run(): Promise<ChildProcess>;
 
-    public abstract debug(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<any>;
+    public abstract debug(args: DebugProtocol.IRequestArgs): Promise<any>;
 
     protected spawnProcess(commandPath: string, commandArgs: string[], tnsOutput?: string): ChildProcess {
         let options = { cwd: this.getProjectPath(), shell: true };
@@ -123,7 +123,7 @@ export class IosProject extends NSProject {
         return Promise.resolve(child);
     }
 
-    public debug(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<string> {
+    public debug(args: DebugProtocol.IRequestArgs): Promise<string> {
         if (!this.isOSX()) {
             return Promise.reject('iOS platform is supported only on OS X.');
         }
@@ -211,7 +211,7 @@ export class AndroidProject extends NSProject {
         return Promise.resolve(child);
     }
 
-    public debug(params: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
+    public debug(params: DebugProtocol.IRequestArgs): Promise<void> {
         if (params.request === "attach") {
             return Promise.resolve<void>();
         }
@@ -266,7 +266,7 @@ export class AndroidProject extends NSProject {
          }
     }
 
-    public getDebugPort(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<number> {
+    public getDebugPort(args: DebugProtocol.IRequestArgs): Promise<number> {
         //TODO: Call CLI to get the debug port
         //return Promise.resolve(40001);
 

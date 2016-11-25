@@ -17,6 +17,7 @@ import * as ns from '../services/NsCliService';
 import {AnalyticsService} from '../services/analytics/AnalyticsService';
 import {ExtensionClient} from '../services/ipc/ExtensionClient';
 import {Logger, LoggerHandler, Handlers, Tags} from '../services/Logger';
+import {DebugConfiguration} from './debugConfiguration';
 
 interface IScopeVarHandle {
     objectId: string;
@@ -42,6 +43,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private platform: string;
     private _lastOutputEvent: OutputEvent;
     private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`  ›${args.message}\n`, args.type.toString()));
+    private _debugConfig: DebugConfiguration;
 
     public constructor() {
         this._variableHandles = new Handles<IScopeVarHandle>();
@@ -100,14 +102,15 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     public launch(args: DebugProtocol.ILaunchRequestArgs): Promise<void> {
-        return this._attach(args);
+        return this.processRequest(args);
     }
 
     public attach(args: DebugProtocol.IAttachRequestArgs): Promise<void> {
-        return this._attach(args);
+        return this.processRequest(args);
     }
 
-    private configureLoggingForRequest(name: string, args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
+    private configureLoggingForRequest(): void {
+        let args = this._debugConfig.args;
         if (args.diagnosticLogging) {
             // The logger frontend handler is initially configured to handle messages with LoggerTagFrontendMessage tag only.
             // We remove the handler and add it again for all messages.
@@ -118,18 +121,19 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Logger.addHandler(Handlers.createStreamHandler(fs.createWriteStream(args.tnsOutput)));
         }
         Logger.log(`initialize(${JSON.stringify(this._initArgs) })`);
-        Logger.log(`${name}(${JSON.stringify(args) })`);
+        Logger.log(`${this._debugConfig.args.request}(${JSON.stringify(this._debugConfig.isAttach ? this._debugConfig.attachArgs : this._debugConfig.launchArgs) })`);
     }
 
-    private _attach(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs) {
+    private processRequest(args: DebugProtocol.IRequestArgs) {
+        this._debugConfig = new DebugConfiguration(args);
         ExtensionClient.setAppRoot(args.appRoot);
-        let analyticsRequest = (args.request == "launch" && !(args as DebugProtocol.ILaunchRequestArgs).rebuild) ? "sync" : args.request;
+        let analyticsRequest = this._debugConfig.isSync ? "sync" : args.request;
         ExtensionClient.getInstance().analyticsLaunchDebugger({ request: analyticsRequest, platform: args.platform });
-        this.configureLoggingForRequest(args.request, args);
+        this.configureLoggingForRequest();
         this.appRoot = args.appRoot;
         this.platform = args.platform;
 
-        return ((args.platform == 'ios') ? this._attachIos(args) : this._attachAndroid(args))
+        return ((args.platform == 'ios') ? this._attachIos() : this._attachAndroid())
             .then(() => {
                 this.fireEvent(new InitializedEvent());
             },
@@ -140,18 +144,20 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             });
     }
 
-    private _attachIos(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
+    private _attachIos(): Promise<void> {
+        let args = this._debugConfig.args;
         let iosProject : ns.IosProject = new ns.IosProject(this.appRoot, args.tnsOutput);
 
         return iosProject.debug(args)
         .then((socketFilePath) => {
             let iosConnection: IosConnection = new IosConnection();
-            this.setConnection(iosConnection, args);
+            this.setConnection(iosConnection);
             return iosConnection.attach(socketFilePath);
         });
     }
 
-    private _attachAndroid(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
+    private _attachAndroid(): Promise<void> {
+        let args = this._debugConfig.args;
         let androidProject: ns.AndroidProject = new ns.AndroidProject(this.appRoot, args.tnsOutput);
         let thisAdapter: WebKitDebugAdapter = this;
 
@@ -166,7 +172,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 port = debugPort;
                 if (!thisAdapter._webKitConnection) {
                     androidConnection = new AndroidConnection();
-                    this.setConnection(androidConnection, args);
+                    this.setConnection(androidConnection);
                 }
             }).then(() => {
                 Logger.log("Attaching to debug application");
@@ -175,7 +181,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         });
     }
 
-    private setConnection(connection: INSDebugConnection, args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs) : INSDebugConnection {
+    private setConnection(connection: INSDebugConnection) : INSDebugConnection {
+        let args = this._debugConfig.args;
         connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
         connection.on('Debugger.resumed', () => this.onDebuggerResumed());
         connection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));
@@ -186,12 +193,12 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         connection.on('Inspector.detached', () => this.terminateSession());
         connection.on('close', () => this.terminateSession());
         connection.on('error', () => this.terminateSession());
-        connection.on('connect', () => this.onConnected(args))
+        connection.on('connect', () => this.onConnected())
         this._webKitConnection = connection;
         return connection;
     }
 
-    private onConnected(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
+    private onConnected(): void {
         Logger.log("Debugger connected");
     }
 

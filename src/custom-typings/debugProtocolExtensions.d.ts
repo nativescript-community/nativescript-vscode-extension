@@ -4,30 +4,27 @@ declare module 'vscode-debugprotocol' {
     namespace DebugProtocol {
 
         type RequestArguments = LaunchRequestArguments | AttachRequestArguments;
+        type RequestType = "launch" | "attach";
+        type PlatformType = "android" | "ios";
 
-        interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments {
-            platform: string;
-            appRoot?: string;
-            stopOnEntry?: boolean;
+        interface IRequestArgs {
+            request: RequestType;
+            platform: PlatformType;
+            appRoot: string;
             sourceMaps?: boolean;
             diagnosticLogging?: boolean;
-            request: string;
             tnsArgs?: string[];
             tnsOutput?: string;
-            rebuild?: boolean;
-            syncAllFiles?: boolean;
             nativescriptCliPath?: string;
         }
 
-        interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments {
-            platform: string;
-            appRoot?: string;
-            sourceMaps?: boolean;
-            diagnosticLogging?: boolean;
-            request: string;
-            tnsArgs?: string[];
-            tnsOutput?: string;
-            nativescriptCliPath?: string;
+        interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, IRequestArgs {
+            stopOnEntry?: boolean;
+            rebuild?: boolean;
+            syncAllFiles?: boolean;
+        }
+
+        interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, IRequestArgs {
         }
 
         interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArguments {

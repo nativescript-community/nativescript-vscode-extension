@@ -36,7 +36,7 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
         this.init(args);
     }
 
-    private init(args: DebugProtocol.ILaunchRequestArgs | DebugProtocol.IAttachRequestArgs): void {
+    private init(args: DebugProtocol.IRequestArgs): void {
         if (args.sourceMaps) {
             this._webRoot = args.appRoot;
             this._sourceMaps = new SourceMaps(this._webRoot);
