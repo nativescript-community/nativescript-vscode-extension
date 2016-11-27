@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as utils from '../utilities';
+import * as utils from '../../common/utilities';
 import {DebugAdapterServices as Services} from '../../services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
 

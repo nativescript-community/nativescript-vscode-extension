@@ -6,7 +6,7 @@ import * as net from 'net';
 import * as stream from 'stream';
 import {EventEmitter} from 'events';
 import {INSDebugConnection} from './INSDebugConnection';
-import * as utils from '../utilities';
+import * as utils from '../../common/utilities';
 import {DebugAdapterServices as Services} from '../../services/debugAdapterServices';
 
 interface IMessageWithId {

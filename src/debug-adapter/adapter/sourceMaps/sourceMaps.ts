@@ -9,7 +9,7 @@ import * as URL from 'url';
 import * as FS from 'fs';
 import {SourceMapConsumer} from 'source-map';
 import * as PathUtils from './pathUtilities';
-import * as utils from '../../utilities';
+import * as utils from '../../../common/utilities';
 import {DebugAdapterServices as Services} from '../../../services/debugAdapterServices';
 
 

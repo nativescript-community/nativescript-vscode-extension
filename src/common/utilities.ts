@@ -9,6 +9,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
+import {Version} from './Version';
 
 export const enum Platform {
     Windows, OSX, Linux
@@ -375,4 +376,12 @@ export function lstrip(s: string, lStr: string): string {
     return s.startsWith(lStr) ?
         s.substr(lStr.length) :
         s;
+}
+
+export function getInstalledExtensionVersion(): Version {
+    return Version.parse(require('../../package.json').version);
+}
+
+export function getMinSupportedCliVersion(): Version {
+    return Version.parse(require('../../package.json').minNativescriptCliVersion);
 }

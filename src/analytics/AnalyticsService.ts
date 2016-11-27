@@ -4,8 +4,8 @@ import { Version } from '../common/version';
 import { GUAService } from './GUAService';
 import { TelerikAnalyticsService } from './TelerikAnalyticsService';
 import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
-import { ExtensionVersionService } from '../common/ExtensionVersionService';
-import * as ns from '../project/NsCliService';
+import { ExtensionHostServices as Services } from '../services/extensionHostServices';
+import * as utils from '../common/utilities';
 
 export class AnalyticsService {
     private _baseInfo: AnalyticsBaseInfo;
@@ -39,8 +39,8 @@ export class AnalyticsService {
         };
 
         this._baseInfo = {
-            cliVersion: ns.CliVersionInfo.getInstalledCliVersion().toString(),
-            extensionVersion: require('../../../package.json').version,
+            cliVersion: Services.cli.version.toString(),
+            extensionVersion: utils.getInstalledExtensionVersion().toString(),
             operatingSystem: operatingSystem,
             userId: AnalyticsService.generateMachineId()
         };

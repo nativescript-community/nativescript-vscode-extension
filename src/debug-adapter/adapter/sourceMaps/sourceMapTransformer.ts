@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import {DebugAdapterServices as Services} from '../../../services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {ISourceMaps, SourceMaps} from './sourceMaps';
-import * as utils from '../../utilities';
+import * as utils from '../../../common/utilities';
 
 interface IPendingBreakpoint {
     resolve: () => void;

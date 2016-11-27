@@ -1,10 +1,17 @@
 import {DebugProtocol} from 'vscode-debugprotocol';
+import {Project} from '../project/project';
+import {IosProject} from '../project/iosProject';
+import {AndroidProject} from '../project/androidProject';
+import {DebugAdapterServices as Services} from '../services/debugAdapterServices';
+import {NativeScriptCli} from '../project/nativeScriptCli';
 
-export class DebugConfiguration {
+export class DebugRequest {
     private _requestArgs: DebugProtocol.IRequestArgs;
+    private _project: Project;
 
-    constructor(requestArgs: DebugProtocol.IRequestArgs) {
+    constructor(requestArgs: DebugProtocol.IRequestArgs, cli: NativeScriptCli) {
         this._requestArgs = requestArgs;
+        this._project = this.isIos ? new IosProject(this.args.appRoot, cli) : new AndroidProject(this.args.appRoot, cli);
     }
 
     public get isLaunch(): boolean {
@@ -32,10 +39,22 @@ export class DebugConfiguration {
     }
 
     public get launchArgs(): DebugProtocol.ILaunchRequestArgs {
-        return this.isLaunch ? <DebugProtocol.ILaunchRequestArgs>this.args : null;
+        return (this.isLaunch || this.isSync) ? <DebugProtocol.ILaunchRequestArgs>this.args : null;
     }
 
     public get attachArgs(): DebugProtocol.IAttachRequestArgs {
         return this.isAttach ? <DebugProtocol.IAttachRequestArgs>this.args : null;
+    }
+
+    public get project(): Project {
+        return this._project;
+    }
+
+    public get iosProject(): IosProject {
+        return this.isIos ? <IosProject>this.project : null;
+    }
+
+    public get androidProject(): AndroidProject {
+        return this.isAndroid ? <AndroidProject>this.project : null;
     }
 }

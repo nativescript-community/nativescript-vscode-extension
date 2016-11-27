@@ -3,8 +3,8 @@ import {ExtensionClient} from '../ipc/extensionClient';
 import {Logger} from '../common/Logger';
 
 export class DebugAdapterServices extends Services {
-    private static _appRoot: string;
     private static _extensionClient: ExtensionClient;
+    private static _appRoot: string;
 
     public static get appRoot(): string { return this._appRoot; }
 

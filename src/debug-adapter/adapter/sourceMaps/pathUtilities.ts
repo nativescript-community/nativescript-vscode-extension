@@ -7,7 +7,7 @@
 import * as Path from 'path';
 import * as URL from 'url';
 import {DebugAdapterServices as Services} from '../../../services/debugAdapterServices';
-import * as utils from '../../utilities';
+import * as utils from '../../../common/utilities';
 
 export function getPathRoot(p: string) {
     if (p) {

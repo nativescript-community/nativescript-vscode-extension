@@ -1,6 +1,7 @@
 import * as https from 'https';
 import * as vscode from 'vscode';
 import {Version} from './version';
+import * as utils from './utilities';
 
 export type LatestPublishedVersionCheckResult = {latestPublishedVersion: string, timestamp: number};
 
@@ -74,7 +75,7 @@ export class ExtensionVersionService {
 
     public get isLatestInstalled(): Promise<{ result: boolean, error: string }> {
         return this.latestPublishedVersion.then(latestVersion => {
-            let extensionVersion = Version.parse(require('../../package.json').version);
+            let extensionVersion = utils.getInstalledExtensionVersion();
             let isLatest: boolean = extensionVersion.compareBySubminorTo(latestVersion) >= 0;
             let error = isLatest ? null : `A new version of the NativeScript extension is available. Open "Extensions" panel to update to v${latestVersion}.`;
             return {result: isLatest, error: error};
