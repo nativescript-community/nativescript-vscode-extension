@@ -10,7 +10,7 @@ import * as FS from 'fs';
 import {SourceMapConsumer} from 'source-map';
 import * as PathUtils from './pathUtilities';
 import * as utils from '../../utilities';
-import {DebugAdapterServices as Services} from '../../../services/services/debugAdapterServices';
+import {DebugAdapterServices as Services} from '../../../services/debugAdapterServices';
 
 
 export interface MappingResult {

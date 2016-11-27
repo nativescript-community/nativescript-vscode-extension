@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 import * as child from 'child_process';
-import * as ns from './services/NsCliService';
-import {ExtensionVersionService} from './services/ExtensionVersionService';
-import {AnalyticsService} from './services/analytics/AnalyticsService';
-import {ExtensionServer} from './services/ipc/ExtensionServer';
-import {ExtensionHostServices as Services} from './services/services/extensionHostServices';
+import * as ns from './project/NsCliService';
+import {ExtensionHostServices as Services} from './services/extensionHostServices';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {

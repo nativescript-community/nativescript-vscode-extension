@@ -4,7 +4,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import {DebugAdapterServices as Services} from '../../../services/services/debugAdapterServices';
+import {DebugAdapterServices as Services} from '../../../services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {ISourceMaps, SourceMaps} from './sourceMaps';
 import * as utils from '../../utilities';

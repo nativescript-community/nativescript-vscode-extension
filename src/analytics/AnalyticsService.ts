@@ -1,11 +1,11 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
-import { Version } from '../version';
+import { Version } from '../common/version';
 import { GUAService } from './GUAService';
 import { TelerikAnalyticsService } from './TelerikAnalyticsService';
 import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
-import { ExtensionVersionService } from '../ExtensionVersionService';
-import * as ns from '../NsCliService';
+import { ExtensionVersionService } from '../common/ExtensionVersionService';
+import * as ns from '../project/NsCliService';
 
 export class AnalyticsService {
     private _baseInfo: AnalyticsBaseInfo;

@@ -3,9 +3,8 @@
  *--------------------------------------------------------*/
 
 import * as utils from '../utilities';
-import {DebugAdapterServices as Services} from '../../services/services/debugAdapterServices';
+import {DebugAdapterServices as Services} from '../../services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
-import * as path from 'path';
 
 interface IPendingBreakpoint {
     resolve: () => void;

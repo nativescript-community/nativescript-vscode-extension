@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import {Services} from './services';
-import {ExtensionVersionService} from '../extensionVersionService';
+import {ExtensionVersionService} from '../common/extensionVersionService';
 import {ExtensionServer} from '../ipc/extensionServer';
 import {AnalyticsService} from '../analytics/analyticsService';
 

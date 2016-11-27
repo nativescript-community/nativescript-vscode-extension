@@ -3,10 +3,9 @@ import * as fs from 'fs';
 import {EventEmitter} from 'events';
 import * as path from 'path';
 import * as https from 'https';
-import {Version} from './version';
-import {Logger, Handlers, Tags} from '../services/Logger';
-import {Services} from '../services/services/services';
-import {ExtensionVersionService} from './ExtensionVersionService';
+import {Version} from '../common/version';
+import {Handlers, Tags} from '../common/Logger';
+import {Services} from '../services/services';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 export enum CliVersionState {

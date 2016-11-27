@@ -1,4 +1,4 @@
-import {Logger} from '../logger';
+import {Logger} from '../common/logger';
 
 export class Services {
     private static _logger: Logger;

@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as utils from '../utilities';
-import {DebugAdapterServices as Services} from '../../services/services/debugAdapterServices';
+import {DebugAdapterServices as Services} from '../../services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 export type EventHandler = (event: DebugProtocol.Event) => void;

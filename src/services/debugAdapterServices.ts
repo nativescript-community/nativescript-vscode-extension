@@ -1,6 +1,6 @@
 import {Services} from './services';
 import {ExtensionClient} from '../ipc/extensionClient';
-import {Logger} from '../Logger';
+import {Logger} from '../common/Logger';
 
 export class DebugAdapterServices extends Services {
     private static _appRoot: string;

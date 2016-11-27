@@ -4,8 +4,8 @@
 
 import * as os from 'os';
 import * as fs from 'fs';
-import {spawn, ChildProcess} from 'child_process';
 import * as path from 'path';
+import {spawn, ChildProcess} from 'child_process';
 import {Handles, StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from 'vscode-debugadapter';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {INSDebugConnection} from './connection/INSDebugConnection';
@@ -13,9 +13,9 @@ import {IosConnection} from './connection/iosConnection';
 import {AndroidConnection} from './connection/androidConnection';
 import * as utils from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
-import * as ns from '../services/NsCliService';
-import {DebugAdapterServices as Services} from '../services/services/debugAdapterServices';
-import {LoggerHandler, Handlers, Tags} from '../services/Logger';
+import * as ns from '../project/NsCliService';
+import {DebugAdapterServices as Services} from '../services/debugAdapterServices';
+import {LoggerHandler, Handlers, Tags} from '../common/Logger';
 import {DebugConfiguration} from './debugConfiguration';
 
 interface IScopeVarHandle {

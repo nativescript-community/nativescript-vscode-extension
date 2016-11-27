@@ -1,6 +1,6 @@
 import * as http from 'http';
 import {EventEmitter} from 'events';
-import {DebugAdapterServices as Services} from '../../services/services/debugAdapterServices';
+import {DebugAdapterServices as Services} from '../../services/debugAdapterServices';
 import * as Net from 'net';
 import { INSDebugConnection } from './INSDebugConnection';
 
