@@ -61,6 +61,14 @@ export class StringMatchingScanner extends StreamScanner {
         this._metas = [];
     }
 
+    public onEveryMatch(test: string | RegExp, handler: (result: MatchFound) => void) {
+        let handlerWrapper = (result: MatchFound) => {
+            handler(result);
+            this.nextMatch(test).then(handlerWrapper);
+        };
+        this.nextMatch(test).then(handlerWrapper);
+    }
+
     public nextMatch(test: string | RegExp): Promise<MatchFound> {
         let meta: MatchMeta = {
             test: test,

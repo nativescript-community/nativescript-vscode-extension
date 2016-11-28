@@ -1,5 +1,6 @@
 import {ChildProcess} from 'child_process';
 import * as stream from 'stream';
+import {EventEmitter} from 'events';
 import {Project, DebugResult} from './project';
 import * as scanner from './streamScanner';
 import {Version} from '../common/version';
@@ -24,12 +25,13 @@ export class IosProject extends Project {
         args = args.concat(tnsArgs);
 
         let debugProcess : ChildProcess = super.executeDebugCommand(args);
-        let socketPathPromise = this.waitForSocketPath(debugProcess.stdout);
-        return { tnsProcess: debugProcess, backendIsReadyForConnection: socketPathPromise };
+        let tnsOutputEventEmitter: EventEmitter = new EventEmitter();
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter);
+        return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
     public debugWithSync(options: { stopOnEntry: boolean, syncAllFiles: boolean }, tnsArgs?: string[]): DebugResult {
-        let args: string[] = ["--no-rebuild"];
+        let args: string[] = ["--no-rebuild", "--watch"];
         if (options.syncAllFiles) { args.push("--syncAllFiles"); }
         args = args.concat(tnsArgs);
 
@@ -42,18 +44,17 @@ export class IosProject extends Project {
         args = args.concat(tnsArgs);
 
         let debugProcess : ChildProcess = super.executeDebugCommand(args);
-        let socketPathPromise = this.waitForSocketPath(debugProcess.stdout);
-        return { tnsProcess: debugProcess, backendIsReadyForConnection: socketPathPromise };
+        let tnsOutputEventEmitter: EventEmitter = new EventEmitter();
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter);
+        return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
-    private waitForSocketPath(readableStream: stream.Readable): Promise<string> {
+    private configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
         let socketPathPrefix = 'socket-file-location: ';
         let streamScanner = new scanner.StringMatchingScanner(readableStream);
-
-        return streamScanner.nextMatch(new RegExp(socketPathPrefix + '.*\.sock')).then((match: scanner.MatchFound) => {
+        streamScanner.onEveryMatch(new RegExp(socketPathPrefix + '.*\.sock'), (match: scanner.MatchFound) => {
             let socketPath = (<string>match.matches[0]).substr(socketPathPrefix.length);
-            streamScanner.stop();
-            return socketPath;
+            eventEmitter.emit('readyForConnection', socketPath);
         });
     }
 
