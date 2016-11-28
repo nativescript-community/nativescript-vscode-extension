@@ -1,21 +1,28 @@
 import * as vscode from 'vscode';
-import {Services} from './services';
+import {Services as BaseServices} from './services';
 import {ExtensionVersionService} from '../common/extensionVersionService';
 import {ExtensionServer} from '../ipc/extensionServer';
 import {AnalyticsService} from '../analytics/analyticsService';
+import {WorkspaceConfigService} from '../common/workspaceConfigService';
 
-export class ExtensionHostServices extends Services {
-    private static _globalState: vscode.Memento;
+export class ExtensionHostServices extends BaseServices {
+    private _globalState: vscode.Memento;
 
-    private static _extensionVersionService: ExtensionVersionService;
-    private static _extensionServer: ExtensionServer;
-    private static _analyticsService: AnalyticsService;
+    private _workspaceConfigService: WorkspaceConfigService;
+    private _extensionVersionService: ExtensionVersionService;
+    private _extensionServer: ExtensionServer;
+    private _analyticsService: AnalyticsService;
 
-    public static get globalState(): vscode.Memento { return this._globalState; }
+    public get globalState(): vscode.Memento { return this._globalState; }
 
-    public static set globalState(globalState: vscode.Memento) { this._globalState = globalState; }
+    public set globalState(globalState: vscode.Memento) { this._globalState = globalState; }
 
-    public static get extensionVersionService(): ExtensionVersionService {
+    public workspaceConfigService(): WorkspaceConfigService {
+        this._workspaceConfigService = this._workspaceConfigService || new WorkspaceConfigService();
+        return this._workspaceConfigService;
+    }
+
+    public extensionVersionService(): ExtensionVersionService {
         if (!this._extensionVersionService && !this._globalState) {
             throw new Error("Global state has no value.");
         }
@@ -23,13 +30,15 @@ export class ExtensionHostServices extends Services {
         return this._extensionVersionService;
     }
 
-    public static get extensionServer(): ExtensionServer {
+    public extensionServer(): ExtensionServer {
         this._extensionServer = this._extensionServer || new ExtensionServer();
         return this._extensionServer;
     }
 
-    public static get analyticsService(): AnalyticsService {
+    public analyticsService(): AnalyticsService {
         this._analyticsService = this._analyticsService || new AnalyticsService();
         return this._analyticsService;
     }
 }
+
+export let Services = new ExtensionHostServices();

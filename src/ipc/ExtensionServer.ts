@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import * as extProtocol from './ExtensionProtocol';
-import {ExtensionHostServices as Services} from '../services/extensionHostServices';
+import {Services} from '../services/extensionHostServices';
 let ipc = require('node-ipc');
 
 export class ExtensionServer {
@@ -56,11 +56,16 @@ export class ExtensionServer {
         return this._isRunning;
     }
 
+    public getInitSettings(): Promise<extProtocol.InitSettingsResult> {
+        let tnsPath = Services.workspaceConfigService().tnsPath;
+        return Promise.resolve({ tnsPath: tnsPath });
+    }
+
     public analyticsLaunchDebugger(args: extProtocol.AnalyticsLaunchDebuggerArgs): Promise<any> {
-        return Services.analyticsService.launchDebugger(args.request, args.platform);
+        return Services.analyticsService().launchDebugger(args.request, args.platform);
     }
 
     public runRunCommand(args: extProtocol.AnalyticsRunRunCommandArgs): Promise<any> {
-        return Services.analyticsService.runRunCommand(args.platform);
+        return Services.analyticsService().runRunCommand(args.platform);
     }
 }

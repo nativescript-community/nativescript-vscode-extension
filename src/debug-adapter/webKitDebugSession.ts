@@ -3,7 +3,7 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {WebKitDebugAdapter} from './webKitDebugAdapter';
 import {Handlers} from '../common/Logger';
-import {DebugAdapterServices as Services} from '../services/debugAdapterServices';
+import {Services} from '../services/debugAdapterServices';
 
 import {AdapterProxy} from './adapter/adapterProxy';
 import {LineNumberTransformer} from './adapter/lineNumberTransformer';
@@ -19,12 +19,12 @@ export class WebKitDebugSession extends DebugSession {
         // Logging on the std streams is only allowed when running in server mode, because otherwise it goes through
         // the same channel that Code uses to communicate with the adapter, which can cause communication issues.
         if (isServer) {
-            Services.logger.addHandler(Handlers.stdStreamsHandler);
+            Services.logger().addHandler(Handlers.stdStreamsHandler);
         }
 
         process.removeAllListeners('unhandledRejection');
         process.addListener('unhandledRejection', reason => {
-            Services.logger.log(`******** ERROR! Unhandled promise rejection: ${reason}`);
+            Services.logger().log(`******** ERROR! Unhandled promise rejection: ${reason}`);
         });
 
         this._adapterProxy = new AdapterProxy(
@@ -43,7 +43,7 @@ export class WebKitDebugSession extends DebugSession {
     public sendEvent(event: DebugProtocol.Event): void {
         if (event.event !== 'output') {
             // Don't create an infinite loop...
-            Services.logger.log(`To client: ${JSON.stringify(event) }`);
+            Services.logger().log(`To client: ${JSON.stringify(event) }`);
         }
 
         super.sendEvent(event);
@@ -53,7 +53,7 @@ export class WebKitDebugSession extends DebugSession {
      * Overload sendResponse to log
      */
     public sendResponse(response: DebugProtocol.Response): void {
-        Services.logger.log(`To client: ${JSON.stringify(response) }`);
+        Services.logger().log(`To client: ${JSON.stringify(response) }`);
         super.sendResponse(response);
     }
 
@@ -88,7 +88,7 @@ export class WebKitDebugSession extends DebugSession {
                     // These errors show up in the message bar at the top (or nowhere), sometimes not obvious that they
                     // come from the adapter
                     response.message = '[NativeScript-Debug-Adapter] ' + eStr;
-                    Services.logger.log('Error: ' + e ? e.stack : eStr);
+                    Services.logger().log('Error: ' + e ? e.stack : eStr);
                 }
 
                 response.success = false;
@@ -102,7 +102,7 @@ export class WebKitDebugSession extends DebugSession {
     protected dispatchRequest(request: DebugProtocol.Request): void {
         const response = { seq: 0, type: 'response', request_seq: request.seq, command: request.command, success: true  };
         try {
-            Services.logger.log(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
+            Services.logger().log(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
             this.sendResponseAsync(
                 request,
                 response,

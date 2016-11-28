@@ -40,12 +40,16 @@ export class ExtensionClient {
         });
     }
 
-    private callRemoteMethod(method: string, args: Object): Promise<Object> {
+    private callRemoteMethod(method: string, args?: Object): Promise<Object> {
         let request: extProtocol.Request = { id: 'req' + (++this._idCounter), method: method, args: args };
         return new Promise<Object>((res, rej) => {
             this._pendingRequests[request.id] = res;
             ipc.of.extHost.emit('extension-protocol-message', request);
         });
+    }
+
+    public getInitSettings(): Promise<extProtocol.InitSettingsResult> {
+        return this.callRemoteMethod('getInitSettings');
     }
 
     public analyticsLaunchDebugger(args: extProtocol.AnalyticsLaunchDebuggerArgs): Promise<any> {

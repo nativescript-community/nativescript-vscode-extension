@@ -17,3 +17,7 @@ export interface AnalyticsLaunchDebuggerArgs {
 export interface AnalyticsRunRunCommandArgs {
     platform: string;
 }
+
+export interface InitSettingsResult {
+    tnsPath: string;
+}

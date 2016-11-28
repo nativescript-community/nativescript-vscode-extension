@@ -1,10 +1,9 @@
 import * as os from 'os';
-import * as vscode from 'vscode';
 import { Version } from '../common/version';
 import { GUAService } from './GUAService';
 import { TelerikAnalyticsService } from './TelerikAnalyticsService';
 import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
-import { ExtensionHostServices as Services } from '../services/extensionHostServices';
+import { Services } from '../services/extensionHostServices';
 import * as utils from '../common/utilities';
 
 export class AnalyticsService {
@@ -29,7 +28,7 @@ export class AnalyticsService {
     }
 
     constructor() {
-        this._analyticsEnabled = vscode.workspace.getConfiguration('nativescript').get('analytics.enabled') as boolean;
+        this._analyticsEnabled = Services.workspaceConfigService().isAnalyticsEnabled;
         let operatingSystem = OperatingSystem.Other;
         switch(process.platform) {
             case 'win32': { operatingSystem = OperatingSystem.Windows; break; }
@@ -39,7 +38,7 @@ export class AnalyticsService {
         };
 
         this._baseInfo = {
-            cliVersion: Services.cli.version.toString(),
+            cliVersion: Services.cli().version.toString(),
             extensionVersion: utils.getInstalledExtensionVersion().toString(),
             operatingSystem: operatingSystem,
             userId: AnalyticsService.generateMachineId()

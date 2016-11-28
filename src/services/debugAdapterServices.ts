@@ -1,16 +1,16 @@
-import {Services} from './services';
+import {Services as BaseServices} from './services';
 import {ExtensionClient} from '../ipc/extensionClient';
 import {Logger} from '../common/Logger';
 
-export class DebugAdapterServices extends Services {
-    private static _extensionClient: ExtensionClient;
-    private static _appRoot: string;
+export class DebugAdapterServices extends BaseServices {
+    private _extensionClient: ExtensionClient;
+    private _appRoot: string;
 
-    public static get appRoot(): string { return this._appRoot; }
+    public get appRoot(): string { return this._appRoot; }
 
-    public static set appRoot(appRoot: string) { this._appRoot = appRoot; }
+    public set appRoot(appRoot: string) { this._appRoot = appRoot; }
 
-    public static get extensionClient(): ExtensionClient {
+    public extensionClient(): ExtensionClient {
         if (!this._extensionClient && !this._appRoot) {
             throw new Error("appRoot has no value.");
         }
@@ -18,3 +18,5 @@ export class DebugAdapterServices extends Services {
         return this._extensionClient;
     }
 }
+
+export let Services = new DebugAdapterServices();

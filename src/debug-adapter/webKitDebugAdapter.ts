@@ -15,7 +15,7 @@ import {IosProject} from '../project/iosProject';
 import {AndroidProject} from '../project/androidProject';
 import * as utils from '../common/utilities';
 import {formatConsoleMessage} from './consoleHelper';
-import {DebugAdapterServices as Services} from '../services/debugAdapterServices';
+import {Services} from '../services/debugAdapterServices';
 import {LoggerHandler, Handlers, Tags} from '../common/Logger';
 import {DebugRequest} from './debugRequest';
 
@@ -47,10 +47,10 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         this._variableHandles = new Handles<IScopeVarHandle>();
 
         // Messages tagged with a special tag are sent to the frontend through the debugging protocol
-        Services.logger.addHandler(this._loggerFrontendHandler, [Tags.FrontendMessage]);
-        Services.logger.log(`OS: ${os.platform()} ${os.arch()}`);
-        Services.logger.log('Node version: ' + process.version);
-        Services.logger.log('Adapter version: ' + utils.getInstalledExtensionVersion().toString());
+        Services.logger().addHandler(this._loggerFrontendHandler, [Tags.FrontendMessage]);
+        Services.logger().log(`OS: ${os.platform()} ${os.arch()}`);
+        Services.logger().log('Node version: ' + process.version);
+        Services.logger().log('Adapter version: ' + utils.getInstalledExtensionVersion().toString());
 
         this.clearEverything();
     }
@@ -112,59 +112,62 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         if (args.diagnosticLogging) {
             // The logger frontend handler is initially configured to handle messages with LoggerTagFrontendMessage tag only.
             // We remove the handler and add it again for all messages.
-            Services.logger.removeHandler(this._loggerFrontendHandler);
-            Services.logger.addHandler(this._loggerFrontendHandler);
+            Services.logger().removeHandler(this._loggerFrontendHandler);
+            Services.logger().addHandler(this._loggerFrontendHandler);
         }
         if (args.tnsOutput) {
-            Services.logger.addHandler(Handlers.createStreamHandler(fs.createWriteStream(args.tnsOutput)));
+            Services.logger().addHandler(Handlers.createStreamHandler(fs.createWriteStream(args.tnsOutput)));
         }
-        Services.logger.log(`initialize(${JSON.stringify(this._initArgs) })`);
-        Services.logger.log(`${args.request}(${JSON.stringify(args)})`);
+        Services.logger().log(`initialize(${JSON.stringify(this._initArgs) })`);
+        Services.logger().log(`${args.request}(${JSON.stringify(args)})`);
     }
 
     private processRequest(args: DebugProtocol.IRequestArgs): Promise<void> {
-        this.configureLoggingForRequest(args);
         // Initialize the request
+        this.configureLoggingForRequest(args);
         Services.appRoot = args.appRoot;
-        Services.cliPath = args.nativescriptCliPath || Services.cliPath;
-        this._request = new DebugRequest(args, Services.cli);
-        Services.extensionClient.analyticsLaunchDebugger({ request: this._request.isSync ? "sync" : args.request, platform: args.platform });
+        return Services.extensionClient().getInitSettings().then(settings => {
+            Services.cliPath = settings.tnsPath || Services.cliPath;
+            this._request = new DebugRequest(args, Services.cli());
+            Services.extensionClient().analyticsLaunchDebugger({ request: this._request.isSync ? "sync" : args.request, platform: args.platform });
 
-        // Run CLI Command
-        let cliCommand: DebugResult;
-        if (this._request.isLaunch) {
-            cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry }, this._request.args.tnsArgs);
-        }
-        else if (this._request.isSync) {
-            cliCommand = this._request.project.debugWithSync({ stopOnEntry: this._request.launchArgs.stopOnEntry, syncAllFiles: this._request.launchArgs.syncAllFiles }, this._request.args.tnsArgs);
-        }
-        else if (this._request.isAttach) {
-            cliCommand = this._request.project.attach(this._request.args.tnsArgs);
-        }
+            // Run CLI Command
+            let cliCommand: DebugResult;
+            if (this._request.isLaunch) {
+                cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry }, this._request.args.tnsArgs);
+            }
+            else if (this._request.isSync) {
+                cliCommand = this._request.project.debugWithSync({ stopOnEntry: this._request.launchArgs.stopOnEntry, syncAllFiles: this._request.launchArgs.syncAllFiles }, this._request.args.tnsArgs);
+            }
+            else if (this._request.isAttach) {
+                cliCommand = this._request.project.attach(this._request.args.tnsArgs);
+            }
 
-        if (cliCommand.tnsProcess) {
-            cliCommand.tnsProcess.stdout.on('data', data => { Services.logger.log(data.toString(), Tags.FrontendMessage); });
-            cliCommand.tnsProcess.stderr.on('data', data => { Services.logger.error(data.toString(), Tags.FrontendMessage); });
-            cliCommand.tnsProcess.on('close', (code, signal) => { Services.logger.error(`The tns command finished its execution with code ${code}.`, Tags.FrontendMessage); });
-        }
+            if (cliCommand.tnsProcess) {
+                cliCommand.tnsProcess.stdout.on('data', data => { Services.logger().log(data.toString(), Tags.FrontendMessage); });
+                cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
+                cliCommand.tnsProcess.on('close', (code, signal) => { Services.logger().error(`The tns command finished its execution with code ${code}.`, Tags.FrontendMessage); });
+            }
 
-        let promiseResolve = null;
-        let promise: Promise<void> = new Promise<void>((res, rej) => { promiseResolve = res; });
-        // Attach to the running application
-        cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
-            connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync() : connectionToken;
-            Services.logger.log(`Attaching to application on ${connectionToken}`);
-            let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
-            this.setConnection(connection);
-            let attachPromise = this._request.isAndroid ? (<AndroidConnection>connection).attach(<number>connectionToken, 'localhost') : (<IosConnection>connection).attach(<string>connectionToken);
-            attachPromise.then(() => {
-                // Send InitializedEvent
-                this.fireEvent(new InitializedEvent());
-                promiseResolve();
+            let promiseResolve = null;
+            let promise: Promise<void> = new Promise<void>((res, rej) => { promiseResolve = res; });
+            // Attach to the running application
+            cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
+                connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync() : connectionToken;
+                Services.logger().log(`Attaching to application on ${connectionToken}`);
+                let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
+                this.setConnection(connection);
+                let attachPromise = this._request.isAndroid ? (<AndroidConnection>connection).attach(<number>connectionToken, 'localhost') : (<IosConnection>connection).attach(<string>connectionToken);
+                attachPromise.then(() => {
+                    // Send InitializedEvent
+                    this.fireEvent(new InitializedEvent());
+                    promiseResolve();
+                });
             });
+
+            return promise;
         });
 
-        return promise;
     }
 
     private setConnection(connection: INSDebugConnection) : INSDebugConnection {
@@ -185,7 +188,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private onConnected(): void {
-        Services.logger.log("Debugger connected");
+        Services.logger().log("Debugger connected");
     }
 
     private fireEvent(event: DebugProtocol.Event): void {
@@ -198,7 +201,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         this.clearEverything();
         // In case of a sync request the session is not terminated when the backend is detached
         if (!this._request.isSync) {
-            Services.logger.log("Terminating debug session");
+            Services.logger().log("Terminating debug session");
             this.fireEvent(new TerminatedEvent());
         }
     }
@@ -208,7 +211,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         this.clearTargetContext();
 
         if (this._webKitConnection) {
-            Services.logger.log("Closing debug connection");
+            Services.logger().log("Closing debug connection");
 
             this._webKitConnection.close();
             this._webKitConnection = null;

@@ -15,7 +15,6 @@ declare module 'vscode-debugprotocol' {
             diagnosticLogging?: boolean;
             tnsArgs?: string[];
             tnsOutput?: string;
-            nativescriptCliPath?: string;
         }
 
         interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, IRequestArgs {

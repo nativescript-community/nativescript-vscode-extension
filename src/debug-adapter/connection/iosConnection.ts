@@ -7,7 +7,7 @@ import * as stream from 'stream';
 import {EventEmitter} from 'events';
 import {INSDebugConnection} from './INSDebugConnection';
 import * as utils from '../../common/utilities';
-import {DebugAdapterServices as Services} from '../../services/debugAdapterServices';
+import {Services} from '../../services/debugAdapterServices';
 
 interface IMessageWithId {
     id: number;
@@ -73,7 +73,7 @@ class ResReqTcpSocket extends EventEmitter {
                 });
 
                 unixSocket.on('close', () => {
-                    Services.logger.log('Unix socket closed');
+                    Services.logger().log('Unix socket closed');
                     this.emit('close');
                 });
 
@@ -82,7 +82,7 @@ class ResReqTcpSocket extends EventEmitter {
 
                 packetsStream.on('data', (buffer: Buffer) => {
                     let packet = buffer.toString('utf16le');
-                    Services.logger.log('From target: ' + packet);
+                    Services.logger().log('From target: ' + packet);
                     this.onMessage(JSON.parse(packet));
                 });
             } catch (e) {
@@ -110,7 +110,7 @@ class ResReqTcpSocket extends EventEmitter {
             this._pendingRequests.set(message.id, resolve);
             this._unixSocketAttached.then(socket => {
                 const msgStr = JSON.stringify(message);
-                Services.logger.log('To target: ' + msgStr);
+                Services.logger().log('To target: ' + msgStr);
                 let encoding = "utf16le";
                 let length = Buffer.byteLength(msgStr, encoding);
 				let payload = new Buffer(length + 4);
@@ -155,7 +155,7 @@ export class IosConnection implements INSDebugConnection {
      * Attach the underlying Unix socket
      */
     public attach(filePath: string): Promise<void> {
-        Services.logger.log('Attempting to attach to path ' + filePath);
+        Services.logger().log('Attempting to attach to path ' + filePath);
         return utils.retryAsync(() => this._attach(filePath), 6000)
             .then(() => {
                 Promise.all<WebKitProtocol.Response>([

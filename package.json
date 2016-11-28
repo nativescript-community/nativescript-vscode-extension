@@ -68,6 +68,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enables the extension tracking."
+        },
+        "nativescript.tnsPath": {
+          "type": "string",
+          "default": "tns",
+          "description": "Path to the NativeScript CLI executable."
         }
       }
     },
@@ -215,11 +220,6 @@
                 "type": "boolean",
                 "description": "Whether to sync files from node_modules folder.",
                 "default": false
-              },
-              "nativescriptCliPath": {
-                "type": "string",
-                "description": "Path to the nativescript CLI to be used by the NativeScript extension.",
-                "default": "tns"
               }
             }
           },
@@ -258,11 +258,6 @@
                 "type": "string",
                 "description": "NativeScript platform",
                 "default": null
-              },
-              "nativescriptCliPath": {
-                "type": "string",
-                "description": "Path to the nativescript CLI to be used by the NativeScript extension.",
-                "default": "tns"
               }
             }
           }
