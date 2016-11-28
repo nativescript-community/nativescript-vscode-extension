@@ -1,8 +1,9 @@
 import {ChildProcess} from 'child_process';
+import {EventEmitter} from 'events';
 import {Version} from '../common/version';
 import {NativeScriptCli} from './nativeScriptCli';
 
-export type DebugResult = { tnsProcess: ChildProcess, backendIsReadyForConnection: Promise<any> };
+export type DebugResult = { tnsProcess: ChildProcess, tnsOutputEventEmitter: EventEmitter };
 
 export abstract class Project {
     private _appRoot: string;
@@ -13,7 +14,7 @@ export abstract class Project {
         this._cli = cli;
     }
 
-    public get rootPath(): string { return this._appRoot; }
+    public get appRoot(): string { return this._appRoot; }
 
     public get cli(): NativeScriptCli { return this._cli; }
 

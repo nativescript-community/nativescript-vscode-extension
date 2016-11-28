@@ -63,6 +63,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         this._scriptsById = new Map<WebKitProtocol.Debugger.ScriptId, WebKitProtocol.Debugger.Script>();
         this._committedBreakpointsByUrl = new Map<string, WebKitProtocol.Debugger.BreakpointId[]>();
         this._setBreakpointsRequestQ = Promise.resolve<void>();
+        this._lastOutputEvent = null;
         this.fireEvent({ seq: 0, type: 'event',  event: 'clearTargetContext'});
     }
 
@@ -121,7 +122,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         Services.logger.log(`${args.request}(${JSON.stringify(args)})`);
     }
 
-    private processRequest(args: DebugProtocol.IRequestArgs) {
+    private processRequest(args: DebugProtocol.IRequestArgs): Promise<void> {
         this.configureLoggingForRequest(args);
         // Initialize the request
         Services.appRoot = args.appRoot;
@@ -147,30 +148,23 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             cliCommand.tnsProcess.on('close', (code, signal) => { Services.logger.error(`The tns command finished its execution with code ${code}.`, Tags.FrontendMessage); });
         }
 
+        let promiseResolve = null;
+        let promise: Promise<void> = new Promise<void>((res, rej) => { promiseResolve = res; });
         // Attach to the running application
-        let connectionEstablished = cliCommand.backendIsReadyForConnection.then((connectionToken: string | number) => {
-            if (this._request.isAndroid) {
-                Services.logger.log(`Attaching to application on port ${connectionToken}`);
-                let androidConnection = new AndroidConnection();
-                this.setConnection(androidConnection);
-                let port: number = <number>connectionToken;
-                return androidConnection.attach(port, 'localhost');
-            }
-            if (this._request.isIos) {
-                Services.logger.log(`Attaching to application on socket path ${connectionToken}`);
-                let iosConnection = new IosConnection();
-                this.setConnection(iosConnection);
-                let socketFilePath: string = <string>connectionToken;
-                return iosConnection.attach(socketFilePath);
-            }
+        cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
+            connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync() : connectionToken;
+            Services.logger.log(`Attaching to application on ${connectionToken}`);
+            let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
+            this.setConnection(connection);
+            let attachPromise = this._request.isAndroid ? (<AndroidConnection>connection).attach(<number>connectionToken, 'localhost') : (<IosConnection>connection).attach(<string>connectionToken);
+            attachPromise.then(() => {
+                // Send InitializedEvent
+                this.fireEvent(new InitializedEvent());
+                promiseResolve();
+            });
         });
 
-        // Send InitializedEvent
-        return connectionEstablished.then(() => this.fireEvent(new InitializedEvent()), e => {
-            Services.logger.error(`Error: ${e}`, Tags.FrontendMessage);
-            this.clearEverything();
-            return utils.errP(e);
-        });
+        return promise;
     }
 
     private setConnection(connection: INSDebugConnection) : INSDebugConnection {
@@ -201,10 +195,12 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private terminateSession(): void {
-        //this.fireEvent(new TerminatedEvent());
-
-        Services.logger.log("Terminating debug session");
         this.clearEverything();
+        // In case of a sync request the session is not terminated when the backend is detached
+        if (!this._request.isSync) {
+            Services.logger.log("Terminating debug session");
+            this.fireEvent(new TerminatedEvent());
+        }
     }
 
     private clearEverything(): void {

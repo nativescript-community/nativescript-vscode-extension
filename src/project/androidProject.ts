@@ -1,5 +1,6 @@
 import {ChildProcess} from 'child_process';
 import * as stream from 'stream';
+import {EventEmitter} from 'events';
 import {Project, DebugResult} from './project';
 import * as scanner from './streamScanner';
 import {Version} from '../common/version';
@@ -18,11 +19,13 @@ export class AndroidProject extends Project {
     }
 
     public attach(tnsArgs?: string[]): DebugResult {
-        return { tnsProcess: null, backendIsReadyForConnection: this.getDebugPort().debugPort };
+        let tnsOutputEventEmitter = new EventEmitter();
+        setTimeout(() => tnsOutputEventEmitter.emit('readyForConnection')); // emit readyForConnection on the next tick
+        return { tnsProcess: null, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
     public debugWithSync(options: { stopOnEntry: boolean, syncAllFiles: boolean }, tnsArgs?: string[]): DebugResult {
-        let args: string[] = ["--no-rebuild"];
+        let args: string[] = ["--no-rebuild", "--watch"];
         if (options.syncAllFiles) { args.push("--syncAllFiles"); }
         args = args.concat(tnsArgs);
 
@@ -35,26 +38,21 @@ export class AndroidProject extends Project {
         args = args.concat(tnsArgs);
 
         let debugProcess : ChildProcess = super.executeDebugCommand(args);
-        let backendIsReady = new scanner.StringMatchingScanner(debugProcess.stdout).nextMatch('# NativeScript Debugger started #').then(_ => {
+        let tnsOutputEventEmitter: EventEmitter = new EventEmitter();
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter);
+        return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
+    }
+
+    public getDebugPortSync(): number {
+        let output = this.cli.executeSync(["debug", "android", "--get--port"], this.appRoot);
+        let port = parseInt(output.match("(?:debug port: )([\\d]{5})")[1]);
+        return port;
+    }
+
+    private configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
+        new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', (match: scanner.MatchFound) => {
             // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
-            return new Promise((resolve, reject) => setTimeout(() => { resolve(); }, 500));
-        }).then(() => this.getDebugPort().debugPort);
-
-        return { tnsProcess: debugProcess, backendIsReadyForConnection: backendIsReady };
-    }
-
-    private getDebugPort(): GetDebugPortResult {
-        let debugProcess : ChildProcess = super.executeDebugCommand(["--get-port"]);
-        let portNumberPromise: Promise<number> = this.waitForPortNumber(debugProcess.stdout);
-        return  { tnsProcess: debugProcess, debugPort: portNumberPromise };
-    }
-
-    private waitForPortNumber(readableStream: stream.Readable): Promise<number> {
-        let streamScanner = new scanner.StringMatchingScanner(readableStream);
-        return streamScanner.nextMatch(new RegExp("(?:debug port: )([\\d]{5})")).then((match: scanner.MatchFound) => {
-            let portNumber = parseInt(<string>match.matches[1]);
-            streamScanner.stop();
-            return portNumber;
+            setTimeout(() => { eventEmitter.emit('readyForConnection'); }, 500);
         });
     }
 }
