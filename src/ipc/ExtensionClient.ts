@@ -5,39 +5,19 @@ import * as extProtocol from './ExtensionProtocol';
 let ipc = require('node-ipc');
 
 export class ExtensionClient {
-    private static _appRoot: string;
-    private static _instance: ExtensionClient;
-
+    private _appRoot: string;
     private _idCounter = 0;
     private _pendingRequests: Object;
 
     private _ipcClientInitialized: Promise<any>;
-
-    public static getInstance() {
-        if (!this._instance) {
-            this._instance = new ExtensionClient();
-        }
-        return this._instance;
-    }
-
-    public static getAppRoot() {
-        return this._appRoot;
-    }
 
     public static getTempFilePathForDirectory(directoryPath: string) {
         let fileName: string = 'vsc-ns-ext-' + crypto.createHash('md5').update(directoryPath).digest("hex") + '.sock';
         return path.join(os.tmpdir(), fileName);
     }
 
-    public static setAppRoot(appRoot: string) {
+    constructor(appRoot: string) {
         this._appRoot = appRoot;
-    }
-
-    constructor() {
-        if (!ExtensionClient.getAppRoot()) {
-            throw new Error(`Unable to connect to extension host. App root is '${ExtensionClient.getAppRoot()}'`);
-        }
-
         this._idCounter = 0;
         this._pendingRequests = {};
 
@@ -47,7 +27,7 @@ export class ExtensionClient {
         this._ipcClientInitialized = new Promise((res, rej) => {
             ipc.connectTo(
                 'extHost',
-                ExtensionClient.getTempFilePathForDirectory(ExtensionClient.getAppRoot()),
+                ExtensionClient.getTempFilePathForDirectory(this._appRoot),
                 () => {
                     ipc.of.extHost.on('connect', () => {
                         res();

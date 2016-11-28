@@ -1,89 +1,66 @@
 import * as vscode from 'vscode';
-import * as child from 'child_process';
-import * as ns from './services/NsCliService';
-import {ExtensionVersionInfo} from './services/ExtensionVersionInfo';
-import {AnalyticsService} from './services/analytics/AnalyticsService';
-import {ExtensionServer} from './services/ipc/ExtensionServer';
-
-function performVersionsCheck(context: vscode.ExtensionContext) {
-    // Check the state of the existing NativeScript CLI
-    let cliInfo: ns.CliVersionInfo = new ns.CliVersionInfo();
-    if (cliInfo.getErrorMessage() !== null) {
-        vscode.window.showErrorMessage(cliInfo.getErrorMessage());
-    }
-    else {
-        // Checks whether a new version of the extension is available
-        let extensionVersionPromise: Promise<ExtensionVersionInfo> = null;
-
-        // Check the cache for extension version information
-        let extensionVersion: any = context.globalState.get<any>('ExtensionVersionInfo');
-        if (extensionVersion) {
-            let extensionVersionInfo = new ExtensionVersionInfo(extensionVersion.latestVersionMetadata, extensionVersion.timestamp);
-            if (extensionVersionInfo.getTimestamp() > Date.now() - 24 * 60 * 60 * 1000 /* Cache the version for a day */) {
-                extensionVersionPromise = Promise.resolve(extensionVersionInfo);
-            }
-        }
-
-        if (!extensionVersionPromise) {
-            // Takes the slow path and checks for newer version in the VS Code Marketplace
-            extensionVersionPromise = ExtensionVersionInfo.createFromMarketplace();
-        }
-        extensionVersionPromise.then(extensionInfo => {
-            if (extensionInfo) {
-                context.globalState.update('ExtensionVersionInfo', { latestVersionMetadata: extensionInfo.getLatestVersionMeta(), timestamp: extensionInfo.getTimestamp() }); // save in cache
-                if (!extensionInfo.isLatest()) {
-                    vscode.window.showWarningMessage(`A new version of the NativeScript extension is available. Run "Extensions: Show Outdated Extensions" command and select "NativeScript" to update to v${extensionInfo.getLatestVersionMeta().version}.`);
-                }
-            }
-        }, error => { /* In case of error behave as if the extension verison is latest */ });
-    }
-}
+import {CliVersion} from './project/nativeScriptCli';
+import {ExtensionHostServices as Services} from './services/extensionHostServices';
+import {Project} from './project/project';
+import {IosProject} from './project/iosProject';
+import {AndroidProject} from './project/androidProject';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
-    ExtensionServer.getInstance().start();
-    performVersionsCheck(context);
+    Services.globalState = context.globalState;
+    Services.extensionServer.start();
 
-    let runCommand = (project: ns.NSProject) => {
+    // Check for newer extension version
+    Services.extensionVersionService.isLatestInstalled.then(result => {
+        if (!result.result) {
+            vscode.window.showWarningMessage(result.error);
+        }
+    });
+
+    // Check if NativeScript CLI is installed globally and if it is compatible with the extension version
+    let cliVersion = Services.cli.version;
+    if (!cliVersion.isCompatible) {
+        vscode.window.showErrorMessage(cliVersion.errorMessage);
+    }
+
+    let runCommand = (project: Project) => {
         if (vscode.workspace.rootPath === undefined) {
             vscode.window.showErrorMessage('No workspace opened.');
             return;
         }
 
         // Show output channel
-        let runChannel: vscode.OutputChannel = vscode.window.createOutputChannel(`Run on ${project.platform()}`);
+        let runChannel: vscode.OutputChannel = vscode.window.createOutputChannel(`Run on ${project.platformName()}`);
         runChannel.clear();
         runChannel.show(vscode.ViewColumn.Two);
 
-        AnalyticsService.getInstance().runRunCommand(project.platform());
+        Services.analyticsService.runRunCommand(project.platformName());
 
-        return project.run()
-        .then(tnsProcess => {
-            tnsProcess.on('error', err => {
-                vscode.window.showErrorMessage('Unexpected error executing NativeScript Run command.');
-            });
-            tnsProcess.stderr.on('data', data => {
-                runChannel.append(data.toString());
-            });
-            tnsProcess.stdout.on('data', data => {
-                runChannel.append(data.toString());
-            });
-            tnsProcess.on('exit', exitCode => {
-                tnsProcess.stdout.removeAllListeners('data');
-                tnsProcess.stderr.removeAllListeners('data');
-            });
-            tnsProcess.on('close', exitCode => {
-                runChannel.hide();
-            });
+        let tnsProcess = project.run();
+        tnsProcess.on('error', err => {
+            vscode.window.showErrorMessage('Unexpected error executing NativeScript Run command.');
+        });
+        tnsProcess.stderr.on('data', data => {
+            runChannel.append(data.toString());
+        });
+        tnsProcess.stdout.on('data', data => {
+            runChannel.append(data.toString());
+        });
+        tnsProcess.on('exit', exitCode => {
+            tnsProcess.stdout.removeAllListeners('data');
+            tnsProcess.stderr.removeAllListeners('data');
+        });
+        tnsProcess.on('close', exitCode => {
+            runChannel.hide();
         });
     };
 
     let runIosCommand = vscode.commands.registerCommand('nativescript.runIos', () => {
-        return runCommand(new ns.IosProject(vscode.workspace.rootPath));
+        return runCommand(new IosProject(vscode.workspace.rootPath, Services.cli));
     });
 
     let runAndroidCommand = vscode.commands.registerCommand('nativescript.runAndroid', () => {
-        return runCommand(new ns.AndroidProject(vscode.workspace.rootPath));
+        return runCommand(new AndroidProject(vscode.workspace.rootPath, Services.cli));
     });
 
     context.subscriptions.push(runIosCommand);
@@ -91,5 +68,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    ExtensionServer.getInstance().stop();
+    Services.extensionServer.stop();
 }

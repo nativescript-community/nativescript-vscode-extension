@@ -9,31 +9,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
-import {DebugProtocol} from 'vscode-debugprotocol';
-
-const DEFAULT_CHROME_PATH = {
-    OSX: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    WIN: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    WINx86: 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-    LINUX: '/usr/bin/google-chrome'
-};
-
-export function getBrowserPath(): string {
-    const platform = getPlatform();
-    if (platform === Platform.OSX) {
-        return existsSync(DEFAULT_CHROME_PATH.OSX) ? DEFAULT_CHROME_PATH.OSX : null;
-    } else if (platform === Platform.Windows) {
-        if (existsSync(DEFAULT_CHROME_PATH.WINx86)) {
-            return DEFAULT_CHROME_PATH.WINx86;
-        } else if (existsSync(DEFAULT_CHROME_PATH.WIN)) {
-            return DEFAULT_CHROME_PATH.WIN;
-        } else {
-            return null;
-        }
-    } else {
-        return existsSync(DEFAULT_CHROME_PATH.LINUX) ? DEFAULT_CHROME_PATH.LINUX : null;
-    }
-}
+import {Version} from './Version';
 
 export const enum Platform {
     Windows, OSX, Linux
@@ -56,37 +32,6 @@ export function existsSync(path: string): boolean {
     } catch (e) {
         // doesn't exist
         return false;
-    }
-}
-
-export class DebounceHelper {
-    private waitToken: NodeJS.Timer;
-
-    constructor(private timeoutMs: number) { }
-
-    /**
-     * If not waiting already, call fn after the timeout
-     */
-    public wait(fn: () => any): void {
-        if (!this.waitToken) {
-            this.waitToken = setTimeout(() => {
-                this.waitToken = null;
-                fn();
-            },
-                this.timeoutMs);
-        }
-    }
-
-    /**
-     * If waiting for something, cancel it and call fn immediately
-     */
-    public doAndCancel(fn: () => any): void {
-        if (this.waitToken) {
-            clearTimeout(this.waitToken);
-            this.waitToken = null;
-        }
-
-        fn();
     }
 }
 
@@ -135,66 +80,6 @@ export function retryAsync(fn: () => Promise<any>, timeoutMs: number): Promise<a
     }
 
     return tryUntilTimeout();
-}
-
-/**
- * Holds a singleton to manage access to console.log.
- * Logging is only allowed when running in server mode, because otherwise it goes through the same channel that Code uses to
- * communicate with the adapter, which can cause communication issues.
- */
-export class Logger {
-    private static _logger: Logger;
-    private _isServer: boolean;
-    private _diagnosticLogCallback: (msg: string) => void;
-    private _diagnosticLoggingEnabled: boolean;
-
-    public static log(msg: string, forceDiagnosticLogging = false): void {
-        if (this._logger) this._logger._log(msg, forceDiagnosticLogging);
-    }
-
-    public static init(isServer: boolean, logCallback: (msg: string) => void): void {
-        if (!this._logger) {
-            this._logger = new Logger(isServer);
-            this._logger._diagnosticLogCallback = logCallback;
-
-            if (isServer) {
-                Logger.logVersionInfo();
-            }
-        }
-    }
-
-    public static enableDiagnosticLogging(): void {
-        if (this._logger) {
-            this._logger._diagnosticLoggingEnabled = true;
-            if (!this._logger._isServer) {
-                Logger.logVersionInfo();
-            }
-        }
-    }
-
-    public static logVersionInfo(): void {
-        Logger.log(`OS: ${os.platform() } ${os.arch() }`);
-        Logger.log('Node version: ' + process.version);
-        Logger.log('Adapter version: ' + require('../../package.json').version);
-    }
-
-    constructor(isServer: boolean) {
-        this._isServer = isServer;
-    }
-
-    private _log(msg: string, forceDiagnosticLogging: boolean): void {
-        if (this._isServer || this._diagnosticLoggingEnabled || forceDiagnosticLogging) {
-            this._sendLog(msg);
-        }
-    }
-
-    private _sendLog(msg: string): void {
-        if (this._isServer) {
-            console.log(msg);
-        } else if (this._diagnosticLogCallback) {
-            this._diagnosticLogCallback(msg);
-        }
-    }
 }
 
 function tryFindSourcePathInNSProject(nsProjectPath: string, additionalFileExtension: string, resorcePath: string) : string {
@@ -456,13 +341,6 @@ export function errP(msg: any): Promise<any> {
 }
 
 /**
- * Calculates the appRoot from a launch/attach request. The appRoot is the root directory of the NativeScript app.
- */
-export function getAppRoot(args: DebugProtocol.ILaunchRequestArgs | DebugProtocol.IAttachRequestArgs): string {
-    return (args.appRoot && path.isAbsolute(args.appRoot)) ? args.appRoot : '';
-}
-
-/**
  * Helper function to GET the contents of a url
  */
 export function getURL(aUrl: string): Promise<string> {
@@ -498,4 +376,12 @@ export function lstrip(s: string, lStr: string): string {
     return s.startsWith(lStr) ?
         s.substr(lStr.length) :
         s;
+}
+
+export function getInstalledExtensionVersion(): Version {
+    return Version.parse(require('../../package.json').version);
+}
+
+export function getMinSupportedCliVersion(): Version {
+    return Version.parse(require('../../package.json').minNativescriptCliVersion);
 }

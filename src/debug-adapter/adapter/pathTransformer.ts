@@ -2,9 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as utils from '../utilities';
+import * as utils from '../../common/utilities';
+import {DebugAdapterServices as Services} from '../../services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
-import * as path from 'path';
 
 interface IPendingBreakpoint {
     resolve: () => void;
@@ -16,7 +16,7 @@ interface IPendingBreakpoint {
  * Converts a local path from Code to a path on the target.
  */
 export class PathTransformer implements DebugProtocol.IDebugTransformer {
-    private _webRoot: string;
+    private _appRoot: string;
     private _platform: string;
     private _clientPathToWebkitUrl = new Map<string, string>();
     private _webkitUrlToClientPath = new Map<string, string>();
@@ -24,13 +24,13 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
     private inferedDeviceRoot :string = null;
 
     public launch(args: DebugProtocol.ILaunchRequestArgs): void {
-        this._webRoot = utils.getAppRoot(args);
+        this._appRoot = args.appRoot;
         this._platform = args.platform;
         this.inferedDeviceRoot = (this._platform === 'ios') ? 'file://' : this.inferedDeviceRoot;
     }
 
     public attach(args: DebugProtocol.IAttachRequestArgs): void {
-        this._webRoot = utils.getAppRoot(args);
+        this._appRoot = args.appRoot;
         this._platform = args.platform;
     }
 
@@ -43,7 +43,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
 
             if (utils.isURL(args.source.path)) {
                 // already a url, use as-is
-                utils.Logger.log(`Paths.setBP: ${args.source.path} is already a URL`);
+                Services.logger.log(`Paths.setBP: ${args.source.path} is already a URL`);
                 resolve();
                 return;
             }
@@ -51,11 +51,11 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
             const url = utils.canonicalizeUrl(args.source.path);
             if (this._clientPathToWebkitUrl.has(url)) {
                 args.source.path = this._clientPathToWebkitUrl.get(url);
-                utils.Logger.log(`Paths.setBP: Resolved ${url} to ${args.source.path}`);
+                Services.logger.log(`Paths.setBP: Resolved ${url} to ${args.source.path}`);
                 resolve();
             }
             else if (this.inferedDeviceRoot) {
-                let inferedUrl = url.replace(this._webRoot, this.inferedDeviceRoot).replace(/\\/g, "/");
+                let inferedUrl = url.replace(this._appRoot, this.inferedDeviceRoot).replace(/\\/g, "/");
 
                 //change device path if {N} core module or {N} module
                 if (inferedUrl.indexOf("/node_modules/tns-core-modules/") != -1)
@@ -71,11 +71,11 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
                 inferedUrl = inferedUrl.replace(`.${this._platform}.`, '.');
 
                 args.source.path = inferedUrl;
-                utils.Logger.log(`Paths.setBP: Resolved (by infering) ${url} to ${args.source.path}`);
+                Services.logger.log(`Paths.setBP: Resolved (by infering) ${url} to ${args.source.path}`);
                 resolve();
             }
             else {
-                utils.Logger.log(`Paths.setBP: No target url cached for client path: ${url}, waiting for target script to be loaded.`);
+                Services.logger.log(`Paths.setBP: No target url cached for client path: ${url}, waiting for target script to be loaded.`);
                 args.source.path = url;
                 this._pendingBreakpointsByPath.set(args.source.path, { resolve, reject, args });
             }
@@ -95,8 +95,8 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
         const webkitUrl: string = event.body.scriptUrl;
         if (!this.inferedDeviceRoot && this._platform === "android")
         {
-            this.inferedDeviceRoot = utils.inferDeviceRoot(this._webRoot, this._platform, webkitUrl);
-             utils.Logger.log("\n\n\n ***Inferred device root: " + this.inferedDeviceRoot + "\n\n\n");
+            this.inferedDeviceRoot = utils.inferDeviceRoot(this._appRoot, this._platform, webkitUrl);
+             Services.logger.log("\n\n\n ***Inferred device root: " + this.inferedDeviceRoot + "\n\n\n");
 
             if (this.inferedDeviceRoot.indexOf("/data/user/0/") != -1)
             {
@@ -104,12 +104,12 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
             }
         }
 
-        const clientPath = utils.webkitUrlToClientPath(this._webRoot, this._platform, webkitUrl);
+        const clientPath = utils.webkitUrlToClientPath(this._appRoot, this._platform, webkitUrl);
 
         if (!clientPath) {
-            utils.Logger.log(`Paths.scriptParsed: could not resolve ${webkitUrl} to a file in the workspace. webRoot: ${this._webRoot}`);
+            Services.logger.log(`Paths.scriptParsed: could not resolve ${webkitUrl} to a file in the workspace. webRoot: ${this._appRoot}`);
         } else {
-            utils.Logger.log(`Paths.scriptParsed: resolved ${webkitUrl} to ${clientPath}. webRoot: ${this._webRoot}`);
+            Services.logger.log(`Paths.scriptParsed: resolved ${webkitUrl} to ${clientPath}. webRoot: ${this._appRoot}`);
             this._clientPathToWebkitUrl.set(clientPath, webkitUrl);
             this._webkitUrlToClientPath.set(webkitUrl, clientPath);
 
@@ -117,7 +117,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
         }
 
         if (this._pendingBreakpointsByPath.has(event.body.scriptUrl)) {
-            utils.Logger.log(`Paths.scriptParsed: Resolving pending breakpoints for ${event.body.scriptUrl}`);
+            Services.logger.log(`Paths.scriptParsed: Resolving pending breakpoints for ${event.body.scriptUrl}`);
             const pendingBreakpoint = this._pendingBreakpointsByPath.get(event.body.scriptUrl);
             this._pendingBreakpointsByPath.delete(event.body.scriptUrl);
             this.setBreakpoints(pendingBreakpoint.args).then(pendingBreakpoint.resolve, pendingBreakpoint.reject);
@@ -131,7 +131,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
             if (frame.source && frame.source.path) {
                 const clientPath = this._webkitUrlToClientPath.has(frame.source.path) ?
                     this._webkitUrlToClientPath.get(frame.source.path) :
-                    utils.webkitUrlToClientPath(this._webRoot, this._platform, frame.source.path);
+                    utils.webkitUrlToClientPath(this._appRoot, this._platform, frame.source.path);
                 // Incoming stackFrames have sourceReference and path set. If the path was resolved to a file in the workspace,
                 // clear the sourceReference since it's not needed.
                 if (clientPath) {

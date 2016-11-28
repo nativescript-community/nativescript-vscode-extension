@@ -1,26 +1,17 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
-import { Version } from '../../common/Version';
+import { Version } from '../common/version';
 import { GUAService } from './GUAService';
 import { TelerikAnalyticsService } from './TelerikAnalyticsService';
 import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
-import { ExtensionVersionInfo } from '../ExtensionVersionInfo';
-import * as ns from '../NsCliService';
+import { ExtensionHostServices as Services } from '../services/extensionHostServices';
+import * as utils from '../common/utilities';
 
 export class AnalyticsService {
-    private static _instance: AnalyticsService;
-
     private _baseInfo: AnalyticsBaseInfo;
     private _gua: GUAService;
     private _ta: TelerikAnalyticsService;
     private _analyticsEnabled: boolean;
-
-    public static getInstance(): AnalyticsService {
-        if (!this._instance) {
-            this._instance = new AnalyticsService();
-        }
-        return this._instance;
-    }
 
     public static generateMachineId(): string {
         let machineId = '';
@@ -48,8 +39,8 @@ export class AnalyticsService {
         };
 
         this._baseInfo = {
-            cliVersion: Version.stringify(ns.CliVersionInfo.getInstalledCliVersion()),
-            extensionVersion: Version.stringify(ExtensionVersionInfo.getExtensionVersion()),
+            cliVersion: Services.cli.version.toString(),
+            extensionVersion: utils.getInstalledExtensionVersion().toString(),
             operatingSystem: operatingSystem,
             userId: AnalyticsService.generateMachineId()
         };
@@ -79,7 +70,7 @@ export class AnalyticsService {
                     this._gua.runRunCommand(platform),
                     this._ta.runRunCommand(platform)
                 ]);
-            } catch(e) {}
+            } catch(e) { }
         }
         return Promise.resolve();
     }

@@ -4,9 +4,10 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
+import {DebugAdapterServices as Services} from '../../../services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {ISourceMaps, SourceMaps} from './sourceMaps';
-import * as utils from '../../utilities';
+import * as utils from '../../../common/utilities';
 
 interface IPendingBreakpoint {
     resolve: () => void;
@@ -35,9 +36,9 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
         this.init(args);
     }
 
-    private init(args: DebugProtocol.ILaunchRequestArgs | DebugProtocol.IAttachRequestArgs): void {
+    private init(args: DebugProtocol.IRequestArgs): void {
         if (args.sourceMaps) {
-            this._webRoot = utils.getAppRoot(args);
+            this._webRoot = args.appRoot;
             this._sourceMaps = new SourceMaps(this._webRoot);
             this._requestSeqToSetBreakpointsArgs = new Map<number, DebugProtocol.ISetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();
@@ -59,7 +60,7 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
                 const argsPath = args.source.path;
                 const mappedPath = this._sourceMaps.MapPathFromSource(argsPath);
                 if (mappedPath) {
-                    utils.Logger.log(`SourceMaps.setBP: Mapped ${argsPath} to ${mappedPath}`);
+                    Services.logger.log(`SourceMaps.setBP: Mapped ${argsPath} to ${mappedPath}`);
                     args.authoredPath = argsPath;
                     args.source.path = mappedPath;
 
@@ -68,11 +69,11 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
                     const mappedLines = args.lines.map((line, i) => {
                         const mapped = this._sourceMaps.MapFromSource(argsPath, line, /*column=*/0);
                         if (mapped) {
-                            utils.Logger.log(`SourceMaps.setBP: Mapped ${argsPath}:${line}:0 to ${mappedPath}:${mapped.line}:${mapped.column}`);
+                            Services.logger.log(`SourceMaps.setBP: Mapped ${argsPath}:${line}:0 to ${mappedPath}:${mapped.line}:${mapped.column}`);
                             mappedCols[i] = mapped.column;
                             return mapped.line;
                         } else {
-                            utils.Logger.log(`SourceMaps.setBP: Mapped ${argsPath} but not line ${line}, column 0`);
+                            Services.logger.log(`SourceMaps.setBP: Mapped ${argsPath} but not line ${line}, column 0`);
                             mappedCols[i] = 0;
                             return line;
                         }
@@ -100,10 +101,10 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
                     });
                 } else if (this._allRuntimeScriptPaths.has(argsPath)) {
                     // It's a generated file which is loaded
-                    utils.Logger.log(`SourceMaps.setBP: SourceMaps are enabled but ${argsPath} is a runtime script`);
+                    Services.logger.log(`SourceMaps.setBP: SourceMaps are enabled but ${argsPath} is a runtime script`);
                 } else {
                     // Source (or generated) file which is not loaded, need to wait
-                    utils.Logger.log(`SourceMaps.setBP: ${argsPath} can't be resolved to a loaded script.`);
+                    Services.logger.log(`SourceMaps.setBP: ${argsPath} can't be resolved to a loaded script.`);
                     this._pendingBreakpointsByPath.set(argsPath, { resolve, reject, args, requestSeq });
                     return;
                 }
@@ -131,10 +132,10 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
                     response.breakpoints.forEach((bp, i) => {
                         const mapped = this._sourceMaps.MapToSource(args.source.path, args.lines[i], args.cols[i]);
                         if (mapped) {
-                            utils.Logger.log(`SourceMaps.setBP: Mapped ${args.source.path}:${bp.line}:${bp.column} to ${mapped.path}:${mapped.line}`);
+                            Services.logger.log(`SourceMaps.setBP: Mapped ${args.source.path}:${bp.line}:${bp.column} to ${mapped.path}:${mapped.line}`);
                             bp.line = mapped.line;
                         } else {
-                            utils.Logger.log(`SourceMaps.setBP: Can't map ${args.source.path}:${bp.line}:${bp.column}, keeping the line number as-is.`);
+                            Services.logger.log(`SourceMaps.setBP: Can't map ${args.source.path}:${bp.line}:${bp.column}, keeping the line number as-is.`);
                         }
 
                         this._requestSeqToSetBreakpointsArgs.delete(requestSeq);
@@ -200,7 +201,7 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
             this._sourceMaps.ProcessNewSourceMap(event.body.scriptUrl, sourceMapUrlValue).then(() => {
                 const sources = this._sourceMaps.AllMappedSources(event.body.scriptUrl);
                 if (sources) {
-                    utils.Logger.log(`SourceMaps.scriptParsed: ${event.body.scriptUrl} was just loaded and has mapped sources: ${JSON.stringify(sources)}`);
+                    Services.logger.log(`SourceMaps.scriptParsed: ${event.body.scriptUrl} was just loaded and has mapped sources: ${JSON.stringify(sources)}`);
                     sources.forEach(this.resolvePendingBreakpoints, this);
                 }
             });
@@ -240,7 +241,7 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
     private resolvePendingBreakpoints(sourcePath: string): void {
         // If there's a setBreakpoints request waiting on this script, go through setBreakpoints again
         if (this._pendingBreakpointsByPath.has(sourcePath)) {
-            utils.Logger.log(`SourceMaps.scriptParsed: Resolving pending breakpoints for ${sourcePath}`);
+            Services.logger.log(`SourceMaps.scriptParsed: Resolving pending breakpoints for ${sourcePath}`);
             const pendingBreakpoint = this._pendingBreakpointsByPath.get(sourcePath);
             this._pendingBreakpointsByPath.delete(sourcePath);
 

@@ -2,7 +2,8 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as utils from '../utilities';
+import * as utils from '../../common/utilities';
+import {DebugAdapterServices as Services} from '../../services/debugAdapterServices';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 export type EventHandler = (event: DebugProtocol.Event) => void;
@@ -77,7 +78,7 @@ export class AdapterProxy {
                 this._eventHandler(event);
             }
         } catch (e) {
-            utils.Logger.log('Error handling adapter event: ' + (e ? e.stack : ''));
+            Services.logger.error('Error handling adapter event: ' + (e ? e.stack : ''));
         }
     }
 }

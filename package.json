@@ -111,81 +111,58 @@
           {
             "name": "Sync on iOS",
             "type": "nativescript",
-            "platform": "ios",
             "request": "launch",
+            "platform": "ios",
             "appRoot": "${workspaceRoot}",
-            "sourceMaps": true,
-            "diagnosticLogging": false,
-            "emulator": false,
-            "rebuild": false,
-            "syncAllFiles": false
+            "sourceMaps": true
           },
           {
             "name": "Launch on iOS",
             "type": "nativescript",
-            "platform": "ios",
             "request": "launch",
+            "platform": "ios",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
-            "diagnosticLogging": false,
-            "emulator": false,
             "rebuild": true
           },
           {
             "name": "Attach on iOS",
             "type": "nativescript",
-            "platform": "ios",
             "request": "attach",
+            "platform": "ios",
             "appRoot": "${workspaceRoot}",
-            "sourceMaps": true,
-            "diagnosticLogging": false,
-            "emulator": false
+            "sourceMaps": true
           },
           {
             "name": "Sync on Android",
             "type": "nativescript",
-            "platform": "android",
             "request": "launch",
+            "platform": "android",
             "appRoot": "${workspaceRoot}",
-            "sourceMaps": true,
-            "diagnosticLogging": false,
-            "emulator": false,
-            "rebuild": false
+            "sourceMaps": true
           },
           {
             "name": "Launch on Android",
             "type": "nativescript",
-            "platform": "android",
             "request": "launch",
+            "platform": "android",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
-            "diagnosticLogging": false,
-            "emulator": false,
             "rebuild": true
           },
           {
             "name": "Attach on Android",
             "type": "nativescript",
-            "platform": "android",
             "request": "attach",
+            "platform": "android",
             "appRoot": "${workspaceRoot}",
-            "sourceMaps": true,
-            "diagnosticLogging": false,
-            "emulator": false
+            "sourceMaps": true
           }
         ],
         "configurationAttributes": {
           "launch": {
             "required": [],
             "properties": {
-              "runtimeArgs": {
-                "type": "array",
-                "description": "Optional arguments passed to the runtime executable.",
-                "items": {
-                  "type": "string"
-                },
-                "default": []
-              },
               "tnsArgs": {
                 "type": "array",
                 "description": "Optional arguments passed to the NativeScript CLI executable.",
@@ -219,9 +196,14 @@
                 "description": "NativeScript platform",
                 "default": null
               },
-              "emulator": {
+              "stopOnEntry": {
                 "type": "boolean",
-                "description": "Whether the app to run in emulator or on a physical device.",
+                "description": "Automatically stop on the first line after lauch",
+                "default": false
+              },
+              "noDebug": {
+                "type": "boolean",
+                "description": "If true the launch request will launch the program without enabling debugging",
                 "default": false
               },
               "rebuild": {
@@ -244,14 +226,6 @@
           "attach": {
             "required": [],
             "properties": {
-              "runtimeArgs": {
-                "type": "array",
-                "description": "Optional arguments passed to the runtime executable.",
-                "items": {
-                  "type": "string"
-                },
-                "default": []
-              },
               "tnsArgs": {
                 "type": "array",
                 "description": "Optional arguments passed to the NativeScript CLI executable.",
@@ -284,11 +258,6 @@
                 "type": "string",
                 "description": "NativeScript platform",
                 "default": null
-              },
-              "emulator": {
-                "type": "boolean",
-                "description": "Whether the app to run in emulator or on a physical device.",
-                "default": false
               },
               "nativescriptCliPath": {
                 "type": "string",

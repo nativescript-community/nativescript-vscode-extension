@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as url from 'url';
-import * as Utilities from './utilities';
+import * as Utilities from '../common/utilities';
 
 export function formatConsoleMessage(m: WebKitProtocol.Console.Message, isClientPath :boolean = false): { text: string, isError: boolean } {
     let outputText: string;

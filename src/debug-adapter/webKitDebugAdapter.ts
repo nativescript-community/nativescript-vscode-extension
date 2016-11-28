@@ -2,18 +2,22 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {spawn, ChildProcess} from 'child_process';
+import * as os from 'os';
+import * as fs from 'fs';
 import * as path from 'path';
 import {Handles, StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from 'vscode-debugadapter';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {INSDebugConnection} from './connection/INSDebugConnection';
 import {IosConnection} from './connection/iosConnection';
 import {AndroidConnection} from './connection/androidConnection';
-import * as utils from './utilities';
+import {Project, DebugResult} from '../project/project';
+import {IosProject} from '../project/iosProject';
+import {AndroidProject} from '../project/androidProject';
+import * as utils from '../common/utilities';
 import {formatConsoleMessage} from './consoleHelper';
-import * as ns from '../services/NsCliService';
-import {AnalyticsService} from '../services/analytics/AnalyticsService';
-import {ExtensionClient} from '../services/ipc/ExtensionClient';
+import {DebugAdapterServices as Services} from '../services/debugAdapterServices';
+import {LoggerHandler, Handlers, Tags} from '../common/Logger';
+import {DebugRequest} from './debugRequest';
 
 interface IScopeVarHandle {
     objectId: string;
@@ -26,27 +30,27 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
     private _initArgs: DebugProtocol.InitializeRequestArguments;
 
-    private _clientAttached: boolean;
     private _variableHandles: Handles<IScopeVarHandle>;
     private _currentStack: WebKitProtocol.Debugger.CallFrame[];
     private _committedBreakpointsByUrl: Map<string, WebKitProtocol.Debugger.BreakpointId[]>;
-    private _overlayHelper: utils.DebounceHelper;
     private _exceptionValueObject: WebKitProtocol.Runtime.RemoteObject;
     private _expectingResumedEvent: boolean;
     private _scriptsById: Map<WebKitProtocol.Debugger.ScriptId, WebKitProtocol.Debugger.Script>;
     private _setBreakpointsRequestQ: Promise<any>;
-
-    private _chromeProc: ChildProcess;
     private _webKitConnection: INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
-    private appRoot: string;
-    private platform: string;
-    private isAttached: boolean;
     private _lastOutputEvent: OutputEvent;
+    private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`  ›${args.message}\n`, args.type.toString()));
+    private _request: DebugRequest;
 
     public constructor() {
         this._variableHandles = new Handles<IScopeVarHandle>();
-        this._overlayHelper = new utils.DebounceHelper(/*timeoutMs=*/200);
+
+        // Messages tagged with a special tag are sent to the frontend through the debugging protocol
+        Services.logger.addHandler(this._loggerFrontendHandler, [Tags.FrontendMessage]);
+        Services.logger.log(`OS: ${os.platform()} ${os.arch()}`);
+        Services.logger.log('Node version: ' + process.version);
+        Services.logger.log('Adapter version: ' + utils.getInstalledExtensionVersion().toString());
 
         this.clearEverything();
     }
@@ -63,7 +67,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private clearClientContext(): void {
-        this._clientAttached = false;
         this.fireEvent({ seq: 0, type: 'event',  event: 'clearClientContext'});
     }
 
@@ -97,81 +100,81 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     public launch(args: DebugProtocol.ILaunchRequestArgs): Promise<void> {
-        return this._attach(args);
+        return this.processRequest(args);
     }
 
     public attach(args: DebugProtocol.IAttachRequestArgs): Promise<void> {
-        return this._attach(args);
+        return this.processRequest(args);
     }
 
-    private initDiagnosticLogging(name: string, args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
+    private configureLoggingForRequest(args: DebugProtocol.IRequestArgs): void {
         if (args.diagnosticLogging) {
-            utils.Logger.enableDiagnosticLogging();
-            utils.Logger.log(`initialize(${JSON.stringify(this._initArgs) })`);
-            utils.Logger.log(`${name}(${JSON.stringify(args) })`);
+            // The logger frontend handler is initially configured to handle messages with LoggerTagFrontendMessage tag only.
+            // We remove the handler and add it again for all messages.
+            Services.logger.removeHandler(this._loggerFrontendHandler);
+            Services.logger.addHandler(this._loggerFrontendHandler);
         }
+        if (args.tnsOutput) {
+            Services.logger.addHandler(Handlers.createStreamHandler(fs.createWriteStream(args.tnsOutput)));
+        }
+        Services.logger.log(`initialize(${JSON.stringify(this._initArgs) })`);
+        Services.logger.log(`${args.request}(${JSON.stringify(args)})`);
     }
 
-    private _attach(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs) {
-        ExtensionClient.setAppRoot(utils.getAppRoot(args));
-        let analyticsRequest = (args.request == "launch" && !(args as DebugProtocol.ILaunchRequestArgs).rebuild) ? "sync" : args.request;
-        ExtensionClient.getInstance().analyticsLaunchDebugger({ request: analyticsRequest, platform: args.platform });
-        this.initDiagnosticLogging(args.request, args);
-        this.appRoot = utils.getAppRoot(args);
-        this.platform = args.platform;
-        this.isAttached = false;
+    private processRequest(args: DebugProtocol.IRequestArgs) {
+        this.configureLoggingForRequest(args);
+        // Initialize the request
+        Services.appRoot = args.appRoot;
+        Services.cliPath = args.nativescriptCliPath || Services.cliPath;
+        this._request = new DebugRequest(args, Services.cli);
+        Services.extensionClient.analyticsLaunchDebugger({ request: this._request.isSync ? "sync" : args.request, platform: args.platform });
 
-        return ((args.platform == 'ios') ? this._attachIos(args) : this._attachAndroid(args))
-            .then(() => {
-                this.isAttached = true;
-                this.fireEvent(new InitializedEvent());
-            },
-            e => {
-                this.onTnsOutputMessage("Command failed: " + e, "error");
-                this.clearEverything();
-                return utils.errP(e);
-            });
-    }
+        // Run CLI Command
+        let cliCommand: DebugResult;
+        if (this._request.isLaunch) {
+            cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry }, this._request.args.tnsArgs);
+        }
+        else if (this._request.isSync) {
+            cliCommand = this._request.project.debugWithSync({ stopOnEntry: this._request.launchArgs.stopOnEntry, syncAllFiles: this._request.launchArgs.syncAllFiles }, this._request.args.tnsArgs);
+        }
+        else if (this._request.isAttach) {
+            cliCommand = this._request.project.attach(this._request.args.tnsArgs);
+        }
 
-    private _attachIos(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
-        let iosProject : ns.IosProject = new ns.IosProject(this.appRoot, args.tnsOutput);
-        iosProject.on('TNS.outputMessage', (message, level) => this.onTnsOutputMessage.apply(this, [message, level]));
+        if (cliCommand.tnsProcess) {
+            cliCommand.tnsProcess.stdout.on('data', data => { Services.logger.log(data.toString(), Tags.FrontendMessage); });
+            cliCommand.tnsProcess.stderr.on('data', data => { Services.logger.error(data.toString(), Tags.FrontendMessage); });
+            cliCommand.tnsProcess.on('close', (code, signal) => { Services.logger.error(`The tns command finished its execution with code ${code}.`, Tags.FrontendMessage); });
+        }
 
-        return iosProject.debug(args)
-        .then((socketFilePath) => {
-            let iosConnection: IosConnection = new IosConnection();
-            this.setConnection(iosConnection, args);
-            return iosConnection.attach(socketFilePath);
-        });
-    }
-
-    private _attachAndroid(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): Promise<void> {
-        let androidProject: ns.AndroidProject = new ns.AndroidProject(this.appRoot, args.tnsOutput);
-        let thisAdapter: WebKitDebugAdapter = this;
-
-        androidProject.on('TNS.outputMessage', (message, level) => thisAdapter.onTnsOutputMessage.apply(thisAdapter, [message, level]));
-
-        this.onTnsOutputMessage("Getting debug port");
-        let androidConnection: AndroidConnection = null;
-
-        let runDebugCommand: Promise<any> = (args.request == 'launch') ? androidProject.debug(args) : Promise.resolve();
-
-        return runDebugCommand.then(_ => {
-            let port: number;
-            return androidProject.getDebugPort(args).then(debugPort => {
-                port = debugPort;
-                if (!thisAdapter._webKitConnection) {
-                    androidConnection = new AndroidConnection();
-                    this.setConnection(androidConnection, args);
-                }
-            }).then(() => {
-                this.onTnsOutputMessage("Attaching to debug application");
+        // Attach to the running application
+        let connectionEstablished = cliCommand.backendIsReadyForConnection.then((connectionToken: string | number) => {
+            if (this._request.isAndroid) {
+                Services.logger.log(`Attaching to application on port ${connectionToken}`);
+                let androidConnection = new AndroidConnection();
+                this.setConnection(androidConnection);
+                let port: number = <number>connectionToken;
                 return androidConnection.attach(port, 'localhost');
-            });
+            }
+            if (this._request.isIos) {
+                Services.logger.log(`Attaching to application on socket path ${connectionToken}`);
+                let iosConnection = new IosConnection();
+                this.setConnection(iosConnection);
+                let socketFilePath: string = <string>connectionToken;
+                return iosConnection.attach(socketFilePath);
+            }
+        });
+
+        // Send InitializedEvent
+        return connectionEstablished.then(() => this.fireEvent(new InitializedEvent()), e => {
+            Services.logger.error(`Error: ${e}`, Tags.FrontendMessage);
+            this.clearEverything();
+            return utils.errP(e);
         });
     }
 
-    private setConnection(connection: INSDebugConnection, args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs) : INSDebugConnection {
+    private setConnection(connection: INSDebugConnection) : INSDebugConnection {
+        let args = this._request.args;
         connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
         connection.on('Debugger.resumed', () => this.onDebuggerResumed());
         connection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));
@@ -182,29 +185,13 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         connection.on('Inspector.detached', () => this.terminateSession());
         connection.on('close', () => this.terminateSession());
         connection.on('error', () => this.terminateSession());
-        connection.on('connect', () => this.onConnected(args))
+        connection.on('connect', () => this.onConnected())
         this._webKitConnection = connection;
         return connection;
     }
 
-    private onConnected(args: DebugProtocol.IAttachRequestArgs | DebugProtocol.ILaunchRequestArgs): void {
-        this.onTnsOutputMessage("Debugger connected");
-    }
-
-    private onTnsOutputMessage(message: string, level: string = "log"): void {
-        utils.Logger.log(message);
-
-        if (!this.isAttached) {
-            let messageParams: WebKitProtocol.Console.MessageAddedParams = {
-                message: {
-                    level: level,
-                    type: 'log',
-                    text: message
-                }
-            };
-
-            this.onConsoleMessage(messageParams);
-        }
+    private onConnected(): void {
+        Services.logger.log("Debugger connected");
     }
 
     private fireEvent(event: DebugProtocol.Event): void {
@@ -214,22 +201,18 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private terminateSession(): void {
-        if (this._clientAttached) {
-            this.fireEvent(new TerminatedEvent());
-        }
+        //this.fireEvent(new TerminatedEvent());
 
-        this.onTnsOutputMessage("Terminating debug session");
+        Services.logger.log("Terminating debug session");
         this.clearEverything();
     }
 
     private clearEverything(): void {
         this.clearClientContext();
         this.clearTargetContext();
-        this.isAttached = false;
-        this._chromeProc = null;
 
         if (this._webKitConnection) {
-            this.onTnsOutputMessage("Closing debug connection");
+            Services.logger.log("Closing debug connection");
 
             this._webKitConnection.close();
             this._webKitConnection = null;
@@ -318,7 +301,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         let isClientPath = false;
         if (localMessage.url)
         {
-            const clientPath = utils.webkitUrlToClientPath(this.appRoot, this.platform, localMessage.url);
+            const clientPath = utils.webkitUrlToClientPath(this._request.args.appRoot, this._request.args.platform, localMessage.url);
             if (clientPath !== '') {
                 localMessage.url = clientPath;
                 isClientPath = true;
@@ -340,11 +323,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     public disconnect(): Promise<void> {
-        if (this._chromeProc) {
-            this._chromeProc.kill('SIGINT');
-            this._chromeProc = null;
-        }
-
         this.clearEverything();
 
         return Promise.resolve<void>();
