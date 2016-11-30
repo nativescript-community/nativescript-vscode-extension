@@ -460,7 +460,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         // Only process at the requested number of frames, if 'levels' is specified
         let stack = this._currentStack;
         if (args.levels) {
-            stack = this._currentStack.filter((_, i) => i < args.levels);
+            stack = this._currentStack.filter((_, i) => args.startFrame <= i && i < args.startFrame + args.levels);
         }
 
         const stackFrames: DebugProtocol.StackFrame[] = stack
@@ -515,7 +515,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 // or eval script. If its source has a name, it's probably an anonymous function.
                 const frameName = callFrame.functionName || (script && script.url ? '(anonymous function)' : '(eval code)');
                 return {
-                    id: i,
+                    id: args.startFrame + i,
                     name: frameName,
                     source: source,
                     line: callFrame.location.lineNumber,
@@ -523,7 +523,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 };
             });
 
-        return { stackFrames };
+        return { stackFrames: stackFrames, totalFrames: this._currentStack.length };
     }
 
     public scopes(args: DebugProtocol.ScopesArguments): DebugProtocol.IScopesResponseBody {
