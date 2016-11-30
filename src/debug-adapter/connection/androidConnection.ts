@@ -450,17 +450,15 @@ export class AndroidConnection implements INSDebugConnection {
         this._socket.close();
     }
 
-    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition?: string): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
-        //throw new Error("Not implemented");
-        //return this.sendMessage('Debugger.setBreakpointByUrl', <WebKitProtocol.Debugger.SetBreakpointByUrlParams>{ url, lineNumber, columnNumber });
-
+    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition: string, ignoreCount: number): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
         let that = this;
         var requestParams = {
             type: 'script',
             target: that.inspectorUrlToV8Name(url),
             line: lineNumber,
             column: columnNumber,
-            condition: condition
+            condition: condition,
+            ignoreCount: ignoreCount
         };
 
         return this.request("setbreakpoint", requestParams)

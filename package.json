@@ -16,7 +16,7 @@
   "publisher": "Telerik",
   "bugs": "https://github.com/NativeScript/nativescript-vscode-extension/issues",
   "engines": {
-    "vscode": "^1.5.0"
+    "vscode": "^1.7.0"
   },
   "homepage": "https://www.nativescript.org/",
   "categories": [
@@ -29,8 +29,8 @@
     "source-map": "^0.5.3",
     "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master",
     "universal-analytics": "^0.4.6",
-    "vscode-debugadapter": "^1.7.0",
-    "vscode-debugprotocol": "^1.7.0"
+    "vscode-debugadapter": "^1.14.0",
+    "vscode-debugprotocol": "^1.14.0"
   },
   "devDependencies": {
     "@types/es6-collections": "^0.5.29",

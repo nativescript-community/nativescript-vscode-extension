@@ -83,6 +83,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             supportsFunctionBreakpoints: false,
             supportsConditionalBreakpoints: true,
             supportsEvaluateForHovers: false,
+            supportsHitConditionalBreakpoints: true, // TODO: Not working on Android
             exceptionBreakpointFilters: [{
 				label: 'All Exceptions',
 				filter: 'all',
@@ -92,7 +93,16 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 				label: 'Uncaught Exceptions',
 				filter: 'uncaught',
 				default: true
-			}]
+			}],
+            supportsStepBack: false,
+            supportsSetVariable: false, // TODO: Check if can be enabled
+            supportsRestartFrame: false, // TODO: Check if can be enabled
+            supportsGotoTargetsRequest: false, // TODO: Check if can be enabled
+            supportsStepInTargetsRequest: false, // TODO: Check if can be enabled
+            supportsCompletionsRequest: false, // TODO: Check if can be enabled
+            supportsModulesRequest: false, // TODO: Check if can be enabled
+            additionalModuleColumns: undefined, // TODO: Check if can be enabled
+            supportedChecksumAlgorithms: undefined // TODO: Check if can be enabled
         }
     }
 
@@ -377,7 +387,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private _addBreakpoints(url: string, breakpoints: DebugProtocol.ISetBreakpointsArgs): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse[]> {
         // Call setBreakpoint for all breakpoints in the script simultaneously
         const responsePs = breakpoints.breakpoints
-            .map((b, i) => this._webKitConnection.debugger_setBreakpointByUrl(url, breakpoints.lines[i], breakpoints.cols ? breakpoints.cols[i] : 0, b.condition));
+            .map((b, i) => this._webKitConnection.debugger_setBreakpointByUrl(url, breakpoints.lines[i], breakpoints.cols ? breakpoints.cols[i] : 0, b.condition, parseInt(b.hitCondition) || 0));
 
         // Join all setBreakpoint requests to a single promise
         return Promise.all(responsePs);
