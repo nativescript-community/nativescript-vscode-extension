@@ -54,6 +54,7 @@ declare module 'vscode-debugprotocol' {
 
         interface IStackTraceResponseBody {
             stackFrames: DebugProtocol.StackFrame[];
+            totalFrames?: number;
         }
 
         interface IScopesResponseBody {
