@@ -237,7 +237,7 @@ export class AndroidConnection implements INSDebugConnection {
 
         this._socket.on("afterCompile", function(params) {
 
-            let scriptData = <WebKitProtocol.Debugger.Script>{
+            let scriptData = <Webkit.Debugger.ScriptParsedEventArgs>{
                 scriptId: String(params.body.script.id),
                 url: params.body.script.name,
                 startLine: params.body.script.lineOffset,
@@ -264,7 +264,7 @@ export class AndroidConnection implements INSDebugConnection {
     private handleBreakEvent(params: any): Promise<any> {
         let that = this;
         return this.fetchCallFrames().then(callFrames => {
-            let scriptData = <WebKitProtocol.Debugger.PausedParams>{
+            let scriptData = <Webkit.Debugger.PausedEventArgs>{
                 reason: "other",
                 hitBreakpoints: params ? (params.breakpoints || []) : [],
                 callFrames: callFrames
@@ -389,7 +389,7 @@ export class AndroidConnection implements INSDebugConnection {
         };
     };
 
-    private fetchCallFrames(): Promise<WebKitProtocol.Debugger.CallFrame[]> {
+    private fetchCallFrames(): Promise<Webkit.Debugger.CallFrame[]> {
 
         let that = this;
         return this.request("backtrace",
@@ -439,7 +439,6 @@ export class AndroidConnection implements INSDebugConnection {
     public attach(port: number, url?: string): Promise<void> {
         Services.logger().log('Attempting to attach on port ' + port);
         return this._attach(port, url);
-        //.then(() => this.sendMessage('Console.enable'))
     }
 
     private _attach(port: number, url?: string): Promise<void> {
@@ -450,7 +449,7 @@ export class AndroidConnection implements INSDebugConnection {
         this._socket.close();
     }
 
-    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition: string, ignoreCount: number): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
+    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition: string, ignoreCount: number): Promise<Webkit.Response<Webkit.Debugger.SetBreakpointByUrlResult>> {
         let that = this;
         var requestParams = {
             type: 'script',
@@ -463,8 +462,7 @@ export class AndroidConnection implements INSDebugConnection {
 
         return this.request("setbreakpoint", requestParams)
             .then(response => {
-                return <WebKitProtocol.Debugger.SetBreakpointByUrlResponse>
-                    {
+                return {
                         result: {
                             breakpointId: response.breakpoint.toString(),
                             locations: response.actual_locations.map(that.v8LocationToInspectorLocation),
@@ -473,32 +471,14 @@ export class AndroidConnection implements INSDebugConnection {
             });
     }
 
-    public debugger_removeBreakpoint(breakpointId: string): Promise<WebKitProtocol.Response> {
-        //throw new Error("Not implemented");
-        //return this.sendMessage('Debugger.removeBreakpoint', <WebKitProtocol.Debugger.RemoveBreakpointParams>{ breakpointId });
-
-        //ok
-
+    public debugger_removeBreakpoint(breakpointId: string): Promise<Webkit.Response<any>> {
         return this.request("clearbreakpoint", {
             breakpoint: breakpointId
-            })
-            .then(response => {
-                return <WebKitProtocol.Response>{};
-            });
+        });
     }
 
-    public debugger_stepOver(): Promise<WebKitProtocol.Response> {
-        //throw new Error("Not implemented");
-        //return this.sendMessage('Debugger.stepOver');
-
-
-        //locations: response.actual_locations.map(that.v8LocationToInspectorLocation)
-
-        return this.sendContinue('next').then(reponse => {
-            return <WebKitProtocol.Response>{};
-        });
-
-        //ok
+    public debugger_stepOver(): Promise<Webkit.Response<any>> {
+        return this.sendContinue('next');
     }
 
     private sendContinue(stepAction: string): Promise<any> {
@@ -510,54 +490,25 @@ export class AndroidConnection implements INSDebugConnection {
         })
     }
 
-    public debugger_stepIn(): Promise<WebKitProtocol.Response> {
-
-        //return this.sendMessage('Debugger.stepInto');
-        //throw new Error("Not implemented");
-
-        //ok
-        return this.sendContinue('in').then(reponse => {
-            return <WebKitProtocol.Response>{};
-        });
+    public debugger_stepIn(): Promise<Webkit.Response<any>> {
+        return this.sendContinue('in');
     }
 
-    public debugger_stepOut(): Promise<WebKitProtocol.Response> {
-        //return this.sendMessage('Debugger.stepOut');
-        //throw new Error("Not implemented");
-
-        //ok
-        return this.sendContinue('out').then(reponse => {
-            return <WebKitProtocol.Response>{};
-        });
+    public debugger_stepOut(): Promise<Webkit.Response<any>> {
+        return this.sendContinue('out');
     }
 
-    public debugger_resume(): Promise<WebKitProtocol.Response> {
-        //return this.sendMessage('Debugger.resume');
-        //throw new Error("Not implemented");
-
-        //ok
-        return this.sendContinue(null).then(reponse => {
-            return <WebKitProtocol.Response>{};
-        });
+    public debugger_resume(): Promise<Webkit.Response<any>> {
+        return this.sendContinue(null);
     }
 
-    public debugger_pause(): Promise<WebKitProtocol.Response> {
-        //return this.sendMessage('Debugger.pause');
-        //throw new Error("Not implemented");
-
-        //ok
+    public debugger_pause(): Promise<Webkit.Response<any>> {
         let that = this;
         return this.request("suspend", {})
             .then(reponse => that.handleBreakEvent(null));
-        // .then(reponse => {
-        //     return <WebKitProtocol.Response>{};
-        // });
     }
 
-    public debugger_evaluateOnCallFrame(callFrameId: string, expression: string, objectGroup = 'dummyObjectGroup', returnByValue?: boolean): Promise<WebKitProtocol.Debugger.EvaluateOnCallFrameResponse> {
-        //return this.sendMessage('Debugger.evaluateOnCallFrame', <WebKitProtocol.Debugger.EvaluateOnCallFrameParams>{ callFrameId, expression, objectGroup, returnByValue });
-        //throw new Error("Not implemented");
-
+    public debugger_evaluateOnCallFrame(callFrameId: string, expression: string, objectGroup = 'dummyObjectGroup', returnByValue?: boolean): Promise<Webkit.Response<Webkit.Debugger.EvaluateOnCallFrameResult>> {
         var requestParams = {
             expression: expression,
             frame: callFrameId
@@ -567,7 +518,7 @@ export class AndroidConnection implements INSDebugConnection {
         let messageId = this._nextId++;
         let that = this;
         return this.request("evaluate", requestParams).then(response => {
-            return <WebKitProtocol.Debugger.EvaluateOnCallFrameResponse>{
+            return {
               result: {
                     result : that.v8ResultToInspectorResult(response),
                     wasThrown : false
@@ -576,9 +527,7 @@ export class AndroidConnection implements INSDebugConnection {
         });
     }
 
-    public debugger_setPauseOnExceptions(state: string): Promise<WebKitProtocol.Response> {
-        //return this.sendMessage('Debugger.setPauseOnExceptions', <WebKitProtocol.Debugger.SetPauseOnExceptionsParams>{ state });
-
+    public debugger_setPauseOnExceptions(state: string): Promise<Webkit.Response<any>> {
         var requestParams = {
             type: state !== 'none' ? state : "uncaught",
             enabled: state !== 'none'
@@ -591,15 +540,12 @@ export class AndroidConnection implements INSDebugConnection {
                     reject(response.error);
                     return;
                 }
-                resolve(<WebKitProtocol.Response>{ id: messageId });
+                resolve({ id: messageId });
             });
         });
     }
 
-    public debugger_getScriptSource(scriptId: WebKitProtocol.Debugger.ScriptId): Promise<WebKitProtocol.Debugger.GetScriptSourceResponse> {
-
-        //return this.sendMessage('Debugger.getScriptSource', //<WebKitProtocol.Debugger.GetScriptSourceParams>{ scriptId });
-
+    public debugger_getScriptSource(scriptId: Webkit.Debugger.ScriptId): Promise<Webkit.Response<Webkit.Debugger.GetScriptSourceResult>> {
         var requestParams = {
             includeSource: true,
             types: 4,
@@ -627,15 +573,12 @@ export class AndroidConnection implements INSDebugConnection {
                     source = response.source;
                 }
 
-
-                let result = <WebKitProtocol.Debugger.GetScriptSourceResponse>{
+                resolve({
                     id: messageId,
                     result: {
                         scriptSource: source
                     }
-                }
-
-                resolve(result);
+                });
             });
         });
     }
@@ -666,12 +609,7 @@ export class AndroidConnection implements INSDebugConnection {
 
 
     ////getProperties Functions. Implementation in RuntimeAgent.js
-    public runtime_getProperties(objectId: string, ownProperties: boolean, accessorPropertiesOnly: boolean): Promise<WebKitProtocol.Runtime.GetPropertiesResponse> {
-
-        //return this.sendMessage('Runtime.getProperties', <WebKitProtocol.Runtime.GetPropertiesParams>{ objectId, ownProperties, accessorPropertiesOnly });
-        //throw new Error("Not implemented");
-
-
+    public runtime_getProperties(objectId: string, ownProperties: boolean, accessorPropertiesOnly: boolean): Promise<Webkit.Response<Webkit.Runtime.GetPropertiesResult>> {
         return this.isScopeId(objectId).then(response => {
             if (response) {
                 return this.getPropertiesOfScopeId(objectId);
@@ -699,7 +637,7 @@ export class AndroidConnection implements INSDebugConnection {
                 });
             }
 
-            return <WebKitProtocol.Runtime.GetPropertiesResponse>{
+            return {
                 result: {
                     result: result
                 }
@@ -771,33 +709,7 @@ export class AndroidConnection implements INSDebugConnection {
 
     ////getProperties Functions END
 
-    public runtime_evaluate(expression: string, objectGroup = 'dummyObjectGroup', contextId?: number, returnByValue = false): Promise<WebKitProtocol.Runtime.EvaluateResponse> {
-        //return this.sendMessage('Runtime.evaluate', <WebKitProtocol.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
+    public runtime_evaluate(expression: string, objectGroup = 'dummyObjectGroup', contextId?: number, returnByValue = false): Promise<Webkit.Response<Webkit.Runtime.EvaluateResult>> {
         throw new Error("Not implemented");
     }
-
-    // private sendMessage(method: any, params?: any): Promise<WebKitProtocol.Response> {
-    //     return this._socket.sendMessage({
-    //         id: this._nextId++,
-    //         method,
-    //         params
-    //     });
-    // }
-}
-
-/**
- * Helper function to GET the contents of a url
- */
-function getUrl(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        http.get(url, response => {
-            let jsonResponse = '';
-            response.on('data', chunk => jsonResponse += chunk);
-            response.on('end', () => {
-                resolve(jsonResponse);
-            });
-        }).on('error', e => {
-            reject('Cannot connect to the target: ' + e.message);
-        });
-    });
 }

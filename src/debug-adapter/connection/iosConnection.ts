@@ -158,7 +158,7 @@ export class IosConnection implements INSDebugConnection {
         Services.logger().log('Attempting to attach to path ' + filePath);
         return utils.retryAsync(() => this._attach(filePath), 6000)
             .then(() => {
-                Promise.all<WebKitProtocol.Response>([
+                Promise.all<Webkit.Response<any>>([
                     this.sendMessage('Debugger.enable'),
                     this.sendMessage('Console.enable'),
                     this.sendMessage('Debugger.setBreakpointsActive', {active: true})
@@ -174,59 +174,59 @@ export class IosConnection implements INSDebugConnection {
         this._socket.close();
     }
 
-    public debugger_setBreakpoint(location: WebKitProtocol.Debugger.Location, condition?: string): Promise<WebKitProtocol.Debugger.SetBreakpointResponse> {
-        return this.sendMessage('Debugger.setBreakpoint', <WebKitProtocol.Debugger.SetBreakpointParams>{ location, options: { condition: condition }});
+    public debugger_setBreakpoint(location: Webkit.Debugger.Location, condition?: string): Promise<Webkit.Response<Webkit.Debugger.SetBreakpointResult>> {
+        return this.sendMessage('Debugger.setBreakpoint', <Webkit.Debugger.SetBreakpointParams>{ location, options: { condition: condition }});
     }
 
-    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition: string, ignoreCount: number): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
-        return this.sendMessage('Debugger.setBreakpointByUrl', <WebKitProtocol.Debugger.SetBreakpointByUrlParams>{ url: url, lineNumber: lineNumber, columnNumber: 0 /* a columnNumber different from 0 confuses the debugger */, options: { condition: condition, ignoreCount: ignoreCount }});
+    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition: string, ignoreCount: number): Promise<Webkit.Response<Webkit.Debugger.SetBreakpointByUrlResult>> {
+        return this.sendMessage('Debugger.setBreakpointByUrl', <Webkit.Debugger.SetBreakpointByUrlParams>{ url: url, lineNumber: lineNumber, columnNumber: 0 /* a columnNumber different from 0 confuses the debugger */, options: { condition: condition, ignoreCount: ignoreCount }});
     }
 
-    public debugger_removeBreakpoint(breakpointId: string): Promise<WebKitProtocol.Response> {
-        return this.sendMessage('Debugger.removeBreakpoint', <WebKitProtocol.Debugger.RemoveBreakpointParams>{ breakpointId });
+    public debugger_removeBreakpoint(breakpointId: string): Promise<Webkit.Response<any>> {
+        return this.sendMessage('Debugger.removeBreakpoint', <Webkit.Debugger.RemoveBreakpointParams>{ breakpointId });
     }
 
-    public debugger_stepOver(): Promise<WebKitProtocol.Response> {
+    public debugger_stepOver(): Promise<Webkit.Response<any>> {
         return this.sendMessage('Debugger.stepOver');
     }
 
-    public debugger_stepIn(): Promise<WebKitProtocol.Response> {
+    public debugger_stepIn(): Promise<Webkit.Response<any>> {
         return this.sendMessage('Debugger.stepInto');
     }
 
-    public debugger_stepOut(): Promise<WebKitProtocol.Response> {
+    public debugger_stepOut(): Promise<Webkit.Response<any>> {
         return this.sendMessage('Debugger.stepOut');
     }
 
-    public debugger_resume(): Promise<WebKitProtocol.Response> {
+    public debugger_resume(): Promise<Webkit.Response<any>> {
         return this.sendMessage('Debugger.resume');
     }
 
-    public debugger_pause(): Promise<WebKitProtocol.Response> {
+    public debugger_pause(): Promise<Webkit.Response<any>> {
         return this.sendMessage('Debugger.pause');
     }
 
-    public debugger_evaluateOnCallFrame(callFrameId: string, expression: string, objectGroup = 'dummyObjectGroup', returnByValue?: boolean): Promise<WebKitProtocol.Debugger.EvaluateOnCallFrameResponse> {
-        return this.sendMessage('Debugger.evaluateOnCallFrame', <WebKitProtocol.Debugger.EvaluateOnCallFrameParams>{ callFrameId, expression, objectGroup, returnByValue });
+    public debugger_evaluateOnCallFrame(callFrameId: string, expression: string, objectGroup = 'dummyObjectGroup', returnByValue?: boolean): Promise<Webkit.Response<Webkit.Debugger.EvaluateOnCallFrameResult>> {
+        return this.sendMessage('Debugger.evaluateOnCallFrame', <Webkit.Debugger.EvaluateOnCallFrameParams>{ callFrameId, expression, objectGroup, returnByValue });
     }
 
-    public debugger_setPauseOnExceptions(state: string): Promise<WebKitProtocol.Response> {
-        return this.sendMessage('Debugger.setPauseOnExceptions', <WebKitProtocol.Debugger.SetPauseOnExceptionsParams>{ state });
+    public debugger_setPauseOnExceptions(state: string): Promise<Webkit.Response<any>> {
+        return this.sendMessage('Debugger.setPauseOnExceptions', <Webkit.Debugger.SetPauseOnExceptionsParams>{ state });
     }
 
-    public debugger_getScriptSource(scriptId: WebKitProtocol.Debugger.ScriptId): Promise<WebKitProtocol.Debugger.GetScriptSourceResponse> {
-        return this.sendMessage('Debugger.getScriptSource', <WebKitProtocol.Debugger.GetScriptSourceParams>{ scriptId });
+    public debugger_getScriptSource(scriptId: Webkit.Debugger.ScriptId): Promise<Webkit.Response<Webkit.Debugger.GetScriptSourceResult>> {
+        return this.sendMessage('Debugger.getScriptSource', <Webkit.Debugger.GetScriptSourceParams>{ scriptId });
     }
 
-    public runtime_getProperties(objectId: string, ownProperties: boolean, accessorPropertiesOnly: boolean): Promise<WebKitProtocol.Runtime.GetPropertiesResponse> {
-        return this.sendMessage('Runtime.getProperties', <WebKitProtocol.Runtime.GetPropertiesParams>{ objectId, ownProperties, accessorPropertiesOnly });
+    public runtime_getProperties(objectId: string, ownProperties: boolean, accessorPropertiesOnly: boolean): Promise<Webkit.Response<Webkit.Runtime.GetPropertiesResult>> {
+        return this.sendMessage('Runtime.getProperties', <Webkit.Runtime.GetPropertiesParams>{ objectId, ownProperties, accessorPropertiesOnly });
     }
 
-    public runtime_evaluate(expression: string, objectGroup = 'dummyObjectGroup', contextId?: number, returnByValue = false): Promise<WebKitProtocol.Runtime.EvaluateResponse> {
-        return this.sendMessage('Runtime.evaluate', <WebKitProtocol.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
+    public runtime_evaluate(expression: string, objectGroup = 'dummyObjectGroup', contextId?: number, returnByValue = false): Promise<Webkit.Response<Webkit.Runtime.EvaluateResult>> {
+        return this.sendMessage('Runtime.evaluate', <Webkit.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
     }
 
-    private sendMessage(method: string, params?: any): Promise<WebKitProtocol.Response> {
+    private sendMessage(method: string, params?: any): Promise<Webkit.Response<any>> {
         return this._socket.sendMessage({
             id: this._nextId++,
             method: method,

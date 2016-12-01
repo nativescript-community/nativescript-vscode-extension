@@ -21,7 +21,7 @@ import {DebugRequest} from './debugRequest';
 
 interface IScopeVarHandle {
     objectId: string;
-    thisObj?: WebKitProtocol.Runtime.RemoteObject;
+    thisObj?: Webkit.Runtime.RemoteObject;
 }
 
 export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
@@ -31,11 +31,11 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private _initArgs: DebugProtocol.InitializeRequestArguments;
 
     private _variableHandles: Handles<IScopeVarHandle>;
-    private _currentStack: WebKitProtocol.Debugger.CallFrame[];
-    private _committedBreakpointsByUrl: Map<string, WebKitProtocol.Debugger.BreakpointId[]>;
-    private _exceptionValueObject: WebKitProtocol.Runtime.RemoteObject;
+    private _currentStack: Webkit.Debugger.CallFrame[];
+    private _committedBreakpointsByUrl: Map<string, Webkit.Debugger.BreakpointId[]>;
+    private _exceptionValueObject: Webkit.Runtime.RemoteObject;
     private _expectingResumedEvent: boolean;
-    private _scriptsById: Map<WebKitProtocol.Debugger.ScriptId, WebKitProtocol.Debugger.Script>;
+    private _scriptsById: Map<Webkit.Debugger.ScriptId, Webkit.Debugger.ScriptParsedEventArgs>;
     private _setBreakpointsRequestQ: Promise<any>;
     private _webKitConnection: INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
@@ -60,8 +60,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private clearTargetContext(): void {
-        this._scriptsById = new Map<WebKitProtocol.Debugger.ScriptId, WebKitProtocol.Debugger.Script>();
-        this._committedBreakpointsByUrl = new Map<string, WebKitProtocol.Debugger.BreakpointId[]>();
+        this._scriptsById = new Map<Webkit.Debugger.ScriptId, Webkit.Debugger.ScriptParsedEventArgs>();
+        this._committedBreakpointsByUrl = new Map<string, Webkit.Debugger.BreakpointId[]>();
         this._setBreakpointsRequestQ = Promise.resolve<void>();
         this._lastOutputEvent = null;
         this.fireEvent({ seq: 0, type: 'event',  event: 'clearTargetContext'});
@@ -250,7 +250,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         this.clearTargetContext();
     }
 
-    private onDebuggerPaused(notification: WebKitProtocol.Debugger.PausedParams): void {
+    private onDebuggerPaused(notification: Webkit.Debugger.PausedEventArgs): void {
         this._currentStack = notification.callFrames;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
@@ -262,7 +262,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             if (notification.data && this._currentStack.length) {
                 // Insert a scope to wrap the exception object. exceptionText is unused by Code at the moment.
                 const remoteObjValue = utils.remoteObjectToValue(notification.data, false);
-                let scopeObject: WebKitProtocol.Runtime.RemoteObject;
+                let scopeObject: Webkit.Runtime.RemoteObject;
 
                 if (remoteObjValue.variableHandleRef) {
                     // If the remote object is an object (probably an Error), treat the object like a scope.
@@ -300,7 +300,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         }
     }
 
-    private onScriptParsed(script: WebKitProtocol.Debugger.Script): void {
+    private onScriptParsed(script: Webkit.Debugger.ScriptParsedEventArgs): void {
         this._scriptsById.set(script.scriptId, script);
 
         if (this.scriptIsNotAnonymous(script)) {
@@ -308,7 +308,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         }
     }
 
-    private onBreakpointResolved(params: WebKitProtocol.Debugger.BreakpointResolvedParams): void {
+    private onBreakpointResolved(params: Webkit.Debugger.BreakpointResolvedEventArgs): void {
         const script = this._scriptsById.get(params.location.scriptId);
         if (!script) {
             // Breakpoint resolved for a script we don't know about
@@ -320,7 +320,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         this._committedBreakpointsByUrl.set(script.url, committedBps);
     }
 
-    private onConsoleMessage(params: WebKitProtocol.Console.MessageAddedParams): void {
+    private onConsoleMessage(params: Webkit.Console.MessageAddedEventArgs): void {
         let localMessage = params.message;
         let isClientPath = false;
         if (localMessage.url)
@@ -340,7 +340,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         }
     }
 
-    public onMessageRepeatCountUpdated(params: WebKitProtocol.Console.MessageRepeatCountUpdatedEventArgs) {
+    public onMessageRepeatCountUpdated(params: Webkit.Console.MessageRepeatCountUpdatedEventArgs) {
         if (this._lastOutputEvent) {
             this.fireEvent(this._lastOutputEvent);
         }
@@ -399,7 +399,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         });
     }
 
-    private _addBreakpoints(url: string, breakpoints: DebugProtocol.ISetBreakpointsArgs): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse[]> {
+    private _addBreakpoints(url: string, breakpoints: DebugProtocol.ISetBreakpointsArgs): Promise<Webkit.Debugger.SetBreakpointByUrlResult[]> {
         // Call setBreakpoint for all breakpoints in the script simultaneously
         const responsePs = breakpoints.breakpoints
             .map((b, i) => this._webKitConnection.debugger_setBreakpointByUrl(url, breakpoints.lines[i], breakpoints.cols ? breakpoints.cols[i] : 0, b.condition, parseInt(b.hitCondition) || 0));
@@ -408,7 +408,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         return Promise.all(responsePs);
     }
 
-    private _webkitBreakpointResponsesToODPBreakpoints(url: string, responses: WebKitProtocol.Debugger.SetBreakpointByUrlResponse[], requestLines: number[]): DebugProtocol.IBreakpoint[] {
+    private _webkitBreakpointResponsesToODPBreakpoints(url: string, responses: Webkit.Response<Webkit.Debugger.SetBreakpointByUrlResult>[], requestLines: number[]): DebugProtocol.IBreakpoint[] {
         // Don't cache errored responses
         const committedBpIds = responses
             .filter(response => !response.error)
@@ -489,7 +489,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         }
 
         const stackFrames: DebugProtocol.StackFrame[] = stack
-            .map((callFrame: WebKitProtocol.Debugger.CallFrame, i: number) => {
+            .map((callFrame: Webkit.Debugger.CallFrame, i: number) => {
                 const sourceReference = scriptIdToSourceReference(callFrame.location.scriptId);
                 const scriptId = callFrame.location.scriptId;
                 const script = this._scriptsById.get(scriptId);
@@ -552,7 +552,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     public scopes(args: DebugProtocol.ScopesArguments): DebugProtocol.IScopesResponseBody {
-        const scopes = this._currentStack[args.frameId].scopeChain.map((scope: WebKitProtocol.Debugger.Scope, i: number) => {
+        const scopes = this._currentStack[args.frameId].scopeChain.map((scope: Webkit.Debugger.Scope, i: number) => {
             const scopeHandle: IScopeVarHandle = { objectId: scope.object.objectId };
             if (i === 0) {
                 // The first scope should include 'this'. Keep the RemoteObject reference for use by the variables request
@@ -573,7 +573,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         const handle = this._variableHandles.get(args.variablesReference);
         if (handle.objectId === WebKitDebugAdapter.EXCEPTION_VALUE_ID) {
             // If this is the special marker for an exception value, create a fake property descriptor so the usual route can be used
-            const excValuePropDescriptor: WebKitProtocol.Runtime.PropertyDescriptor = <any>{ name: 'exception', value: this._exceptionValueObject };
+            const excValuePropDescriptor: Webkit.Runtime.PropertyDescriptor = <any>{ name: 'exception', value: this._exceptionValueObject };
             return Promise.resolve({ variables: [this.propertyDescriptorToVariable(excValuePropDescriptor)] });
         } else if (handle != null) {
             return Promise.all([
@@ -582,7 +582,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 this._webKitConnection.runtime_getProperties(handle.objectId, /*ownProperties=*/true, /*accessorPropertiesOnly=*/false)
             ]).then(getPropsResponses => {
                 // Sometimes duplicates will be returned - merge all property descriptors returned
-                const propsByName = new Map<string, WebKitProtocol.Runtime.PropertyDescriptor>();
+                const propsByName = new Map<string, Webkit.Runtime.PropertyDescriptor>();
                 getPropsResponses.forEach(response => {
                     if (!response.error) {
                         response.result.result.forEach(propDesc =>
@@ -651,7 +651,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         });
     }
 
-    private propertyDescriptorToVariable(propDesc: WebKitProtocol.Runtime.PropertyDescriptor): DebugProtocol.Variable {
+    private propertyDescriptorToVariable(propDesc: Webkit.Runtime.PropertyDescriptor): DebugProtocol.Variable {
         if (propDesc.get || propDesc.set) {
             // A property doesn't have a value here, and we shouldn't evaluate the getter because it may have side effects.
             // Node adapter shows 'undefined', Chrome can eval the getter on demand.
@@ -666,7 +666,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
      * Run the object through Utilities.remoteObjectToValue, and if it returns a variableHandle reference,
      * use it with this instance's variableHandles to create a variable handle.
      */
-    private remoteObjectToValue(object: WebKitProtocol.Runtime.RemoteObject): { value: string, variablesReference: number } {
+    private remoteObjectToValue(object: Webkit.Runtime.RemoteObject): { value: string, variablesReference: number } {
         const { value, variableHandleRef } = utils.remoteObjectToValue(object);
         const result = { value, variablesReference: 0 };
         if (variableHandleRef) {
@@ -677,20 +677,20 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     // Returns true if the script has url supplied in Debugger.scriptParsed event
-    private scriptIsNotAnonymous(script: WebKitProtocol.Debugger.Script): boolean {
+    private scriptIsNotAnonymous(script: Webkit.Debugger.ScriptParsedEventArgs): boolean {
         return script && !!script.url;
     }
 
     // Returns true if Debugger.scriptParsed event is received for the provided script id
-    private scriptIsNotUnknown(scriptId: WebKitProtocol.Debugger.ScriptId): boolean {
+    private scriptIsNotUnknown(scriptId: Webkit.Debugger.ScriptId): boolean {
         return !!this._scriptsById.get(scriptId);
     }
 }
 
-function scriptIdToSourceReference(scriptId: WebKitProtocol.Debugger.ScriptId): number {
+function scriptIdToSourceReference(scriptId: Webkit.Debugger.ScriptId): number {
     return parseInt(scriptId, 10);
 }
 
-function sourceReferenceToScriptId(sourceReference: number): WebKitProtocol.Debugger.ScriptId {
+function sourceReferenceToScriptId(sourceReference: number): Webkit.Debugger.ScriptId {
     return '' + sourceReference;
 }
