@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {Handles, StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent} from 'vscode-debugadapter';
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {INSDebugConnection} from './connection/INSDebugConnection';
+import {WebKitConnection} from './connection/webKitConnection';
 import {IosConnection} from './connection/iosConnection';
 import {AndroidConnection} from './connection/androidConnection';
 import {Project, DebugResult} from '../project/project';
@@ -37,7 +37,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private _expectingResumedEvent: boolean;
     private _scriptsById: Map<Webkit.Debugger.ScriptId, Webkit.Debugger.ScriptParsedEventArgs>;
     private _setBreakpointsRequestQ: Promise<any>;
-    private _webKitConnection: INSDebugConnection;
+    private _webKitConnection: WebKitConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
     private _lastOutputEvent: OutputEvent;
     private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`  ›${args.message}\n`, args.type.toString()));
@@ -179,10 +179,15 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
                     connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync() : connectionToken;
                     Services.logger().log(`Attaching to application on ${connectionToken}`);
-                    let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
+                    let connection: WebKitConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
                     this.setConnection(connection);
                     let attachPromise = this._request.isAndroid ? (<AndroidConnection>connection).attach(<number>connectionToken, 'localhost') : (<IosConnection>connection).attach(<string>connectionToken);
                     attachPromise.then(() => {
+                        return Promise.all<Webkit.Response<any>>([
+                            this._webKitConnection.enable(),
+                            this._webKitConnection.setBreakpointsActive({ active: true })
+                        ]);
+                    }).then(() => {
                         // Send InitializedEvent
                         this.fireEvent(new InitializedEvent());
                         promiseResolve();
@@ -195,7 +200,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
     }
 
-    private setConnection(connection: INSDebugConnection) : INSDebugConnection {
+    private setConnection(connection: WebKitConnection) : WebKitConnection {
         let args = this._request.args;
         connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
         connection.on('Debugger.resumed', () => this.onDebuggerResumed());
@@ -393,7 +398,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         // state where later adds on the same line will fail with 'breakpoint already exists' even though it
         // does not break there.
         return this._committedBreakpointsByUrl.get(url).reduce((p, bpId) => {
-            return p.then(() => this._webKitConnection.debugger_removeBreakpoint(bpId)).then(() => { });
+            return p.then(() => this._webKitConnection.removeBreakpoint({ breakpointId: bpId })).then(() => { });
         }, Promise.resolve<void>()).then(() => {
             this._committedBreakpointsByUrl.set(url, null);
         });
@@ -402,7 +407,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private _addBreakpoints(url: string, breakpoints: DebugProtocol.ISetBreakpointsArgs): Promise<Webkit.Debugger.SetBreakpointByUrlResult[]> {
         // Call setBreakpoint for all breakpoints in the script simultaneously
         const responsePs = breakpoints.breakpoints
-            .map((b, i) => this._webKitConnection.debugger_setBreakpointByUrl(url, breakpoints.lines[i], breakpoints.cols ? breakpoints.cols[i] : 0, b.condition, parseInt(b.hitCondition) || 0));
+            .map((b, i) => this._webKitConnection.setBreakpointByUrl({ url: url, lineNumber: breakpoints.lines[i], columnNumber: breakpoints.cols ? breakpoints.cols[i] : 0, options: { condition: b.condition, ignoreCount: parseInt(b.hitCondition) || 0 }}));
 
         // Join all setBreakpoint requests to a single promise
         return Promise.all(responsePs);
@@ -448,36 +453,36 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             state = 'none';
         }
 
-        return this._webKitConnection.debugger_setPauseOnExceptions(state)
+        return this._webKitConnection.setPauseOnExceptions({ state: state })
             .then(() => { });
     }
 
     public continue(): Promise<void> {
         this._expectingResumedEvent = true;
-        return this._webKitConnection.debugger_resume()
+        return this._webKitConnection.resume()
             .then(() => { });
     }
 
     public next(): Promise<void> {
         this._expectingResumedEvent = true;
-        return this._webKitConnection.debugger_stepOver()
+        return this._webKitConnection.stepOver()
             .then(() => { });
     }
 
     public stepIn(): Promise<void> {
         this._expectingResumedEvent = true;
-        return this._webKitConnection.debugger_stepIn()
+        return this._webKitConnection.stepInto()
             .then(() => { });
     }
 
     public stepOut(): Promise<void> {
         this._expectingResumedEvent = true;
-        return this._webKitConnection.debugger_stepOut()
+        return this._webKitConnection.stepOut()
             .then(() => { });
     }
 
     public pause(): Promise<void> {
-        return this._webKitConnection.debugger_pause()
+        return this._webKitConnection.pause()
             .then(() => { });
     }
 
@@ -578,8 +583,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         } else if (handle != null) {
             return Promise.all([
                 // Need to make two requests to get all properties
-                this._webKitConnection.runtime_getProperties(handle.objectId, /*ownProperties=*/false, /*accessorPropertiesOnly=*/true),
-                this._webKitConnection.runtime_getProperties(handle.objectId, /*ownProperties=*/true, /*accessorPropertiesOnly=*/false)
+                this._webKitConnection.getProperties(<any>{ objectId: handle.objectId, ownProperties: false, generatePreview: false, accessorPropertiesOnly: true }),
+                this._webKitConnection.getProperties(<any>{ objectId: handle.objectId, ownProperties: true, generatePreview: false, accessorPropertiesOnly: false })
             ]).then(getPropsResponses => {
                 // Sometimes duplicates will be returned - merge all property descriptors returned
                 const propsByName = new Map<string, Webkit.Runtime.PropertyDescriptor>();
@@ -608,7 +613,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     public source(args: DebugProtocol.SourceArguments): Promise<DebugProtocol.ISourceResponseBody> {
-        return this._webKitConnection.debugger_getScriptSource(sourceReferenceToScriptId(args.sourceReference)).then(webkitResponse => {
+        return this._webKitConnection.getScriptSource({ scriptId: sourceReferenceToScriptId(args.sourceReference) }).then(webkitResponse => {
             if (webkitResponse.error) {
                 throw new Error(webkitResponse.error.message);
             }
@@ -635,9 +640,9 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 // The iOS debugger backend hangs and stops responding after receiving evaluate request on call frame which has unknown source.
                 throw new Error('-'); // The message will be printed in the VS Code UI
             }
-            evalPromise = this._webKitConnection.debugger_evaluateOnCallFrame(callFrame.callFrameId, args.expression);
+            evalPromise = this._webKitConnection.evaluateOnCallFrame({ callFrameId: callFrame.callFrameId, expression: args.expression });
         } else {
-            evalPromise = this._webKitConnection.runtime_evaluate(args.expression);
+            evalPromise = this._webKitConnection.evaluate({ expression: args.expression });
         }
 
         return evalPromise.then(evalResponse => {
