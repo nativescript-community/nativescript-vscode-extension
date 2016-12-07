@@ -141,56 +141,41 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             this._request = new DebugRequest(args, Services.cli());
             Services.extensionClient().analyticsLaunchDebugger({ request: this._request.isSync ? "sync" : args.request, platform: args.platform });
 
-            // FIXME: Workaround for https://github.com/NativeScript/nativescript-cli/issues/2292
-            let cliBuildCommand = Promise.resolve();
-            if (this._request.isSync && !fs.existsSync(this._request.project.platformBuildPath())) {
-                cliBuildCommand = new Promise((resolve, reject) => {
-                    let cliBuildProcess = this._request.project.build([]);
-                    cliBuildProcess.stdout.on('data', data => { Services.logger().log(data.toString(), Tags.FrontendMessage); });
-                    cliBuildProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
-                    cliBuildProcess.on('close', (code) => {
-                        code ? reject(`The build command exited with code: ${code}`) : resolve();
-                    });
-                });
+            // Run CLI Command
+            let cliCommand: DebugResult;
+            if (this._request.isLaunch) {
+                cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry }, this._request.args.tnsArgs);
+            }
+            else if (this._request.isSync) {
+                cliCommand = this._request.project.debugWithSync({ stopOnEntry: this._request.launchArgs.stopOnEntry, syncAllFiles: this._request.launchArgs.syncAllFiles }, this._request.args.tnsArgs);
+            }
+            else if (this._request.isAttach) {
+                cliCommand = this._request.project.attach(this._request.args.tnsArgs);
             }
 
-            return cliBuildCommand.then(() => {
-                // Run CLI Command
-                let cliCommand: DebugResult;
-                if (this._request.isLaunch) {
-                    cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry }, this._request.args.tnsArgs);
-                }
-                else if (this._request.isSync) {
-                    cliCommand = this._request.project.debugWithSync({ stopOnEntry: this._request.launchArgs.stopOnEntry, syncAllFiles: this._request.launchArgs.syncAllFiles }, this._request.args.tnsArgs);
-                }
-                else if (this._request.isAttach) {
-                    cliCommand = this._request.project.attach(this._request.args.tnsArgs);
-                }
+            if (cliCommand.tnsProcess) {
+                cliCommand.tnsProcess.stdout.on('data', data => { Services.logger().log(data.toString(), Tags.FrontendMessage); });
+                cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
+                cliCommand.tnsProcess.on('close', (code, signal) => { Services.logger().error(`The tns command finished its execution with code ${code}.`, Tags.FrontendMessage); });
+            }
 
-                if (cliCommand.tnsProcess) {
-                    cliCommand.tnsProcess.stdout.on('data', data => { Services.logger().log(data.toString(), Tags.FrontendMessage); });
-                    cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
-                    cliCommand.tnsProcess.on('close', (code, signal) => { Services.logger().error(`The tns command finished its execution with code ${code}.`, Tags.FrontendMessage); });
-                }
-
-                let promiseResolve = null;
-                let promise: Promise<void> = new Promise<void>((res, rej) => { promiseResolve = res; });
-                // Attach to the running application
-                cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
-                    connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync() : connectionToken;
-                    Services.logger().log(`Attaching to application on ${connectionToken}`);
-                    let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
-                    this.setConnection(connection);
-                    let attachPromise = this._request.isAndroid ? (<AndroidConnection>connection).attach(<number>connectionToken, 'localhost') : (<IosConnection>connection).attach(<string>connectionToken);
-                    attachPromise.then(() => {
-                        // Send InitializedEvent
-                        this.fireEvent(new InitializedEvent());
-                        promiseResolve();
-                    });
+            let promiseResolve = null;
+            let promise: Promise<void> = new Promise<void>((res, rej) => { promiseResolve = res; });
+            // Attach to the running application
+            cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
+                connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync() : connectionToken;
+                Services.logger().log(`Attaching to application on ${connectionToken}`);
+                let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
+                this.setConnection(connection);
+                let attachPromise = this._request.isAndroid ? (<AndroidConnection>connection).attach(<number>connectionToken, 'localhost') : (<IosConnection>connection).attach(<string>connectionToken);
+                attachPromise.then(() => {
+                    // Send InitializedEvent
+                    this.fireEvent(new InitializedEvent());
+                    promiseResolve();
                 });
-
-                return promise;
             });
+
+            return promise;
         });
 
     }
