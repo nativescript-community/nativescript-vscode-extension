@@ -40,7 +40,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private _webKitConnection: INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
     private _lastOutputEvent: OutputEvent;
-    private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`  ›${args.message}\n`, args.type.toString()));
+    private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`${args.message}\n`, args.type.toString()));
     private _request: DebugRequest;
 
     public constructor() {
@@ -142,6 +142,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Services.extensionClient().analyticsLaunchDebugger({ request: this._request.isSync ? "sync" : args.request, platform: args.platform });
 
             // Run CLI Command
+            Services.logger().log(`[NSDebugAdapter] Using tns CLI on path '${this._request.project.cli.path}'`, Tags.FrontendMessage);
+            Services.logger().log('[NSDebugAdapter] Running tns command...', Tags.FrontendMessage);
             let cliCommand: DebugResult;
             if (this._request.isLaunch) {
                 cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry }, this._request.args.tnsArgs);
@@ -161,14 +163,16 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
             let promiseResolve = null;
             let promise: Promise<void> = new Promise<void>((res, rej) => { promiseResolve = res; });
+            Services.logger().log('[NSDebugAdapter] Watching the tns CLI output to receive a connection token', Tags.FrontendMessage);
             // Attach to the running application
             cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
                 connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync() : connectionToken;
-                Services.logger().log(`Attaching to application on ${connectionToken}`);
+                Services.logger().log(`[NSDebugAdapter] Attaching to application on ${connectionToken}`, Tags.FrontendMessage);
                 let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
                 this.setConnection(connection);
                 let attachPromise = this._request.isAndroid ? (<AndroidConnection>connection).attach(<number>connectionToken, 'localhost') : (<IosConnection>connection).attach(<string>connectionToken);
                 attachPromise.then(() => {
+                    Services.logger().log(`[NSDebugAdapter] Successfully attached to the target application'`, Tags.FrontendMessage);
                     // Send InitializedEvent
                     this.fireEvent(new InitializedEvent());
                     promiseResolve();

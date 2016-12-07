@@ -1,6 +1,6 @@
 import {spawn, execSync, ChildProcess} from 'child_process';
 import {Version} from '../common/version';
-import {Logger} from '../common/logger';
+import {Logger, Tags} from '../common/logger';
 import * as utils from '../common/utilities';
 
 export enum CliVersionState {
@@ -67,13 +67,13 @@ export class NativeScriptCli {
 
     public executeSync(args: string[], cwd: string): string {
         let command: string = `${this._path} ` + args.join(' ');
-        this._logger.log(`[NativeScriptCli] execute sync: ${command}`);
+        this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
         return execSync(command, { encoding: "utf8", cwd: cwd }).toString().trim();
     }
 
     public execute(args: string[], cwd: string): ChildProcess {
         let command: string = `${this._path} ` + args.join(' ');
-        this._logger.log(`[NativeScriptCli] execute async: ${command}`);
+        this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
 
         let options = { cwd: cwd, shell: true };
         let child: ChildProcess = spawn(this._path, args, options);
