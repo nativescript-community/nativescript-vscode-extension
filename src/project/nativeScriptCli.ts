@@ -51,7 +51,13 @@ export class NativeScriptCli {
         this._path = cliPath;
         this._logger = logger;
 
-        let versionStr = this.executeSync(["--version"], undefined);
+        let versionStr = null;
+        try {
+            versionStr = this.executeSync(["--version"], undefined);
+        }
+        catch(e) {
+            throw new Error("NativeScript CLI not found. Use 'nativescript.tnsPath' workspace setting to explicitly set the absolute path to the NativeScript CLI.");
+        }
         let cliVersion: Version = versionStr ? Version.parse(versionStr) : null;
         this._cliVersion = new CliVersion(cliVersion, utils.getMinSupportedCliVersion());
         if (!this._cliVersion.isCompatible) {
