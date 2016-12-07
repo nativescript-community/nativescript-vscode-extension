@@ -1,3 +1,12 @@
+0.5.0
+=====
+
+## What's New
+- [Enable loading more than 20 call frames](https://github.com/NativeScript/nativescript-vscode-extension/pull/98)
+- [[iOS] Support for breakpoints with ignoreCount in iOS only](https://github.com/NativeScript/nativescript-vscode-extension/pull/97)
+- [Enable debugging with livesync](https://github.com/NativeScript/nativescript-vscode-extension/pull/96)
+- [Introduce tnsPath workspace setting](https://github.com/NativeScript/nativescript-vscode-extension/commit/1c327fff71b3e3551da308aad3d596ebc06bc4d5)
+
 0.4.0
 =====
 
