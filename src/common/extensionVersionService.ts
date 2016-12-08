@@ -77,7 +77,7 @@ export class ExtensionVersionService {
         return this.latestPublishedVersion.then(latestVersion => {
             let extensionVersion = utils.getInstalledExtensionVersion();
             let isLatest: boolean = extensionVersion.compareBySubminorTo(latestVersion) >= 0;
-            let error = isLatest ? null : `A new version of the NativeScript extension is available. Open "Extensions" panel to update to v${latestVersion}.`;
+            let error = isLatest ? null : `A new version of the NativeScript extension is available. Open "Extensions" panel to update to v${latestVersion}. Don't forget to regenerate your launch.json file after updating.`;
             return {result: isLatest, error: error};
         });
     }
