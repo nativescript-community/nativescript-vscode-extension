@@ -25,7 +25,7 @@ export class AndroidProject extends Project {
     }
 
     public debugWithSync(options: { stopOnEntry: boolean, syncAllFiles: boolean }, tnsArgs?: string[]): DebugResult {
-        let args: string[] = ["--no-rebuild", "--watch"];
+        let args: string[] = ["--watch"];
         if (options.syncAllFiles) { args.push("--syncAllFiles"); }
         args = args.concat(tnsArgs);
 
