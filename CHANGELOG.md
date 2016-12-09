@@ -1,3 +1,9 @@
+0.5.1
+=====
+
+## What's New
+- [VSCode Extension v0.5.0 Crashes On Linux](https://github.com/NativeScript/nativescript-vscode-extension/issues/100)
+
 0.5.0
 =====
 
