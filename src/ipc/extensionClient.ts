@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
-import * as extProtocol from './ExtensionProtocol';
+import * as extProtocol from './extensionProtocol';
 let ipc = require('node-ipc');
 
 export class ExtensionClient {

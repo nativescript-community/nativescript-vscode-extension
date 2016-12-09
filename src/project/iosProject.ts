@@ -4,7 +4,7 @@ import {EventEmitter} from 'events';
 import {Project, DebugResult} from './project';
 import * as scanner from './streamScanner';
 import {Version} from '../common/version';
-import {NativeScriptCli} from './NativeScriptCli';
+import {NativeScriptCli} from './nativeScriptCli';
 
 export class IosProject extends Project {
 

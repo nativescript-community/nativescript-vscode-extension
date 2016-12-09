@@ -9,7 +9,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
-import {Version} from './Version';
+import {Version} from './version';
 
 export const enum Platform {
     Windows, OSX, Linux

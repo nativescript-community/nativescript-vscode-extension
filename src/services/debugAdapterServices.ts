@@ -1,6 +1,6 @@
 import {Services as BaseServices} from './services';
 import {ExtensionClient} from '../ipc/extensionClient';
-import {Logger} from '../common/Logger';
+import {Logger} from '../common/logger';
 
 export class DebugAdapterServices extends BaseServices {
     private _extensionClient: ExtensionClient;

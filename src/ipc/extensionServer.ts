@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
-import * as extProtocol from './ExtensionProtocol';
+import * as extProtocol from './extensionProtocol';
 import {Services} from '../services/extensionHostServices';
 let ipc = require('node-ipc');
 

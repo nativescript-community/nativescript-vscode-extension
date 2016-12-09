@@ -16,7 +16,7 @@ import {AndroidProject} from '../project/androidProject';
 import * as utils from '../common/utilities';
 import {formatConsoleMessage} from './consoleHelper';
 import {Services} from '../services/debugAdapterServices';
-import {LoggerHandler, Handlers, Tags} from '../common/Logger';
+import {LoggerHandler, Handlers, Tags} from '../common/logger';
 import {DebugRequest} from './debugRequest';
 
 interface IScopeVarHandle {

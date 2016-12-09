@@ -2,7 +2,7 @@ import {OutputEvent, DebugSession, ErrorDestination} from 'vscode-debugadapter';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {WebKitDebugAdapter} from './webKitDebugAdapter';
-import {Handlers} from '../common/Logger';
+import {Handlers} from '../common/logger';
 import {Services} from '../services/debugAdapterServices';
 
 import {AdapterProxy} from './adapter/adapterProxy';

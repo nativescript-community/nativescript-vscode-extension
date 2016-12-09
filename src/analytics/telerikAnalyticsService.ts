@@ -1,4 +1,4 @@
-import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
+import { AnalyticsBaseInfo, OperatingSystem } from './analyticsBaseInfo';
 import * as os from 'os';
 
 /**
@@ -32,7 +32,7 @@ export class TelerikAnalyticsService {
 	}
 
     constructor(projectKey: string, baseInfo: AnalyticsBaseInfo) {
-        require("./EqatecMonitor.min");
+        require("./eqatecMonitor.min");
         let eqatec = (global as any)._eqatec;
         let settings = eqatec.createSettings(projectKey);
         settings.useHttps = false;

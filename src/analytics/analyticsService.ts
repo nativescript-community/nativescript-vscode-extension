@@ -1,8 +1,8 @@
 import * as os from 'os';
 import { Version } from '../common/version';
-import { GUAService } from './GUAService';
-import { TelerikAnalyticsService } from './TelerikAnalyticsService';
-import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
+import { GUAService } from './guaService';
+import { TelerikAnalyticsService } from './telerikAnalyticsService';
+import { AnalyticsBaseInfo, OperatingSystem } from './analyticsBaseInfo';
 import { Services } from '../services/extensionHostServices';
 import * as utils from '../common/utilities';
 

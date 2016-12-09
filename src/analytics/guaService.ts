@@ -1,5 +1,5 @@
 import * as ua from 'universal-analytics';
-import { AnalyticsBaseInfo, OperatingSystem } from './AnalyticsBaseInfo';
+import { AnalyticsBaseInfo, OperatingSystem } from './analyticsBaseInfo';
 
 /**
  * Google Universal Analytics Service
