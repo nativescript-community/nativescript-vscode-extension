@@ -1,8 +1,10 @@
 import * as http from 'http';
-import {EventEmitter} from 'events';
-import {Services} from '../../services/debugAdapterServices';
+import { EventEmitter } from 'events';
+import { Services } from '../../services/debugAdapterServices';
 import * as Net from 'net';
 import { INSDebugConnection } from './INSDebugConnection';
+
+import { ChromeConnection } from 'vscode-chrome-debug-core';
 
 
 interface IMessageWithId {
@@ -17,7 +19,7 @@ class Callbacks {
 
     public wrap(callback: any): number {
         var callbackId = this.lastId++;
-        this.callbacks[callbackId] = callback || function() { };
+        this.callbacks[callbackId] = callback || function () { };
         return callbackId;
     }
 
@@ -60,7 +62,7 @@ class ResReqNetSocket extends EventEmitter {
         return new Promise<void>((resolve, reject) => {
 
             that.conn = Net.createConnection(port, url),
-            that.conn.setEncoding('utf8');
+                that.conn.setEncoding('utf8');
 
             setTimeout(() => {
                 reject('Connection timed out')
@@ -68,7 +70,7 @@ class ResReqNetSocket extends EventEmitter {
 
             that.conn.on('error', reject);
 
-            that.conn.on('connect', function() {
+            that.conn.on('connect', function () {
                 // Replace the promise-rejecting handler
                 that.conn.removeListener('error', reject);
 
@@ -89,23 +91,22 @@ class ResReqNetSocket extends EventEmitter {
                     that.emit('error', e);
                 });
 
-                that.conn.on('data', function(data) {
+                that.conn.on('data', function (data) {
                     that.debugBuffer += data;
-                    that.parse(function() {
-                         that.connected = true;
-                         that.emit('connect');
-                         resolve();
+                    that.parse(function () {
+                        that.connected = true;
+                        that.emit('connect');
+                        resolve();
                     });
                 });
 
 
-                that.conn.on('end', function() {
+                that.conn.on('end', function () {
                     that.close();
                 });
 
-                that.conn.on('close', function() {
-                    if (!that.connected)
-                    {
+                that.conn.on('close', function () {
+                    if (!that.connected) {
                         reject("Can't connect. Check the application is running on the device");
                         that.emit('close', that.lastError || 'Debugged process exited.');
                         return;
@@ -184,7 +185,7 @@ class ResReqNetSocket extends EventEmitter {
             Services.logger().log('To target: ' + data);
             this.conn.write('Content-Length: ' + data.length + '\r\n\r\n' + data);
             this.hasNewDataMessage = true;
-             if (!this.isMessageFlushLoopStarted) {
+            if (!this.isMessageFlushLoopStarted) {
                 this.isMessageFlushLoopStarted = true;
                 setInterval(() => {
                     if (this.hasNewDataMessage) {
@@ -209,11 +210,15 @@ class ResReqNetSocket extends EventEmitter {
         }
 
         if (params) {
-            Object.keys(params).forEach(function(key) {
+            Object.keys(params).forEach(function (key) {
                 msg[key] = params[key];
             });
         }
         this.send(JSON.stringify(msg));
+    }
+
+    public sendMessage(message: any) {
+        this.send(message);
     }
 
     public close() {
@@ -235,7 +240,7 @@ export class AndroidConnection implements INSDebugConnection {
         let that = this;
         this._socket = new ResReqNetSocket();
 
-        this._socket.on("afterCompile", function(params) {
+        this._socket.on("afterCompile", function (params) {
 
             let scriptData = <WebKitProtocol.Debugger.Script>{
                 scriptId: String(params.body.script.id),
@@ -248,15 +253,15 @@ export class AndroidConnection implements INSDebugConnection {
         });
 
 
-        this._socket.on("break", function(params) {
+        this._socket.on("break", function (params) {
             that.handleBreakEvent(params);
         });
 
-         this._socket.on("exception", function(params) {
+        this._socket.on("exception", function (params) {
             that.handleBreakEvent(params);
         });
 
-         this._socket.on("messageAdded", function(params) {
+        this._socket.on("messageAdded", function (params) {
             that._socket.emit("Console.messageAdded", params.body);
         });
     }
@@ -342,7 +347,7 @@ export class AndroidConnection implements INSDebugConnection {
                 if (name && name.length > 1) {
                     desc = name[1];
                     if (desc === 'Array' || desc === 'Buffer') {
-                        size = ref.properties.filter(function(p) { return /^\d+$/.test(p.name); }).length;
+                        size = ref.properties.filter(function (p) { return /^\d+$/.test(p.name); }).length;
                         desc += '[' + size + ']';
                     }
                 } else if (ref.className === 'Date') {
@@ -400,8 +405,8 @@ export class AndroidConnection implements INSDebugConnection {
             })
             .then(response => {
                 var debuggerFrames = <Array<any>>response.frames || [];
-                let frames = debuggerFrames.map(function(frame) {
-                    var scopeChain = frame.scopes.map(function(scope) {
+                let frames = debuggerFrames.map(function (frame) {
+                    var scopeChain = frame.scopes.map(function (scope) {
                         return {
                             object: {
                                 type: 'object',
@@ -481,7 +486,7 @@ export class AndroidConnection implements INSDebugConnection {
 
         return this.request("clearbreakpoint", {
             breakpoint: breakpointId
-            })
+        })
             .then(response => {
                 return <WebKitProtocol.Response>{};
             });
@@ -568,9 +573,9 @@ export class AndroidConnection implements INSDebugConnection {
         let that = this;
         return this.request("evaluate", requestParams).then(response => {
             return <WebKitProtocol.Debugger.EvaluateOnCallFrameResponse>{
-              result: {
-                    result : that.v8ResultToInspectorResult(response),
-                    wasThrown : false
+                result: {
+                    result: that.v8ResultToInspectorResult(response),
+                    wasThrown: false
                 }
             }
         });
@@ -615,12 +620,10 @@ export class AndroidConnection implements INSDebugConnection {
                 }
 
                 let source = undefined;
-                if (Array.isArray(response))
-                {
+                if (Array.isArray(response)) {
                     source = response[0].source;
                 }
-                else if (response.result)
-                {
+                else if (response.result) {
                     source = response.result[0].source;
                 }
                 else if (response.source) {
@@ -653,7 +656,7 @@ export class AndroidConnection implements INSDebugConnection {
                 if (response.refs) {
 
                     let refsLookup = {};
-                    response.refs.forEach(function(r) { refsLookup[r.handle] = r; });
+                    response.refs.forEach(function (r) { refsLookup[r.handle] = r; });
 
                     //TODO: response.body may be undefined in that case set it to {} here
                     response.body.refsLookup = refsLookup;
@@ -748,7 +751,7 @@ export class AndroidConnection implements INSDebugConnection {
                 props = obj.properties;
 
                 if (props) {
-                    props = props.map(function(p) {
+                    props = props.map(function (p) {
                         var ref = response.refsLookup[p.ref];
                         return {
                             name: String(p.name),
@@ -776,13 +779,13 @@ export class AndroidConnection implements INSDebugConnection {
         throw new Error("Not implemented");
     }
 
-    // private sendMessage(method: any, params?: any): Promise<WebKitProtocol.Response> {
-    //     return this._socket.sendMessage({
-    //         id: this._nextId++,
-    //         method,
-    //         params
-    //     });
-    // }
+    private sendMessage(method: any, params?: any): Promise<WebKitProtocol.Response> {
+        return this._socket.sendMessage({
+            id: this._nextId++,
+            method,
+            params
+        });
+    }
 }
 
 /**

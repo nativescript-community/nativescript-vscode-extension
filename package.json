@@ -25,6 +25,7 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
+    "vscode-chrome-debug-core": "3.9.1",
     "node-ipc": "^8.9.2",
     "source-map": "^0.5.3",
     "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master",
