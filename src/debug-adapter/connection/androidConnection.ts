@@ -609,6 +609,9 @@ export class AndroidConnection implements INSDebugConnection {
         let messageId = this._nextId++;
         return this.request("scripts", requestParams).then(response => {
             return new Promise((resolve, reject) => {
+                // We request an array of IDs, we should expect an array of scripts.
+                response = response[0];
+
                 if (response.error) {
                     reject(response.error);
                     return;
