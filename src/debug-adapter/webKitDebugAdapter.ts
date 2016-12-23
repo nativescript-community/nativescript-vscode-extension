@@ -166,16 +166,19 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Services.logger().log('[NSDebugAdapter] Watching the tns CLI output to receive a connection token', Tags.FrontendMessage);
             // Attach to the running application
             cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
-                connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync() : connectionToken;
+                connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync(this._request.args.tnsArgs) : connectionToken;
                 Services.logger().log(`[NSDebugAdapter] Attaching to application on ${connectionToken}`, Tags.FrontendMessage);
                 let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
-                this.setConnection(connection);
-                let attachPromise = this._request.isAndroid ? (<AndroidConnection>connection).attach(<number>connectionToken, 'localhost') : (<IosConnection>connection).attach(<string>connectionToken);
-                attachPromise.then(() => {
+
+                connection.attach(connectionToken, 'localhost').then(() => {
+                    this.setConnection(connection);
+                    return connection.enable();
+                }).then(() => {
                     Services.logger().log(`[NSDebugAdapter] Successfully attached to the target application'`, Tags.FrontendMessage);
-                    // Send InitializedEvent
                     this.fireEvent(new InitializedEvent());
                     promiseResolve();
+                }).then(() => {
+
                 });
             });
 
@@ -185,7 +188,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private setConnection(connection: INSDebugConnection) : INSDebugConnection {
-        let args = this._request.args;
         connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
         connection.on('Debugger.resumed', () => this.onDebuggerResumed());
         connection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));

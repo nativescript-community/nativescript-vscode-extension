@@ -96,11 +96,14 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
         if (!this.inferedDeviceRoot && this._platform === "android")
         {
             this.inferedDeviceRoot = utils.inferDeviceRoot(this._appRoot, this._platform, webkitUrl);
-             Services.logger().log("\n\n\n ***Inferred device root: " + this.inferedDeviceRoot + "\n\n\n");
-
-            if (this.inferedDeviceRoot.indexOf("/data/user/0/") != -1)
+            if (this.inferedDeviceRoot)
             {
-                this.inferedDeviceRoot = this.inferedDeviceRoot.replace("/data/user/0/", "/data/data/");
+                Services.logger().log("\n\n\n ***Inferred device root: " + this.inferedDeviceRoot + "\n\n\n");
+
+                if (this.inferedDeviceRoot.indexOf("/data/user/0/") != -1)
+                {
+                    this.inferedDeviceRoot = this.inferedDeviceRoot.replace("/data/user/0/", "/data/data/");
+                }
             }
         }
 

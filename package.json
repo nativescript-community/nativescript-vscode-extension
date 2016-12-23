@@ -43,7 +43,8 @@
     "typescript": "^2.0.6",
     "vsce": "^1.0.0",
     "vscode": "^1.0.3",
-    "vscode-debugadapter-testsupport": "^1.7.0"
+    "vscode-debugadapter-testsupport": "^1.7.0",
+    "chrome-remote-debug-protocol": "git://github.com/roblourens/chrome-remote-debug-protocol.git"
   },
   "scripts": {
     "clean": "git clean -fdx",

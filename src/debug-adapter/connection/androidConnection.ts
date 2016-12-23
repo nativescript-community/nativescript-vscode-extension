@@ -4,8 +4,8 @@ import { Services } from '../../services/debugAdapterServices';
 import * as Net from 'net';
 import { INSDebugConnection } from './INSDebugConnection';
 
-import { ChromeConnection } from 'vscode-chrome-debug-core';
-
+import { ChromeConnection, logger } from 'vscode-chrome-debug-core';
+import Crdp from 'vscode-chrome-debug-core/lib/crdp/crdp';
 
 interface IMessageWithId {
     id: number;
@@ -234,11 +234,19 @@ export class AndroidConnection implements INSDebugConnection {
     //private _socket: ResReqWebSocket;
     //private _socket: ResReqHttpSocket;
     private _socket: ResReqNetSocket;
+    private _chromeConnection: ChromeConnection;
 
     constructor() {
+
+        this._chromeConnection = new ChromeConnection(this.createWebSocketAddress);
+        logger.init(null, null, true);
+        logger.setMinLogLevel(logger.LogLevel.Verbose);
+
         //this._socket = new ResReqWebSocket();
         let that = this;
         this._socket = new ResReqNetSocket();
+
+
 
         this._socket.on("afterCompile", function (params) {
 
@@ -264,6 +272,15 @@ export class AndroidConnection implements INSDebugConnection {
         this._socket.on("messageAdded", function (params) {
             that._socket.emit("Console.messageAdded", params.body);
         });
+    }
+
+    private createWebSocketAddress(address: string, port: number, targetFilter?: any, targetUrl?: string): Promise<string>
+    {
+        return Promise.resolve(`ws://${address}:${port}`);
+    }
+
+    private get chrome(): Crdp.CrdpClient {
+        return this._chromeConnection.api;
     }
 
     private handleBreakEvent(params: any): Promise<any> {
@@ -438,17 +455,54 @@ export class AndroidConnection implements INSDebugConnection {
 
 
     public on(eventName: string, handler: (msg: any) => void): void {
-        this._socket.on(eventName, handler);
+        //this._socket.on(eventName, handler);
+
+        let domainMethodPair = eventName.split(".");
+        if (domainMethodPair.length == 2)
+        {
+            let domain = domainMethodPair[0];
+            let method = domainMethodPair[1];
+            method = "on" + method.charAt(0).toUpperCase() + method.slice(1);
+
+            //this.chrome.Debugger.onPaused(params => handler(params));
+            //this.chrome.Debugger.onPaused(params => this.onPaused(params));
+
+            this.chrome[domain][method](handler);
+        }
+        else
+        {
+            (<any>(this._chromeConnection))._socket.on(eventName, handler);
+        }
     }
 
     public attach(port: number, url?: string): Promise<void> {
         Services.logger().log('Attempting to attach on port ' + port);
-        return this._attach(port, url);
-        //.then(() => this.sendMessage('Console.enable'))
+        return this._attach(port, url).then(() =>
+        {
+            (<any>this._chromeConnection)._client.setLogging({logEmit: false, logConsole: true})
+
+            return Promise.resolve<void>();
+        });
+    }
+
+    public enable(): Promise<void> {
+            //this.chrome.Console.enable().catch(e => { /* Specifically ignore a fail here since it's only for backcompat */ }),
+        return this.chrome.Debugger.enable();
+
+
+        // .then(() => {
+        //     Services.logger().log('Runtime  enabled');
+        //     return this.chrome.Debugger.enable();
+        //  }).then(() => {
+        //     return this._chromeConnection.run();
+        //  }).then(() => {
+        //        Services.logger().log('debug connection enabled');
+        //     });
     }
 
     private _attach(port: number, url?: string): Promise<void> {
-        return this._socket.attach(port, url);
+        //return this._socket.attach(port, url);
+        return this._chromeConnection.attach(url, port);
     }
 
     public close(): void {
@@ -456,23 +510,35 @@ export class AndroidConnection implements INSDebugConnection {
     }
 
     public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number, condition: string, ignoreCount: number): Promise<WebKitProtocol.Debugger.SetBreakpointByUrlResponse> {
-        let that = this;
-        var requestParams = {
-            type: 'script',
-            target: that.inspectorUrlToV8Name(url),
-            line: lineNumber,
-            column: columnNumber,
-            condition: condition,
-            ignoreCount: ignoreCount
-        };
+        // let that = this;
+        // var requestParams = {
+        //     type: 'script',
+        //     target: that.inspectorUrlToV8Name(url),
+        //     line: lineNumber,
+        //     column: columnNumber,
+        //     condition: condition,
+        //     ignoreCount: ignoreCount
+        // };
 
-        return this.request("setbreakpoint", requestParams)
-            .then(response => {
+        // return this.request("setbreakpoint", requestParams)
+        //     .then(response => {
+        //         return <WebKitProtocol.Debugger.SetBreakpointByUrlResponse>
+        //             {
+        //                 result: {
+        //                     breakpointId: response.breakpoint.toString(),
+        //                     locations: response.actual_locations.map(that.v8LocationToInspectorLocation),
+        //                 },
+        //             }
+        //     });
+
+        return this.chrome.Debugger.setBreakpointByUrl({ urlRegex: url, lineNumber: lineNumber, columnNumber: columnNumber, condition })
+            .then(response =>
+            {
                 return <WebKitProtocol.Debugger.SetBreakpointByUrlResponse>
                     {
                         result: {
-                            breakpointId: response.breakpoint.toString(),
-                            locations: response.actual_locations.map(that.v8LocationToInspectorLocation),
+                            breakpointId: response.breakpointId.toString(),
+                            locations: response.locations
                         },
                     }
             });
@@ -484,10 +550,15 @@ export class AndroidConnection implements INSDebugConnection {
 
         //ok
 
-        return this.request("clearbreakpoint", {
-            breakpoint: breakpointId
-        })
-            .then(response => {
+        // return this.request("clearbreakpoint", {
+        //     breakpoint: breakpointId
+        // })
+        //     .then(response => {
+        //         return <WebKitProtocol.Response>{};
+        //     });
+
+
+        return this.chrome.Debugger.removeBreakpoint({ breakpointId }).then(response => {
                 return <WebKitProtocol.Response>{};
             });
     }
@@ -499,18 +570,27 @@ export class AndroidConnection implements INSDebugConnection {
 
         //locations: response.actual_locations.map(that.v8LocationToInspectorLocation)
 
-        return this.sendContinue('next').then(reponse => {
+        // return this.sendContinue('next').then(reponse => {
+        //     return <WebKitProtocol.Response>{};
+        // });
+
+        return this.chrome.Debugger.stepOver().then(reponse => {
             return <WebKitProtocol.Response>{};
         });
+
 
         //ok
     }
 
     private sendContinue(stepAction: string): Promise<any> {
-        let that = this;
-        let args = stepAction ? { stepaction: stepAction } : undefined;
-        return this.request("continue", args).then(response => {
-            that._socket.emit("'Debugger.resumed");
+        // let that = this;
+        // let args = stepAction ? { stepaction: stepAction } : undefined;
+        // return this.request("continue", args).then(response => {
+        //     that._socket.emit("'Debugger.resumed");
+        //     return response;
+        // })
+
+        return this.chrome.Debugger.resume().then(response => {
             return response;
         })
     }
@@ -521,8 +601,14 @@ export class AndroidConnection implements INSDebugConnection {
         //throw new Error("Not implemented");
 
         //ok
-        return this.sendContinue('in').then(reponse => {
-            return <WebKitProtocol.Response>{};
+
+
+        //return this.sendContinue('in').then(reponse => {
+        //    return <WebKitProtocol.Response>{};
+        //});
+
+        return this.chrome.Debugger.stepInto().then(reponse => {
+           return <WebKitProtocol.Response>{};
         });
     }
 
@@ -531,7 +617,13 @@ export class AndroidConnection implements INSDebugConnection {
         //throw new Error("Not implemented");
 
         //ok
-        return this.sendContinue('out').then(reponse => {
+
+
+        // return this.sendContinue('out').then(reponse => {
+        //     return <WebKitProtocol.Response>{};
+        // });
+
+        return this.chrome.Debugger.stepOut().then(reponse => {
             return <WebKitProtocol.Response>{};
         });
     }
@@ -541,7 +633,12 @@ export class AndroidConnection implements INSDebugConnection {
         //throw new Error("Not implemented");
 
         //ok
-        return this.sendContinue(null).then(reponse => {
+
+        // return this.sendContinue(null).then(reponse => {
+        //     return <WebKitProtocol.Response>{};
+        // });
+
+         return this.chrome.Debugger.resume().then(reponse => {
             return <WebKitProtocol.Response>{};
         });
     }
@@ -551,53 +648,78 @@ export class AndroidConnection implements INSDebugConnection {
         //throw new Error("Not implemented");
 
         //ok
-        let that = this;
-        return this.request("suspend", {})
-            .then(reponse => that.handleBreakEvent(null));
-        // .then(reponse => {
-        //     return <WebKitProtocol.Response>{};
-        // });
+        // let that = this;
+        // return this.request("suspend", {}).then(reponse => that.handleBreakEvent(null));
+
+        return this.chrome.Debugger.pause().then(reponse => {
+            return <WebKitProtocol.Response>{};
+        });
     }
 
     public debugger_evaluateOnCallFrame(callFrameId: string, expression: string, objectGroup = 'dummyObjectGroup', returnByValue?: boolean): Promise<WebKitProtocol.Debugger.EvaluateOnCallFrameResponse> {
         //return this.sendMessage('Debugger.evaluateOnCallFrame', <WebKitProtocol.Debugger.EvaluateOnCallFrameParams>{ callFrameId, expression, objectGroup, returnByValue });
         //throw new Error("Not implemented");
 
-        var requestParams = {
-            expression: expression,
-            frame: callFrameId
-        };
+        // var requestParams = {
+        //     expression: expression,
+        //     frame: callFrameId
+        // };
 
 
-        let messageId = this._nextId++;
-        let that = this;
-        return this.request("evaluate", requestParams).then(response => {
-            return <WebKitProtocol.Debugger.EvaluateOnCallFrameResponse>{
+        // let messageId = this._nextId++;
+        // let that = this;
+        // return this.request("evaluate", requestParams).then(response => {
+        //     return <WebKitProtocol.Debugger.EvaluateOnCallFrameResponse>{
+        //         result: {
+        //             result: that.v8ResultToInspectorResult(response),
+        //             wasThrown: false
+        //         }
+        //     }
+        // });
+
+         return this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression, silent: true, generatePreview: true }).then(response => {
+            return <WebKitProtocol.Debugger.EvaluateOnCallFrameResponse> {
                 result: {
-                    result: that.v8ResultToInspectorResult(response),
+                    result: <any>response.result,
                     wasThrown: false
                 }
             }
         });
     }
 
-    public debugger_setPauseOnExceptions(state: string): Promise<WebKitProtocol.Response> {
+    public debugger_setPauseOnExceptions(args: string): Promise<WebKitProtocol.Response> {
         //return this.sendMessage('Debugger.setPauseOnExceptions', <WebKitProtocol.Debugger.SetPauseOnExceptionsParams>{ state });
 
-        var requestParams = {
-            type: state !== 'none' ? state : "uncaught",
-            enabled: state !== 'none'
-        };
+        //throw new Error("Not implemented");
 
-        let messageId = this._nextId++;
-        return this.request("setexceptionbreak", requestParams).then(response => {
-            return new Promise((resolve, reject) => {
-                if (response.error) {
-                    reject(response.error);
-                    return;
-                }
-                resolve(<WebKitProtocol.Response>{ id: messageId });
-            });
+        // var requestParams = {
+        //     type: state !== 'none' ? state : "uncaught",
+        //     enabled: state !== 'none'
+        // };
+
+        // let messageId = this._nextId++;
+        // return this.request("setexceptionbreak", requestParams).then(response => {
+        //     return new Promise((resolve, reject) => {
+        //         if (response.error) {
+        //             reject(response.error);
+        //             return;
+        //         }
+        //         resolve(<WebKitProtocol.Response>{ id: messageId });
+        //     });
+        // });
+
+        let state: 'all' | 'uncaught' | 'none';
+        if (args.indexOf('all') >= 0) {
+            state = 'all';
+        } else if (args.indexOf('uncaught') >= 0) {
+            state = 'uncaught';
+        } else {
+            state = 'none';
+        }
+
+        return this.chrome.Debugger.setPauseOnExceptions({ state })
+           .then(reponse => {
+               return <WebKitProtocol.Response>{} ;
         });
     }
 
@@ -605,42 +727,53 @@ export class AndroidConnection implements INSDebugConnection {
 
         //return this.sendMessage('Debugger.getScriptSource', //<WebKitProtocol.Debugger.GetScriptSourceParams>{ scriptId });
 
-        var requestParams = {
-            includeSource: true,
-            types: 4,
-            ids: [Number(scriptId)]
-        };
+        // var requestParams = {
+        //     includeSource: true,
+        //     types: 4,
+        //     ids: [Number(scriptId)]
+        // };
 
-        let messageId = this._nextId++;
-        return this.request("scripts", requestParams).then(response => {
-            return new Promise((resolve, reject) => {
-                if (response.error) {
-                    reject(response.error);
-                    return;
-                }
+        // let messageId = this._nextId++;
+        // return this.request("scripts", requestParams).then(response => {
+        //     return new Promise((resolve, reject) => {
+        //         if (response.error) {
+        //             reject(response.error);
+        //             return;
+        //         }
 
-                let source = undefined;
-                if (Array.isArray(response)) {
-                    source = response[0].source;
-                }
-                else if (response.result) {
-                    source = response.result[0].source;
-                }
-                else if (response.source) {
-                    source = response.source;
-                }
+        //         let source = undefined;
+        //         if (Array.isArray(response)) {
+        //             source = response[0].source;
+        //         }
+        //         else if (response.result) {
+        //             source = response.result[0].source;
+        //         }
+        //         else if (response.source) {
+        //             source = response.source;
+        //         }
 
 
-                let result = <WebKitProtocol.Debugger.GetScriptSourceResponse>{
-                    id: messageId,
-                    result: {
-                        scriptSource: source
+        //         let result = <WebKitProtocol.Debugger.GetScriptSourceResponse>{
+        //             id: messageId,
+        //             result: {
+        //                 scriptSource: source
+        //             }
+        //         }
+
+        //         resolve(result);
+        //     });
+        // });
+
+
+        return this.chrome.Debugger.getScriptSource({ scriptId: scriptId }).then(response =>
+            {
+                return <WebKitProtocol.Debugger.GetScriptSourceResponse>
+                    {
+                         result: {
+                            scriptSource: response.scriptSource
+                        }
                     }
-                }
-
-                resolve(result);
             });
-        });
     }
 
     private request(command, args): Promise<any> {
@@ -675,39 +808,46 @@ export class AndroidConnection implements INSDebugConnection {
         //throw new Error("Not implemented");
 
 
-        return this.isScopeId(objectId).then(response => {
-            if (response) {
-                return this.getPropertiesOfScopeId(objectId);
-            }
-            else {
-                if (!ownProperties || accessorPropertiesOnly) {
-                    // Temporary fix for missing getInternalProperties() implementation
-                    // See the comment in RuntimeAgent.js->getProperties and GH issue #213 (node-inspector repo)
-                    return { result: [] };
-                }
+        // return this.isScopeId(objectId).then(response => {
+        //     if (response) {
+        //         return this.getPropertiesOfScopeId(objectId);
+        //     }
+        //     else {
+        //         if (!ownProperties || accessorPropertiesOnly) {
+        //             // Temporary fix for missing getInternalProperties() implementation
+        //             // See the comment in RuntimeAgent.js->getProperties and GH issue #213 (node-inspector repo)
+        //             return { result: [] };
+        //         }
 
-                return this.getPropertiesOfObjectId(objectId);
-            }
-        }).then(response => {
-            let properties = response.result;
-            let result = [];
-            for (var i = 0; properties && i < properties.length; ++i) {
-                let property = properties[i];
-                //convert the result to <WebKitProtocol.Runtime.PropertyDescriptor>
-                result.push({
-                    name: property.name,
-                    writeable: property.writable,
-                    enumerable: property.enumerable,
-                    value: property.value
-                });
-            }
+        //         return this.getPropertiesOfObjectId(objectId);
+        //     }
+        // }).then(response => {
+        //     let properties = response.result;
+        //     let result = [];
+        //     for (var i = 0; properties && i < properties.length; ++i) {
+        //         let property = properties[i];
+        //         //convert the result to <WebKitProtocol.Runtime.PropertyDescriptor>
+        //         result.push({
+        //             name: property.name,
+        //             writeable: property.writable,
+        //             enumerable: property.enumerable,
+        //             value: property.value
+        //         });
+        //     }
 
+        //     return <WebKitProtocol.Runtime.GetPropertiesResponse>{
+        //         result: {
+        //             result: result
+        //         }
+        //     };
+        // });
+
+        return this.chrome.Runtime.getProperties({objectId, ownProperties, accessorPropertiesOnly, generatePreview: true}).then(response => {
             return <WebKitProtocol.Runtime.GetPropertiesResponse>{
                 result: {
-                    result: result
+                    result: <any>response.result
                 }
-            };
-        });
+        }});
     }
 
     private isScopeId(objectId: string): Promise<boolean> {
@@ -776,31 +916,40 @@ export class AndroidConnection implements INSDebugConnection {
 
     public runtime_evaluate(expression: string, objectGroup = 'dummyObjectGroup', contextId?: number, returnByValue = false): Promise<WebKitProtocol.Runtime.EvaluateResponse> {
         //return this.sendMessage('Runtime.evaluate', <WebKitProtocol.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
-        throw new Error("Not implemented");
+        //throw new Error("Not implemented");
+
+        return this.chrome.Runtime.evaluate({expression, objectGroup, contextId, returnByValue}).then(response => {
+            return <WebKitProtocol.Runtime.EvaluateResponse>{
+                result: {
+                    result: <any>response.result
+                }
+        }});
     }
 
-    private sendMessage(method: any, params?: any): Promise<WebKitProtocol.Response> {
-        return this._socket.sendMessage({
-            id: this._nextId++,
-            method,
-            params
-        });
-    }
+    // private sendMessage(method: any, params?: any): Promise<WebKitProtocol.Response> {
+    //     return this._socket.sendMessage({
+    //         id: this._nextId++,
+    //         method,
+    //         params
+    //     });
+    // }
+
+
 }
 
 /**
  * Helper function to GET the contents of a url
  */
-function getUrl(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        http.get(url, response => {
-            let jsonResponse = '';
-            response.on('data', chunk => jsonResponse += chunk);
-            response.on('end', () => {
-                resolve(jsonResponse);
-            });
-        }).on('error', e => {
-            reject('Cannot connect to the target: ' + e.message);
-        });
-    });
-}
+// function getUrl(url: string): Promise<string> {
+//     return new Promise((resolve, reject) => {
+//         http.get(url, response => {
+//             let jsonResponse = '';
+//             response.on('data', chunk => jsonResponse += chunk);
+//             response.on('end', () => {
+//                 resolve(jsonResponse);
+//             });
+//         }).on('error', e => {
+//             reject('Cannot connect to the target: ' + e.message);
+//         });
+//     });
+// }
