@@ -170,6 +170,10 @@ export class IosConnection implements INSDebugConnection {
         return this._socket.attach(filePath);
     }
 
+    public enable() : Promise<void> {
+        return Promise.resolve<void>();
+    }
+
     public close(): void {
         this._socket.close();
     }

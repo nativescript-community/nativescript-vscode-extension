@@ -25,6 +25,7 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
+    "vscode-chrome-debug-core": "3.9.1",
     "node-ipc": "^8.9.2",
     "source-map": "^0.5.3",
     "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master",
@@ -42,7 +43,8 @@
     "typescript": "^2.0.6",
     "vsce": "^1.0.0",
     "vscode": "^1.0.3",
-    "vscode-debugadapter-testsupport": "^1.7.0"
+    "vscode-debugadapter-testsupport": "^1.7.0",
+    "chrome-remote-debug-protocol": "git://github.com/roblourens/chrome-remote-debug-protocol.git"
   },
   "scripts": {
     "clean": "git clean -fdx",

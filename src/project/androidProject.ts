@@ -43,8 +43,10 @@ export class AndroidProject extends Project {
         return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
-    public getDebugPortSync(): number {
-        let output = this.cli.executeSync(["debug", "android", "--get--port"], this.appRoot);
+    public getDebugPortSync(tnsArgs?: string[]): number {
+        let args: string[] = [];
+        args = args.concat(tnsArgs);
+        let output = this.cli.executeSync(["debug", "android", "--get--port"].concat(args), this.appRoot);
         let port = parseInt(output.match("(?:debug port: )([\\d]{5})")[1]);
         return port;
     }

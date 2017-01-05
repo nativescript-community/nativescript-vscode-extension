@@ -1,4 +1,9 @@
 export interface INSDebugConnection {
+
+    attach(target: number | string, url?: string): Promise<void>
+
+    enable() : Promise<void>;
+
     on(eventName: string, handler: (msg: any) => void): void;
 
     close(): void;
