@@ -1,10 +1,6 @@
 import { AnalyticsBaseInfo, OperatingSystem } from './analyticsBaseInfo';
 import * as os from 'os';
 
-/**
- * Google Universal Analytics Service
- */
-
 // Hack needed for the Telerik Analytics JavaScript monitor to work in node environment
 (global as any).XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 (global as any).XMLHttpRequest.prototype.withCredentials = false;
