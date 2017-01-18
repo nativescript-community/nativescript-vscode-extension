@@ -5,6 +5,8 @@ import {Project, DebugResult} from './project';
 import * as scanner from './streamScanner';
 import {Version} from '../common/version';
 import {NativeScriptCli} from './nativeScriptCli';
+import {Services} from '../services/debugAdapterServices';
+import {Tags} from '../common/logger';
 
 export class IosProject extends Project {
 
@@ -30,16 +32,9 @@ export class IosProject extends Project {
         return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
-    public debugWithSync(options: { stopOnEntry: boolean, syncAllFiles: boolean }, tnsArgs?: string[]): DebugResult {
-        let args: string[] = ["--watch"];
-        if (options.syncAllFiles) { args.push("--syncAllFiles"); }
-        args = args.concat(tnsArgs);
-
-        return this.debug({stopOnEntry: options.stopOnEntry}, args);
-    }
-
-    public debug(options: { stopOnEntry: boolean }, tnsArgs?: string[]): DebugResult {
+    public debug(options: { stopOnEntry: boolean, watch: boolean }, tnsArgs?: string[]): DebugResult {
         let args: string[] = [];
+        args.push(options.watch ? "--watch" : "--no-watch");
         if (options.stopOnEntry) { args.push("--debug-brk"); }
         args = args.concat(tnsArgs);
 

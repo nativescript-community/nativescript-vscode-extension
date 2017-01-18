@@ -116,21 +116,13 @@
         "runtime": "node",
         "initialConfigurations": [
           {
-            "name": "Sync on iOS",
-            "type": "nativescript",
-            "request": "launch",
-            "platform": "ios",
-            "appRoot": "${workspaceRoot}",
-            "sourceMaps": true
-          },
-          {
             "name": "Launch on iOS",
             "type": "nativescript",
             "request": "launch",
             "platform": "ios",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
-            "rebuild": true
+            "watch": true
           },
           {
             "name": "Attach on iOS",
@@ -138,15 +130,8 @@
             "request": "attach",
             "platform": "ios",
             "appRoot": "${workspaceRoot}",
-            "sourceMaps": true
-          },
-          {
-            "name": "Sync on Android",
-            "type": "nativescript",
-            "request": "launch",
-            "platform": "android",
-            "appRoot": "${workspaceRoot}",
-            "sourceMaps": true
+            "sourceMaps": true,
+            "watch": false
           },
           {
             "name": "Launch on Android",
@@ -155,7 +140,7 @@
             "platform": "android",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
-            "rebuild": true
+            "watch": true
           },
           {
             "name": "Attach on Android",
@@ -163,7 +148,8 @@
             "request": "attach",
             "platform": "android",
             "appRoot": "${workspaceRoot}",
-            "sourceMaps": true
+            "sourceMaps": true,
+            "watch": false
           }
         ],
         "configurationAttributes": {
@@ -213,15 +199,10 @@
                 "description": "If true the launch request will launch the program without enabling debugging",
                 "default": false
               },
-              "rebuild": {
+              "watch": {
                 "type": "boolean",
-                "description": "Whether the app should be rebuild before start.",
+                "description": "Whether the watch and reconnect on file change.",
                 "default": true
-              },
-              "syncAllFiles": {
-                "type": "boolean",
-                "description": "Whether to sync files from node_modules folder.",
-                "default": false
               }
             }
           },
@@ -260,6 +241,11 @@
                 "type": "string",
                 "description": "NativeScript platform",
                 "default": null
+              },
+              "watch": {
+                "type": "boolean",
+                "description": "Whether the watch and reconnect on file change.",
+                "default": true
               }
             }
           }

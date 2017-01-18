@@ -139,17 +139,14 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         return Services.extensionClient().getInitSettings().then(settings => {
             Services.cliPath = settings.tnsPath || Services.cliPath;
             this._request = new DebugRequest(args, Services.cli());
-            Services.extensionClient().analyticsLaunchDebugger({ request: this._request.isSync ? "sync" : args.request, platform: args.platform });
+            Services.extensionClient().analyticsLaunchDebugger({ request: args.request, platform: args.platform });
 
             // Run CLI Command
-            Services.logger().log(`[NSDebugAdapter] Using tns CLI on path '${this._request.project.cli.path}'`, Tags.FrontendMessage);
+            Services.logger().log(`[NSDebugAdapter] Using tns CLI v${this._request.project.cli.version} on path '${this._request.project.cli.path}'`, Tags.FrontendMessage);
             Services.logger().log('[NSDebugAdapter] Running tns command...', Tags.FrontendMessage);
             let cliCommand: DebugResult;
             if (this._request.isLaunch) {
-                cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry }, this._request.args.tnsArgs);
-            }
-            else if (this._request.isSync) {
-                cliCommand = this._request.project.debugWithSync({ stopOnEntry: this._request.launchArgs.stopOnEntry, syncAllFiles: this._request.launchArgs.syncAllFiles }, this._request.args.tnsArgs);
+                cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry, watch: this._request.launchArgs.watch }, this._request.args.tnsArgs);
             }
             else if (this._request.isAttach) {
                 cliCommand = this._request.project.attach(this._request.args.tnsArgs);
@@ -158,7 +155,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             if (cliCommand.tnsProcess) {
                 cliCommand.tnsProcess.stdout.on('data', data => { Services.logger().log(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
-                cliCommand.tnsProcess.on('close', (code, signal) => { Services.logger().error(`The tns command finished its execution with code ${code}.`, Tags.FrontendMessage); });
+                cliCommand.tnsProcess.on('close', (code, signal) => { Services.logger().error(`[NSDebugAdapter] The tns command finished its execution with code ${code}.`, Tags.FrontendMessage); });
             }
 
             let promiseResolve = null;
@@ -166,25 +163,22 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Services.logger().log('[NSDebugAdapter] Watching the tns CLI output to receive a connection token', Tags.FrontendMessage);
             // Attach to the running application
             cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
-                connectionToken = this._request.isAndroid ? this._request.androidProject.getDebugPortSync(this._request.args.tnsArgs) : connectionToken;
-                Services.logger().log(`[NSDebugAdapter] Attaching to application on ${connectionToken}`, Tags.FrontendMessage);
+                Services.logger().log(`[NSDebugAdapter] Ready to attach to application on ${connectionToken}`, Tags.FrontendMessage);
                 let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
 
                 connection.attach(connectionToken, 'localhost').then(() => {
+                    Services.logger().log(`[NSDebugAdapter] Connection to target application established on ${connectionToken}`, Tags.FrontendMessage);
                     this.setConnection(connection);
                     return connection.enable();
                 }).then(() => {
-                    Services.logger().log(`[NSDebugAdapter] Successfully attached to the target application'`, Tags.FrontendMessage);
+                    Services.logger().log(`[NSDebugAdapter] Connection to target application successfully enabled`, Tags.FrontendMessage);
                     this.fireEvent(new InitializedEvent());
                     promiseResolve();
-                }).then(() => {
-
-                });
+                }).then(() => {});
             });
 
             return promise;
         });
-
     }
 
     private setConnection(connection: INSDebugConnection) : INSDebugConnection {
@@ -216,8 +210,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private terminateSession(): void {
         this.clearEverything();
         // In case of a sync request the session is not terminated when the backend is detached
-        if (!this._request.isSync) {
-            Services.logger().log("Terminating debug session");
+        if (!this._request.isLaunch || !this._request.launchArgs.watch) {
+            Services.logger().log("[NSDebugAdapter] Terminating debug session");
             this.fireEvent(new TerminatedEvent());
         }
     }

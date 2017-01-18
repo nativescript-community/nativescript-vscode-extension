@@ -26,9 +26,7 @@ export abstract class Project {
 
     public abstract attach(tnsArgs?: string[]): DebugResult;
 
-    public abstract debugWithSync(options: { stopOnEntry: boolean, syncAllFiles: boolean }, tnsArgs?: string[]): DebugResult;
-
-    public abstract debug(options: { stopOnEntry: boolean }, tnsArgs?: string[]): DebugResult;
+    public abstract debug(options: { stopOnEntry: boolean, watch: boolean }, tnsArgs?: string[]): DebugResult;
 
     protected executeRunCommand(args: string[]): ChildProcess {
         return this.cli.execute(["run", this.platformName()].concat(args), this._appRoot);

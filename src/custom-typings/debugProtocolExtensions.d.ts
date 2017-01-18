@@ -19,8 +19,7 @@ declare module 'vscode-debugprotocol' {
 
         interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, IRequestArgs {
             stopOnEntry?: boolean;
-            rebuild?: boolean;
-            syncAllFiles?: boolean;
+            watch?: boolean;
         }
 
         interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, IRequestArgs {
