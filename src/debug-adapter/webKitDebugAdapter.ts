@@ -142,7 +142,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Services.extensionClient().analyticsLaunchDebugger({ request: args.request, platform: args.platform });
 
             // Run CLI Command
-            Services.logger().log(`[NSDebugAdapter] Using tns CLI v${this._request.project.cli.version} on path '${this._request.project.cli.path}'`, Tags.FrontendMessage);
+            Services.logger().log(`[NSDebugAdapter] Using tns CLI v${this._request.project.cli.version.version} on path '${this._request.project.cli.path}'`, Tags.FrontendMessage);
             Services.logger().log('[NSDebugAdapter] Running tns command...', Tags.FrontendMessage);
             let cliCommand: DebugResult;
             if (this._request.isLaunch) {
