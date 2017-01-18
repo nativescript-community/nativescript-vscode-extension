@@ -19,9 +19,13 @@ export class AndroidProject extends Project {
     }
 
     public attach(tnsArgs?: string[]): DebugResult {
+        let args: string[] = ["--start"];
+        args = args.concat(tnsArgs);
+
+        let debugProcess : ChildProcess = super.executeDebugCommand(args);
         let tnsOutputEventEmitter = new EventEmitter();
-        setTimeout(() => tnsOutputEventEmitter.emit('readyForConnection')); // emit readyForConnection on the next tick
-        return { tnsProcess: null, tnsOutputEventEmitter: tnsOutputEventEmitter };
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, true);
+        return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
     public debug(options: { stopOnEntry: boolean, watch: boolean }, tnsArgs?: string[]): DebugResult {
@@ -32,19 +36,25 @@ export class AndroidProject extends Project {
 
         let debugProcess : ChildProcess = super.executeDebugCommand(args);
         let tnsOutputEventEmitter: EventEmitter = new EventEmitter();
-        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter);
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, false);
         return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
-    private configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
+    private configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter, attach: boolean): void {
         let debugPort = null;
         new scanner.StringMatchingScanner(readableStream).onEveryMatch(new RegExp("device: .* debug port: [0-9]+"), (match: scanner.MatchFound) => {
             //device: {device-name} debug port: {debug-port}
             debugPort = parseInt((<string>match.matches[0]).match("(?:debug port: )([\\d]{5})")[1]);
+            if (attach) {
+                // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
+                setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 500);
+            }
         });
-        new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', (match: scanner.MatchFound) => {
-            // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
-            setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 500);
-        });
+        if (!attach) {
+            new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', (match: scanner.MatchFound) => {
+                // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
+                setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 500);
+            });
+        }
     }
 }
