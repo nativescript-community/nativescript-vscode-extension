@@ -39,12 +39,12 @@
     "@types/mocha": "^2.2.32",
     "@types/node": "^6.0.46",
     "@types/source-map": "^0.1.29",
+    "chrome-remote-debug-protocol": "git://github.com/roblourens/chrome-remote-debug-protocol.git",
     "mocha": "^2.4.5",
     "typescript": "^2.0.6",
-    "vsce": "^1.0.0",
+    "vsce": "^1.18.0",
     "vscode": "^1.0.3",
-    "vscode-debugadapter-testsupport": "^1.7.0",
-    "chrome-remote-debug-protocol": "git://github.com/roblourens/chrome-remote-debug-protocol.git"
+    "vscode-debugadapter-testsupport": "^1.7.0"
   },
   "scripts": {
     "clean": "git clean -fdx",
