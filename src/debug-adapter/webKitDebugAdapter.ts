@@ -187,6 +187,10 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private setConnection(connection: INSDebugConnection) : INSDebugConnection {
+        if (this._webKitConnection) {
+            this._webKitConnection.close();
+        }
+        this._webKitConnection = connection;
         connection.on('Debugger.paused', params => this.onDebuggerPaused(params));
         connection.on('Debugger.resumed', () => this.onDebuggerResumed());
         connection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));
@@ -201,7 +205,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             this.terminateSession();
         });
         connection.on('connect', () => this.onConnected())
-        this._webKitConnection = connection;
         return connection;
     }
 
@@ -227,18 +230,6 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private clearEverything(): void {
         this.clearClientContext();
         this.clearTargetContext();
-
-        if (this._tnsProcess) {
-            this._tnsProcess.kill('SIGQUIT');
-            this._tnsProcess = null;
-        }
-
-        if (this._webKitConnection) {
-            Services.logger().log("Closing debug connection");
-
-            this._webKitConnection.close();
-            this._webKitConnection = null;
-        }
     }
 
     /**
@@ -346,6 +337,15 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
     public disconnect(): Promise<void> {
         this.clearEverything();
+        if (this._tnsProcess) {
+            this._tnsProcess.kill('SIGQUIT');
+            this._tnsProcess = null;
+        }
+        if (this._webKitConnection) {
+            Services.logger().log("Closing debug connection");
+            this._webKitConnection.close();
+            this._webKitConnection = null;
+        }
 
         return Promise.resolve<void>();
     }
