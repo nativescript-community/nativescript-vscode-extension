@@ -19,42 +19,42 @@ export class AndroidProject extends Project {
     }
 
     public attach(tnsArgs?: string[]): DebugResult {
-        let tnsOutputEventEmitter = new EventEmitter();
-        setTimeout(() => tnsOutputEventEmitter.emit('readyForConnection')); // emit readyForConnection on the next tick
-        return { tnsProcess: null, tnsOutputEventEmitter: tnsOutputEventEmitter };
-    }
-
-    public debugWithSync(options: { stopOnEntry: boolean, syncAllFiles: boolean }, tnsArgs?: string[]): DebugResult {
-        let args: string[] = ["--watch"];
-        if (options.syncAllFiles) { args.push("--syncAllFiles"); }
+        let args: string[] = ["--start"];
         args = args.concat(tnsArgs);
 
-        return this.debug({stopOnEntry: options.stopOnEntry}, args);
+        let debugProcess : ChildProcess = super.executeDebugCommand(args);
+        let tnsOutputEventEmitter = new EventEmitter();
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, true);
+        return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
-    public debug(options: { stopOnEntry: boolean }, tnsArgs?: string[]): DebugResult {
+    public debug(options: { stopOnEntry: boolean, watch: boolean }, tnsArgs?: string[]): DebugResult {
         let args: string[] = [];
+        args.push(options.watch ? "--watch" : "--no-watch");
         if (options.stopOnEntry) { args.push("--debug-brk"); }
         args = args.concat(tnsArgs);
 
         let debugProcess : ChildProcess = super.executeDebugCommand(args);
         let tnsOutputEventEmitter: EventEmitter = new EventEmitter();
-        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter);
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, false);
         return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
-    public getDebugPortSync(tnsArgs?: string[]): number {
-        let args: string[] = [];
-        args = args.concat(tnsArgs);
-        let output = this.cli.executeSync(["debug", "android", "--get-port"].concat(args), this.appRoot);
-        let port = parseInt(output.match("(?:debug port: )([\\d]{5})")[1]);
-        return port;
-    }
-
-    private configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
-        new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', (match: scanner.MatchFound) => {
-            // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
-            setTimeout(() => { eventEmitter.emit('readyForConnection'); }, 500);
+    private configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter, attach: boolean): void {
+        let debugPort = null;
+        new scanner.StringMatchingScanner(readableStream).onEveryMatch(new RegExp("device: .* debug port: [0-9]+"), (match: scanner.MatchFound) => {
+            //device: {device-name} debug port: {debug-port}
+            debugPort = parseInt((<string>match.matches[0]).match("(?:debug port: )([\\d]{5})")[1]);
+            if (attach) {
+                // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
+                setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 500);
+            }
         });
+        if (!attach) {
+            new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', (match: scanner.MatchFound) => {
+                // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
+                setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 500);
+            });
+        }
     }
 }

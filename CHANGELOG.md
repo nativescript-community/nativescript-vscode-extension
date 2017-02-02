@@ -1,3 +1,9 @@
+0.6.0
+=====
+
+## What's New
+- [Replace the v8 remtoe debugging protocol with Chrome Debugging Protocol](https://github.com/NativeScript/nativescript-vscode-extension/pull/107)
+
 0.5.1
 =====
 

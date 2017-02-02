@@ -2,7 +2,7 @@ import {OutputEvent, DebugSession, ErrorDestination} from 'vscode-debugadapter';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {WebKitDebugAdapter} from './webKitDebugAdapter';
-import {Handlers} from '../common/logger';
+import {LoggerHandler, Handlers, Tags} from '../common/logger';
 import {Services} from '../services/debugAdapterServices';
 
 import {AdapterProxy} from './adapter/adapterProxy';
@@ -76,7 +76,7 @@ export class WebKitDebugSession extends DebugSession {
 
 
                 if (eStr === 'Error: unknowncommand') {
-                    this.sendErrorResponse(response, 1014, '[NativeScript-Debug-Adapter] Unrecognized request: ' + request.command, null, ErrorDestination.Telemetry);
+                    this.sendErrorResponse(response, 1014, '[NSDebugAdapter] Unrecognized request: ' + request.command, null, ErrorDestination.Telemetry);
                     return;
                 }
 
@@ -87,8 +87,8 @@ export class WebKitDebugSession extends DebugSession {
                 } else {
                     // These errors show up in the message bar at the top (or nowhere), sometimes not obvious that they
                     // come from the adapter
-                    response.message = '[NativeScript-Debug-Adapter] ' + eStr;
-                    Services.logger().log('Error: ' + e ? e.stack : eStr);
+                    response.message = '[NSDebugAdapter] ' + eStr;
+                    Services.logger().error('Error: ' + eStr, Tags.FrontendMessage);
                 }
 
                 response.success = false;

@@ -15,11 +15,7 @@ export class DebugRequest {
     }
 
     public get isLaunch(): boolean {
-        return this.args.request === "launch" && (<DebugProtocol.ILaunchRequestArgs>this._requestArgs).rebuild;
-    }
-
-    public get isSync(): boolean {
-        return this.args.request == "launch" && !(<DebugProtocol.ILaunchRequestArgs>this._requestArgs).rebuild;
+        return this.args.request === "launch";
     }
 
     public get isAttach(): boolean {
@@ -39,7 +35,7 @@ export class DebugRequest {
     }
 
     public get launchArgs(): DebugProtocol.ILaunchRequestArgs {
-        return (this.isLaunch || this.isSync) ? <DebugProtocol.ILaunchRequestArgs>this.args : null;
+        return this.isLaunch ? <DebugProtocol.ILaunchRequestArgs>this.args : null;
     }
 
     public get attachArgs(): DebugProtocol.IAttachRequestArgs {
