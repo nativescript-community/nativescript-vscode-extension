@@ -1,3 +1,9 @@
+0.6.1
+=====
+
+## What's New
+- [Hint VS Code for the languages supported by the debugger](https://github.com/NativeScript/nativescript-vscode-extension/issues/111)
+
 0.6.0
 =====
 
