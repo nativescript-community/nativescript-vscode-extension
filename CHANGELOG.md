@@ -3,6 +3,7 @@
 
 ## What's New
 - [Hint VS Code for the languages supported by the debugger](https://github.com/NativeScript/nativescript-vscode-extension/issues/111)
+- [Display changelog on extension update](https://github.com/NativeScript/nativescript-vscode-extension/issues/91)
 
 0.6.0
 =====
