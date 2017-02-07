@@ -7,6 +7,5 @@ out/tests/**
 images/screenshots/**
 *.vsix
 .gitignore
-CHANGELOG.md
 CONTRIBUTING.md
 npm-debug.log
