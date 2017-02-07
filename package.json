@@ -152,6 +152,60 @@
             "watch": false
           }
         ],
+        "configurationSnippets": [
+          {
+            "label": "NativeScript: Launch on iOS",
+            "description": "A configuration for launching an app on iOS device/emulator",
+            "body": {
+              "name": "Launch on iOS",
+              "type": "nativescript",
+              "request": "launch",
+              "platform": "ios",
+              "appRoot": "^\"\\${workspaceRoot}\"",
+              "sourceMaps": true,
+              "watch": true
+            }
+          },
+          {
+            "label": "NativeScript: Launch on Android",
+            "description": "A configuration for launching an app on Android device/emulator",
+            "body": {
+              "name": "Launch on Android",
+              "type": "nativescript",
+              "request": "launch",
+              "platform": "android",
+              "appRoot": "^\"\\${workspaceRoot}\"",
+              "sourceMaps": true,
+              "watch": true
+            }
+          },
+          {
+            "label": "NativeScript: Attach on iOS",
+            "description": "A configuration for attaching to an already running iOS app",
+            "body": {
+              "name": "Attach on iOS",
+              "type": "nativescript",
+              "request": "attach",
+              "platform": "ios",
+              "appRoot": "^\"\\${workspaceRoot}\"",
+              "sourceMaps": true,
+              "watch": false
+            }
+          },
+          {
+            "label": "NativeScript: Attach on Android",
+            "description": "A configuration for attaching to an already running Android app",
+            "body": {
+              "name": "Attach on Android",
+              "type": "nativescript",
+              "request": "attach",
+              "platform": "android",
+              "appRoot": "^\"\\${workspaceRoot}\"",
+              "sourceMaps": true,
+              "watch": false
+            }
+          }
+        ],
         "configurationAttributes": {
           "launch": {
             "required": [],
