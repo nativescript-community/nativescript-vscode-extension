@@ -83,34 +83,30 @@ export function retryAsync(fn: () => Promise<any>, timeoutMs: number): Promise<a
 }
 
 function tryFindSourcePathInNSProject(nsProjectPath: string, additionalFileExtension: string, resorcePath: string) : string {
-    let guesses = [];
+    let guess: string = "";
     const pathParts = resorcePath.split(path.sep);
     let appIndex = pathParts.indexOf("app");
     let isTnsModule = appIndex >= 0 && pathParts.length > appIndex + 1 && pathParts[appIndex + 1] === "tns_modules";
     //let isTnsModule: boolean = (pathParts.length >= 3 && pathParts[0] == '' && pathParts[1] == 'app' && pathParts[2] == 'tns_modules');
     if (isTnsModule) {
-        // the file is part of a module, so we search it in '{ns-app}/node_modules/tns-core-modules/' and '{ns-app}/node_modules/'
+        // the file is part of a module, so we search it in '{ns-app}/node_modules/'
         let nsNodeModulesPath: string = path.join(nsProjectPath, 'node_modules');
-        let tnsCoreNodeModulesPath: string = path.join(nsNodeModulesPath, 'tns-core-modules');
 
         let modulePath: string = path.join.apply(path, pathParts.slice(appIndex + 2));
-        guesses.push(path.join(tnsCoreNodeModulesPath, modulePath));
-        guesses.push(path.join(nsNodeModulesPath, modulePath));
+        guess = path.join(nsNodeModulesPath, modulePath);
     }
     else {
-        guesses.push(path.join(nsProjectPath, resorcePath));
+        guess = path.join(nsProjectPath, resorcePath);
     }
 
-    for (var guessPath of guesses) {
-        if (existsSync(guessPath)) {
-            return canonicalizeUrl(guessPath);
-        }
+    if (existsSync(guess)) {
+        return canonicalizeUrl(guess);
+    }
 
-        let extension: string = path.extname(guessPath);
-        let platformSpecificPath: string = guessPath.substr(0, guessPath.length - extension.length) + '.' + additionalFileExtension + extension;
-        if (existsSync(platformSpecificPath)) {
-            return canonicalizeUrl(platformSpecificPath);
-        }
+    let extension: string = path.extname(guess);
+    let platformSpecificPath: string = guess.substr(0, guess.length - extension.length) + '.' + additionalFileExtension + extension;
+    if (existsSync(platformSpecificPath)) {
+        return canonicalizeUrl(platformSpecificPath);
     }
 
     return null;

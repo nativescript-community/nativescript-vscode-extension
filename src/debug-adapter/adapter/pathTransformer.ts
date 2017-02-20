@@ -56,16 +56,7 @@ export class PathTransformer implements DebugProtocol.IDebugTransformer {
             }
             else if (this.inferedDeviceRoot) {
                 let inferedUrl = url.replace(this._appRoot, this.inferedDeviceRoot).replace(/\\/g, "/");
-
-                //change device path if {N} core module or {N} module
-                if (inferedUrl.indexOf("/node_modules/tns-core-modules/") != -1)
-                {
-                    inferedUrl = inferedUrl.replace("/node_modules/tns-core-modules/", "/app/tns_modules/");
-                }
-                else if (inferedUrl.indexOf("/node_modules/") != -1)
-                {
-                    inferedUrl = inferedUrl.replace("/node_modules/", "/app/tns_modules/");
-                }
+                inferedUrl = inferedUrl.replace("/node_modules/", "/app/tns_modules/");
 
                 //change platform specific paths
                 inferedUrl = inferedUrl.replace(`.${this._platform}.`, '.');
