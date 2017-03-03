@@ -56,6 +56,7 @@ export class NativeScriptCli {
             versionStr = this.executeSync(["--version"], undefined);
         }
         catch(e) {
+            this._logger.log(e, Tags.FrontendMessage);
             throw new Error("NativeScript CLI not found. Use 'nativescript.tnsPath' workspace setting to explicitly set the absolute path to the NativeScript CLI.");
         }
         let cliVersion: Version = versionStr ? Version.parse(versionStr) : null;
@@ -74,14 +75,14 @@ export class NativeScriptCli {
     public executeSync(args: string[], cwd: string): string {
         let command: string = `${this._path} ` + args.join(' ');
         this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
-        return execSync(command, { encoding: "utf8", cwd: cwd }).toString().trim();
+        return execSync(command, { encoding: "utf8", cwd: cwd, shell: process.env.SHELL }).toString().trim();
     }
 
     public execute(args: string[], cwd: string): ChildProcess {
         let command: string = `${this._path} ` + args.join(' ');
         this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
 
-        let options = { cwd: cwd, shell: true };
+        let options = { cwd: cwd, shell: process.env.SHELL };
         let child: ChildProcess = spawn(this._path, args, options);
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
