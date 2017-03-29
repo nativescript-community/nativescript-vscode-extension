@@ -2,6 +2,7 @@ import {spawn, execSync, ChildProcess} from 'child_process';
 import {Version} from '../common/version';
 import {Logger, Tags} from '../common/logger';
 import * as utils from '../common/utilities';
+import * as os from 'os';
 
 export enum CliVersionState {
     NotExisting,
@@ -44,12 +45,21 @@ export class CliVersion {
 
 export class NativeScriptCli {
     private _path: string;
+    private _shellPath: string;
     private _cliVersion: CliVersion;
     private _logger: Logger;
 
     constructor(cliPath: string, logger: Logger) {
         this._path = cliPath;
         this._logger = logger;
+
+        this._shellPath = process.env.SHELL;
+
+        // always default to cmd on Windows
+        // workaround for issue #121 https://github.com/NativeScript/nativescript-vscode-extension/issues/121
+        if (os.platform().indexOf("win") != -1) {
+            this._shellPath = "cmd.exe";
+        }
 
         let versionStr = null;
         try {
@@ -73,16 +83,17 @@ export class NativeScriptCli {
     }
 
     public executeSync(args: string[], cwd: string): string {
-        let command: string = `${this._path} ` + args.join(' ');
+        let command: string = `${this._path} ${args.join(' ')}`;
         this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
-        return execSync(command, { encoding: "utf8", cwd: cwd, shell: process.env.SHELL }).toString().trim();
+
+        return execSync(command, { encoding: "utf8", cwd: cwd, shell: this._shellPath}).toString().trim();
     }
 
     public execute(args: string[], cwd: string): ChildProcess {
-        let command: string = `${this._path} ` + args.join(' ');
+        let command: string = `${this._path} ${args.join(' ')}`;
         this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
 
-        let options = { cwd: cwd, shell: process.env.SHELL };
+        let options = { cwd: cwd, shell: this._shellPath };
         let child: ChildProcess = spawn(this._path, args, options);
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
