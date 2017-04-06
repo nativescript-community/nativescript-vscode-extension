@@ -57,7 +57,7 @@ export class NativeScriptCli {
 
         // always default to cmd on Windows
         // workaround for issue #121 https://github.com/NativeScript/nativescript-vscode-extension/issues/121
-        if (os.platform().indexOf("win") != -1) {
+        if (utils.getPlatform() === utils.Platform.Windows) {
             this._shellPath = "cmd.exe";
         }
 
