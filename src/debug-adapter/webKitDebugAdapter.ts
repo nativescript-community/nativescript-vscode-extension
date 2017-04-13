@@ -133,11 +133,11 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         Services.logger().log(`${args.request}(${JSON.stringify(args)})`);
     }
 
-    private processRequest(args: DebugProtocol.IRequestArgs): Promise<void> {
+    private async processRequest(args: DebugProtocol.IRequestArgs) {
         // Initialize the request
         this.configureLoggingForRequest(args);
         Services.appRoot = args.appRoot;
-        return Services.extensionClient().getInitSettings().then(settings => {
+        return Services.extensionClient().getInitSettings().then(async settings => {
             Services.cliPath = settings.tnsPath || Services.cliPath;
             this._request = new DebugRequest(args, Services.cli());
             Services.extensionClient().analyticsLaunchDebugger({ request: args.request, platform: args.platform });
@@ -147,6 +147,10 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Services.logger().log('[NSDebugAdapter] Running tns command...', Tags.FrontendMessage);
             let cliCommand: DebugResult;
             if (this._request.isLaunch) {
+                let teamId = this.getTeamId(Services.appRoot, this._request.args.tnsArgs);
+                if(!teamId) {
+                    teamId = (await Services.extensionClient().selectTeam()).id;
+                }
                 cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry, watch: this._request.launchArgs.watch }, this._request.args.tnsArgs);
             }
             else if (this._request.isAttach) {
@@ -687,6 +691,56 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private scriptIsNotUnknown(scriptId: WebKitProtocol.Debugger.ScriptId): boolean {
         return !!this._scriptsById.get(scriptId);
     }
+
+    private getTeamId(appRoot: string, tnsArgs?: string[]): string {
+        // try to get the TeamId from the TnsArgs
+        if(tnsArgs) {
+            const teamIdArgIndex = tnsArgs.indexOf('--teamId');
+            if(teamIdArgIndex > 0 && teamIdArgIndex + 1 < tnsArgs.length) {
+                return tnsArgs[ teamIdArgIndex + 1 ];
+            }
+        }
+
+        // try to get the TeamId from the buildxcconfig or teamid file
+        const teamIdFromConfig = this.readTeamId(appRoot);
+        if(teamIdFromConfig) {
+            return teamIdFromConfig;
+        }
+
+        // we should get the Teams from the machine and ask the user if they are more than 1
+        return null;
+    }
+
+    private readXCConfig(appRoot: string, flag: string): string {
+		let xcconfigFile = path.join(appRoot, "App_Resources/ios/build.xcconfig");
+		if (fs.exists(xcconfigFile)) {
+			let text = fs.readFileSync(xcconfigFile, { encoding: 'utf8'});
+			let teamId: string;
+			text.split(/\r?\n/).forEach((line) => {
+				line = line.replace(/\/(\/)[^\n]*$/, "");
+				if (line.indexOf(flag) >= 0) {
+					teamId = line.split("=")[1].trim();
+					if (teamId[teamId.length - 1] === ';') {
+						teamId = teamId.slice(0, -1);
+					}
+				}
+			});
+			if (teamId) {
+				return teamId;
+			}
+		}
+
+		let fileName = path.join(appRoot, "teamid");
+		if (fs.exists(fileName)) {
+			return fs.readFileSync(fileName, { encoding: 'utf8' });
+		}
+
+		return null;
+	}
+
+	private readTeamId(appRoot): string {
+		return this.readXCConfig(appRoot, "DEVELOPMENT_TEAM");
+	}
 }
 
 function scriptIdToSourceReference(scriptId: WebKitProtocol.Debugger.ScriptId): number {

@@ -59,4 +59,8 @@ export class ExtensionClient {
     public runRunCommand(args: extProtocol.AnalyticsRunRunCommandArgs): Promise<any> {
         return this.callRemoteMethod('runRunCommand', args);
     }
+
+    public selectTeam(): Promise<{ id: string, name: string }> {
+        return this.callRemoteMethod('selectTeam');
+    }
 }
