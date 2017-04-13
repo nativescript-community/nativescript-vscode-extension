@@ -159,7 +159,12 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.on('close', (code, signal) => {
                     Services.logger().error(`[NSDebugAdapter] The tns command finished its execution with code ${code}.`, Tags.FrontendMessage);
-                    this.fireEvent(new TerminatedEvent());
+
+                    // Sometimes we execute "tns debug android --start" and the process finishes
+                    // which is totally fine. If there's an error we need to Terminate the session.
+                    if(code > 0) {
+                        this.fireEvent(new TerminatedEvent());
+                    }
                 });
             }
 
