@@ -1,7 +1,6 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
-
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -160,6 +159,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.on('close', (code, signal) => {
                     Services.logger().error(`[NSDebugAdapter] The tns command finished its execution with code ${code}.`, Tags.FrontendMessage);
+                    this.fireEvent(new TerminatedEvent());
                 });
             }
 
