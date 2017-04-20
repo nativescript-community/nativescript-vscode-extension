@@ -147,11 +147,22 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Services.logger().log('[NSDebugAdapter] Running tns command...', Tags.FrontendMessage);
             let cliCommand: DebugResult;
             if (this._request.isLaunch) {
-                let teamId = this.getTeamId(Services.appRoot, this._request.args.tnsArgs);
-                if(!teamId) {
-                    teamId = (await Services.extensionClient().selectTeam()).id;
+                let tnsArgs = this._request.args.tnsArgs;
+
+                // For iOS the TeamID is required if there's more than one.
+                // Therefore if not set, show selection to the user.
+                if(args.platform && args.platform.toLowerCase() === 'ios') {
+                    let teamId = this.getTeamId(path.join(Services.appRoot, 'app'), this._request.args.tnsArgs);
+                    if(!teamId) {
+                        let selectedTeam = (await Services.extensionClient().selectTeam());
+                        if(selectedTeam) {
+                            // add the selected by the user Team Id
+                            tnsArgs = (tnsArgs || []).concat(['--teamId', selectedTeam.id]);
+                        }
+                    }
                 }
-                cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry, watch: this._request.launchArgs.watch }, this._request.args.tnsArgs);
+
+                cliCommand = this._request.project.debug({ stopOnEntry: this._request.launchArgs.stopOnEntry, watch: this._request.launchArgs.watch }, tnsArgs);
             }
             else if (this._request.isAttach) {
                 cliCommand = this._request.project.attach(this._request.args.tnsArgs);
@@ -712,8 +723,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     }
 
     private readXCConfig(appRoot: string, flag: string): string {
-		let xcconfigFile = path.join(appRoot, "App_Resources/ios/build.xcconfig");
-		if (fs.exists(xcconfigFile)) {
+		let xcconfigFile = path.join(appRoot, "App_Resources/iOS/build.xcconfig");
+		if (fs.existsSync(xcconfigFile)) {
 			let text = fs.readFileSync(xcconfigFile, { encoding: 'utf8'});
 			let teamId: string;
 			text.split(/\r?\n/).forEach((line) => {
@@ -731,7 +742,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 		}
 
 		let fileName = path.join(appRoot, "teamid");
-		if (fs.exists(fileName)) {
+		if (fs.existsSync(fileName)) {
 			return fs.readFileSync(fileName, { encoding: 'utf8' });
 		}
 
