@@ -83,6 +83,7 @@ export class NativeScriptCli {
     }
 
     public executeSync(args: string[], cwd: string): string {
+        args.unshift("--analyticsClient", "VSCode");
         let command: string = `${this._path} ${args.join(' ')}`;
         this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
 
@@ -90,6 +91,7 @@ export class NativeScriptCli {
     }
 
     public execute(args: string[], cwd: string): ChildProcess {
+        args.unshift("--analyticsClient", "VSCode");
         let command: string = `${this._path} ${args.join(' ')}`;
         this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
 
