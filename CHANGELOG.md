@@ -1,3 +1,14 @@
+0.7.0
+=====
+
+## What's New
+- [UI for selecting teamId for iOS device debugging](https://github.com/NativeScript/nativescript-vscode-extension/issues/93)
+
+## Bug Fixes
+- [Variables are no longer displayed when debugging in VS Code 1.9.0 and {N} plugin 0.6.x](https://github.com/NativeScript/nativescript-vscode-extension/issues/112)
+- [Set using cmd when executing node child processes on Windows](https://github.com/NativeScript/nativescript-vscode-extension/issues/121)
+
+
 0.6.1
 =====
 
