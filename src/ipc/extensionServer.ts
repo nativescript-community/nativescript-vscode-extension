@@ -92,25 +92,30 @@ export class ExtensionServer {
     }
 
     private getDevelopmentTeams(): Array<{ id: string, name: string }> {
-		let dir = path.join(process.env.HOME, "Library/MobileDevice/Provisioning Profiles/");
-		let files = fs.readdirSync(dir);
-		let teamIds: any = {};
-		for (let file of files) {
-			let filePath = path.join(dir, file);
-			let data = fs.readFileSync(filePath, { encoding: "utf8" });
-			let teamId = this.getProvisioningProfileValue("TeamIdentifier", data);
-			let teamName = this.getProvisioningProfileValue("TeamName", data);
-			if (teamId) {
-				teamIds[teamId] = teamName;
-			}
-		}
+        try {
+            let dir = path.join(process.env.HOME, "Library/MobileDevice/Provisioning Profiles/");
+            let files = fs.readdirSync(dir);
+            let teamIds: any = {};
+            for (let file of files) {
+                let filePath = path.join(dir, file);
+                let data = fs.readFileSync(filePath, { encoding: "utf8" });
+                let teamId = this.getProvisioningProfileValue("TeamIdentifier", data);
+                let teamName = this.getProvisioningProfileValue("TeamName", data);
+                if (teamId) {
+                    teamIds[teamId] = teamName;
+                }
+            }
 
-		let teamIdsArray = new Array<{ id: string, name: string }>();
-		for (let teamId in teamIds) {
-			teamIdsArray.push({ id: teamId, name: teamIds[teamId] });
-		}
+            let teamIdsArray = new Array<{ id: string, name: string }>();
+            for (let teamId in teamIds) {
+                teamIdsArray.push({ id: teamId, name: teamIds[teamId] });
+            }
 
-		return teamIdsArray;
+            return teamIdsArray;
+        } catch (e) {
+            // no matter what happens, don't break
+            return new Array<{ id: string, name: string }>();
+        }
 	}
 
     private getProvisioningProfileValue(name: string, text: string): string {
