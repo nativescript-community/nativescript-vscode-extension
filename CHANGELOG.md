@@ -1,3 +1,9 @@
+0.7.1
+=====
+
+## Bug Fixes
+- [Debug with "Launch on iOS" with 0.7.0 and no provisioning profiles not working](https://github.com/NativeScript/nativescript-vscode-extension/issues/133)
+
 0.7.0
 =====
 
