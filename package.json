@@ -1,6 +1,6 @@
 {
   "name": "nativescript",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "minNativescriptCliVersion": "2.5.0",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
@@ -106,7 +106,10 @@
       {
         "type": "nativescript",
         "label": "NativeScript",
-        "languages": ["javascript", "typescript"],
+        "languages": [
+          "javascript",
+          "typescript"
+        ],
         "enableBreakpointsFor": {
           "languageIds": [
             "javascript",
