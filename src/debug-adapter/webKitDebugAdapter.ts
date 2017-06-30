@@ -40,7 +40,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private _webKitConnection: INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
     private _lastOutputEvent: OutputEvent;
-    private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`${args.message}\n`, args.type.toString()));
+    private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`${args.message}`, args.type.toString()));
     private _request: DebugRequest;
     private _tnsProcess: ChildProcess;
 
@@ -143,8 +143,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Services.extensionClient().analyticsLaunchDebugger({ request: args.request, platform: args.platform });
 
             // Run CLI Command
-            Services.logger().log(`[NSDebugAdapter] Using tns CLI v${this._request.project.cli.version.version} on path '${this._request.project.cli.path}'`, Tags.FrontendMessage);
-            Services.logger().log('[NSDebugAdapter] Running tns command...', Tags.FrontendMessage);
+            Services.logger().log(`[NSDebugAdapter] Using tns CLI v${this._request.project.cli.version.version} on path '${this._request.project.cli.path}'\n`, Tags.FrontendMessage);
+            Services.logger().log('[NSDebugAdapter] Running tns command...\n', Tags.FrontendMessage);
             let cliCommand: DebugResult;
             if (this._request.isLaunch) {
                 let tnsArgs = this._request.args.tnsArgs;
@@ -173,7 +173,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 cliCommand.tnsProcess.stdout.on('data', data => { Services.logger().log(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.on('close', (code, signal) => {
-                    Services.logger().error(`[NSDebugAdapter] The tns command finished its execution with code ${code}.`, Tags.FrontendMessage);
+                    Services.logger().error(`[NSDebugAdapter] The tns command finished its execution with code ${code}.\n`, Tags.FrontendMessage);
 
                     // Sometimes we execute "tns debug android --start" and the process finishes
                     // which is totally fine. If there's an error we need to Terminate the session.
@@ -185,18 +185,18 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
             let promiseResolve = null;
             let promise: Promise<void> = new Promise<void>((res, rej) => { promiseResolve = res; });
-            Services.logger().log('[NSDebugAdapter] Watching the tns CLI output to receive a connection token', Tags.FrontendMessage);
+            Services.logger().log('[NSDebugAdapter] Watching the tns CLI output to receive a connection token\n', Tags.FrontendMessage);
             // Attach to the running application
             cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
-                Services.logger().log(`[NSDebugAdapter] Ready to attach to application on ${connectionToken}`, Tags.FrontendMessage);
+                Services.logger().log(`[NSDebugAdapter] Ready to attach to application on ${connectionToken}\n`, Tags.FrontendMessage);
                 let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
 
                 connection.attach(connectionToken, 'localhost').then(() => {
-                    Services.logger().log(`[NSDebugAdapter] Connection to target application established on ${connectionToken}`, Tags.FrontendMessage);
+                    Services.logger().log(`[NSDebugAdapter] Connection to target application established on ${connectionToken}\n`, Tags.FrontendMessage);
                     this.setConnection(connection);
                     return connection.enable();
                 }).then(() => {
-                    Services.logger().log(`[NSDebugAdapter] Connection to target application successfully enabled`, Tags.FrontendMessage);
+                    Services.logger().log(`[NSDebugAdapter] Connection to target application successfully enabled\n`, Tags.FrontendMessage);
                     this.fireEvent(new InitializedEvent());
                     promiseResolve();
                 }).then(() => {});
