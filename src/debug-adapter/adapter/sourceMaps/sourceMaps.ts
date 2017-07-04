@@ -395,7 +395,7 @@ export class SourceMaps implements ISourceMaps {
             });
         } else {
             contentsP = new Promise((resolve, reject) => {
-                FS.readFile(mapPath, (err, data) => {
+                FS.readFile(mapPath, 'utf8', (err, data) => {
                     if (err) {
                         Services.logger().log(`SourceMaps.createSourceMap: Could not read map from ${mapPath}`);
                         resolve(null);

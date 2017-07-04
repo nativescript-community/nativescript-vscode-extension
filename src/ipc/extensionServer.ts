@@ -83,7 +83,7 @@ export class ExtensionServer {
                 vscode.window.showQuickPick(quickPickItems)
                     .then(val => resolve({
                             id: val.description,
-                            label: val.label
+                            name: val.label
                         }));
             } else {
                 resolve();

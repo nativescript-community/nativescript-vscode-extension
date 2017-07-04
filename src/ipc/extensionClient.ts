@@ -49,7 +49,7 @@ export class ExtensionClient {
     }
 
     public getInitSettings(): Promise<extProtocol.InitSettingsResult> {
-        return this.callRemoteMethod('getInitSettings');
+        return <Promise<extProtocol.InitSettingsResult>>(this.callRemoteMethod('getInitSettings'));
     }
 
     public analyticsLaunchDebugger(args: extProtocol.AnalyticsLaunchDebuggerArgs): Promise<any> {
@@ -61,6 +61,6 @@ export class ExtensionClient {
     }
 
     public selectTeam(): Promise<{ id: string, name: string }> {
-        return this.callRemoteMethod('selectTeam');
+        return <Promise<{ id: string, name: string }>>(this.callRemoteMethod('selectTeam'));
     }
 }
