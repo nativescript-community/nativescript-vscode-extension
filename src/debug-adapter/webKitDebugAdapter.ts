@@ -158,6 +158,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                         if(selectedTeam) {
                             // add the selected by the user Team Id
                             tnsArgs = (tnsArgs || []).concat(['--teamId', selectedTeam.id]);
+                            Services.logger().log(`[NSDebugAdapter] Using iOS Team ID '${selectedTeam.id}', you can change this in the workspace settings.\n`, Tags.FrontendMessage);
                         }
                     }
                 }

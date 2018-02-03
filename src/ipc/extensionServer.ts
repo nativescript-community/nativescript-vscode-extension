@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import * as extProtocol from './extensionProtocol';
 import {Services} from '../services/extensionHostServices';
+import {QuickPickItem} from "vscode";
 let ipc = require('node-ipc');
 
 export class ExtensionServer {
@@ -70,21 +71,37 @@ export class ExtensionServer {
         return Services.analyticsService().runRunCommand(args.platform);
     }
 
-    public selectTeam() : Promise<{ id: string, name: string }> {
+    public selectTeam(): Promise<{ id: string, name: string }> {
         return new Promise((resolve, reject) => {
+            const workspaceTeamId = vscode.workspace.getConfiguration().get<string>("nativescript.iosTeamId");
+
+            if (workspaceTeamId) {
+                resolve({
+                    id: workspaceTeamId,
+                    name: undefined // irrelevant
+                });
+                return;
+            }
+
             let developmentTeams = this.getDevelopmentTeams();
-            if(developmentTeams.length > 1) {
-                let quickPickItems = developmentTeams.map((team) => {
+            if (developmentTeams.length > 1) {
+                let quickPickItems: Array<QuickPickItem> = developmentTeams.map((team) => {
                     return {
                         label: team.name,
                         description: team.id
                     };
                 });
-                vscode.window.showQuickPick(quickPickItems)
-                    .then(val => resolve({
+                vscode.window.showQuickPick(
+                    quickPickItems, {
+                        placeHolder: "Select your development team"
+                    })
+                    .then((val: QuickPickItem) => {
+                        vscode.workspace.getConfiguration().update("nativescript.iosTeamId", val.description);
+                        resolve({
                             id: val.description,
                             name: val.label
-                        }));
+                        })
+                    });
             } else {
                 resolve();
             }
