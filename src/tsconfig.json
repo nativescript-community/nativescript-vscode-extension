@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es5",
+        "target": "es6",
         "module": "commonjs",
         "moduleResolution": "node",
         "sourceMap": true,
@@ -12,7 +12,6 @@
     },
     "files": [
         // typescript definitions
-        "custom-typings/es6-impl/es6-impl.d.ts",
         "custom-typings/universal-analytics/ua.d.ts",
         "custom-typings/debugProtocolExtensions.d.ts",
         "custom-typings/webKitProtocol.d.ts",

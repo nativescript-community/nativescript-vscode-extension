@@ -171,7 +171,7 @@ export class IosConnection implements INSDebugConnection {
     }
 
     public enable() : Promise<void> {
-        return Promise.resolve<void>();
+        return Promise.resolve();
     }
 
     public close(): void {

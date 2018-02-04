@@ -1,6 +1,6 @@
 {
   "name": "nativescript",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "minNativescriptCliVersion": "2.5.0",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
@@ -16,7 +16,7 @@
   "publisher": "Telerik",
   "bugs": "https://github.com/NativeScript/nativescript-vscode-extension/issues",
   "engines": {
-    "vscode": "^1.7.0"
+    "vscode": "^1.19.0"
   },
   "homepage": "https://www.nativescript.org/",
   "categories": [
@@ -25,26 +25,24 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "vscode-chrome-debug-core": "3.9.1",
+    "vscode-chrome-debug-core": "~3.9.0",
     "node-ipc": "8.10.3",
-    "source-map": "0.5.6",
+    "source-map": "0.6.1",
     "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master",
     "universal-analytics": "0.4.13",
-    "vscode-debugadapter": "1.19.0",
-    "vscode-debugprotocol": "1.19.0"
+    "vscode-debugadapter": "1.26.0",
+    "vscode-debugprotocol": "1.26.0"
   },
   "devDependencies": {
-    "@types/es6-collections": "0.5.30",
-    "@types/es6-promise": "0.0.32",
     "@types/mocha": "2.2.41",
     "@types/node": "6.0.46",
     "@types/source-map": "~0.1.0",
     "chrome-remote-debug-protocol": "git://github.com/roblourens/chrome-remote-debug-protocol.git",
     "mocha": "2.5.3",
-    "typescript": "~2.4.0",
-    "vsce": "1.22.0",
-    "vscode": "1.1.0",
-    "vscode-debugadapter-testsupport": "1.19.0"
+    "typescript": "2.6.2",
+    "vsce": "~1.36.0",
+    "vscode": "~1.1.10",
+    "vscode-debugadapter-testsupport": "1.26.0"
   },
   "scripts": {
     "clean": "git clean -fdx",

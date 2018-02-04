@@ -63,7 +63,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private clearTargetContext(): void {
         this._scriptsById = new Map<WebKitProtocol.Debugger.ScriptId, WebKitProtocol.Debugger.Script>();
         this._committedBreakpointsByUrl = new Map<string, WebKitProtocol.Debugger.BreakpointId[]>();
-        this._setBreakpointsRequestQ = Promise.resolve<void>();
+        this._setBreakpointsRequestQ = Promise.resolve();
         this._lastOutputEvent = null;
         this.fireEvent({ seq: 0, type: 'event',  event: 'clearTargetContext'});
     }
@@ -368,7 +368,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             this._webKitConnection = null;
         }
 
-        return Promise.resolve<void>();
+        return Promise.resolve();
     }
 
     public setBreakpoints(args: DebugProtocol.ISetBreakpointsArgs): Promise<DebugProtocol.ISetBreakpointsResponseBody> {
@@ -403,7 +403,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
     private _clearAllBreakpoints(url: string): Promise<void> {
         if (!this._committedBreakpointsByUrl.has(url)) {
-            return Promise.resolve<void>();
+            return Promise.resolve();
         }
 
         // Remove breakpoints one at a time. Seems like it would be ok to send the removes all at once,
@@ -412,7 +412,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         // does not break there.
         return this._committedBreakpointsByUrl.get(url).reduce((p, bpId) => {
             return p.then(() => this._webKitConnection.debugger_removeBreakpoint(bpId)).then(() => { });
-        }, Promise.resolve<void>()).then(() => {
+        }, Promise.resolve()).then(() => {
             this._committedBreakpointsByUrl.set(url, null);
         });
     }
@@ -621,7 +621,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 return { variables };
             });
         } else {
-            return Promise.resolve();
+            return Promise.resolve(null);
         }
     }
 
