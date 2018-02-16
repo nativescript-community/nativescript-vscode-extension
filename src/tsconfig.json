@@ -10,6 +10,10 @@
         "outDir": "../out",
         "allowJs": true
     },
+    "exclude": [
+        "node_modules",
+        "tests"
+    ],
     "files": [
         // typescript definitions
         "custom-typings/universal-analytics/ua.d.ts",
