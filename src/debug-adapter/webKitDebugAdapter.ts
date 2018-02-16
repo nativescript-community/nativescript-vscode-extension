@@ -10,9 +10,7 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 import {INSDebugConnection} from './connection/INSDebugConnection';
 import {IosConnection} from './connection/iosConnection';
 import {AndroidConnection} from './connection/androidConnection';
-import {Project, DebugResult} from '../project/project';
-import {IosProject} from '../project/iosProject';
-import {AndroidProject} from '../project/androidProject';
+import {DebugResult} from '../project/project';
 import * as utils from '../common/utilities';
 import {formatConsoleMessage} from './consoleHelper';
 import {Services} from '../services/debugAdapterServices';
@@ -129,8 +127,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         if (args.tnsOutput) {
             Services.logger().addHandler(Handlers.createStreamHandler(fs.createWriteStream(args.tnsOutput)));
         }
-        Services.logger().log(`initialize(${JSON.stringify(this._initArgs) })`);
-        Services.logger().log(`${args.request}(${JSON.stringify(args)})`);
+        Services.logger().log(`initialize(${JSON.stringify(this._initArgs) })\n`);
+        Services.logger().log(`${args.request}(${JSON.stringify(args)})\n`);
     }
 
     private async processRequest(args: DebugProtocol.IRequestArgs) {
