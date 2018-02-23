@@ -40,7 +40,7 @@ export class AdapterProxy {
             .filter(transformer => request.command in transformer)
             .reduce(
                 (p, transformer) => p.then(() => transformer[request.command](request.arguments, request.seq)),
-                Promise.resolve<void>());
+                Promise.resolve());
     }
 
     /**
@@ -48,7 +48,7 @@ export class AdapterProxy {
      */
     private transformResponse(request: DebugProtocol.Request, body: any): Promise<void> {
         if (!body) {
-            return Promise.resolve<void>();
+            return Promise.resolve();
         }
 
         const bodyTransformMethodName = request.command + 'Response';
@@ -58,7 +58,7 @@ export class AdapterProxy {
             .filter(transformer => bodyTransformMethodName in transformer)
             .reduce(
                 (p, transformer) => p.then(() => transformer[bodyTransformMethodName](body, request.seq)),
-                Promise.resolve<void>());
+                Promise.resolve());
     }
 
     /**

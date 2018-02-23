@@ -1,38 +1,41 @@
-import * as path from 'path';
-import * as os from 'os';
-import * as crypto from 'crypto';
 import * as extProtocol from './extensionProtocol';
-let ipc = require('node-ipc');
+import {Services} from "../services/debugAdapterServices";
+import {getSocketId} from "./sockedId";
+
+const ipc = require('node-ipc');
 
 export class ExtensionClient {
     private _appRoot: string;
     private _idCounter = 0;
     private _pendingRequests: Object;
+    private _socketId: string;
 
     private _ipcClientInitialized: Promise<any>;
-
-    public static getTempFilePathForDirectory(directoryPath: string) {
-        let fileName: string = 'vsc-ns-ext-' + crypto.createHash('md5').update(directoryPath).digest("hex") + '.sock';
-        return path.join(os.tmpdir(), fileName);
-    }
 
     constructor(appRoot: string) {
         this._appRoot = appRoot;
         this._idCounter = 0;
         this._pendingRequests = {};
 
-        ipc.config.id = 'debug-adpater-' + process.pid;
+        this._socketId = getSocketId();
+
+        ipc.config.id = 'debug-adapter-' + process.pid;
         ipc.config.retry = 1500;
+        ipc.config.maxRetries = 5;
 
         this._ipcClientInitialized = new Promise((res, rej) => {
             ipc.connectTo(
-                'extHost',
-                ExtensionClient.getTempFilePathForDirectory(this._appRoot),
+                this._socketId,
                 () => {
-                    ipc.of.extHost.on('connect', () => {
+                    ipc.of[this._socketId].on('connect', () => {
                         res();
                     });
-                    ipc.of.extHost.on('extension-protocol-message', (response: extProtocol.Response) => {
+
+                    ipc.of[this._socketId].on('error', error => {
+                        Services.logger().log(`[ExtensionClient] error: ${JSON.stringify(error)}\n`);
+                    });
+
+                    ipc.of[this._socketId].on('extension-protocol-message', (response: extProtocol.Response) => {
                         (<(result: Object) => void>this._pendingRequests[response.requestId])(response.result);
                     });
                 }
@@ -41,15 +44,15 @@ export class ExtensionClient {
     }
 
     private callRemoteMethod(method: string, args?: Object): Promise<Object> {
-        let request: extProtocol.Request = { id: 'req' + (++this._idCounter), method: method, args: args };
+        let request: extProtocol.Request = {id: 'req' + (++this._idCounter), method: method, args: args};
         return new Promise<Object>((res, rej) => {
             this._pendingRequests[request.id] = res;
-            ipc.of.extHost.emit('extension-protocol-message', request);
+            ipc.of[this._socketId].emit('extension-protocol-message', request);
         });
     }
 
     public getInitSettings(): Promise<extProtocol.InitSettingsResult> {
-        return this.callRemoteMethod('getInitSettings');
+        return <Promise<extProtocol.InitSettingsResult>>(this.callRemoteMethod('getInitSettings'));
     }
 
     public analyticsLaunchDebugger(args: extProtocol.AnalyticsLaunchDebuggerArgs): Promise<any> {
@@ -61,6 +64,6 @@ export class ExtensionClient {
     }
 
     public selectTeam(): Promise<{ id: string, name: string }> {
-        return this.callRemoteMethod('selectTeam');
+        return <Promise<{ id: string, name: string }>>(this.callRemoteMethod('selectTeam'));
     }
 }

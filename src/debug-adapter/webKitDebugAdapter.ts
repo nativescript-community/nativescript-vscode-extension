@@ -10,9 +10,7 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 import {INSDebugConnection} from './connection/INSDebugConnection';
 import {IosConnection} from './connection/iosConnection';
 import {AndroidConnection} from './connection/androidConnection';
-import {Project, DebugResult} from '../project/project';
-import {IosProject} from '../project/iosProject';
-import {AndroidProject} from '../project/androidProject';
+import {DebugResult} from '../project/project';
 import * as utils from '../common/utilities';
 import {formatConsoleMessage} from './consoleHelper';
 import {Services} from '../services/debugAdapterServices';
@@ -40,7 +38,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private _webKitConnection: INSDebugConnection;
     private _eventHandler: (event: DebugProtocol.Event) => void;
     private _lastOutputEvent: OutputEvent;
-    private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`${args.message}\n`, args.type.toString()));
+    private _loggerFrontendHandler: LoggerHandler = args => this.fireEvent(new OutputEvent(`${args.message}`, args.type.toString()));
     private _request: DebugRequest;
     private _tnsProcess: ChildProcess;
 
@@ -63,7 +61,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     private clearTargetContext(): void {
         this._scriptsById = new Map<WebKitProtocol.Debugger.ScriptId, WebKitProtocol.Debugger.Script>();
         this._committedBreakpointsByUrl = new Map<string, WebKitProtocol.Debugger.BreakpointId[]>();
-        this._setBreakpointsRequestQ = Promise.resolve<void>();
+        this._setBreakpointsRequestQ = Promise.resolve();
         this._lastOutputEvent = null;
         this.fireEvent({ seq: 0, type: 'event',  event: 'clearTargetContext'});
     }
@@ -129,8 +127,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         if (args.tnsOutput) {
             Services.logger().addHandler(Handlers.createStreamHandler(fs.createWriteStream(args.tnsOutput)));
         }
-        Services.logger().log(`initialize(${JSON.stringify(this._initArgs) })`);
-        Services.logger().log(`${args.request}(${JSON.stringify(args)})`);
+        Services.logger().log(`initialize(${JSON.stringify(this._initArgs) })\n`);
+        Services.logger().log(`${args.request}(${JSON.stringify(args)})\n`);
     }
 
     private async processRequest(args: DebugProtocol.IRequestArgs) {
@@ -143,8 +141,8 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             Services.extensionClient().analyticsLaunchDebugger({ request: args.request, platform: args.platform });
 
             // Run CLI Command
-            Services.logger().log(`[NSDebugAdapter] Using tns CLI v${this._request.project.cli.version.version} on path '${this._request.project.cli.path}'`, Tags.FrontendMessage);
-            Services.logger().log('[NSDebugAdapter] Running tns command...', Tags.FrontendMessage);
+            Services.logger().log(`[NSDebugAdapter] Using tns CLI v${this._request.project.cli.version.version} on path '${this._request.project.cli.path}'\n`, Tags.FrontendMessage);
+            Services.logger().log('[NSDebugAdapter] Running tns command...\n', Tags.FrontendMessage);
             let cliCommand: DebugResult;
             if (this._request.isLaunch) {
                 let tnsArgs = this._request.args.tnsArgs;
@@ -158,6 +156,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                         if(selectedTeam) {
                             // add the selected by the user Team Id
                             tnsArgs = (tnsArgs || []).concat(['--teamId', selectedTeam.id]);
+                            Services.logger().log(`[NSDebugAdapter] Using iOS Team ID '${selectedTeam.id}', you can change this in the workspace settings.\n`, Tags.FrontendMessage);
                         }
                     }
                 }
@@ -173,7 +172,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 cliCommand.tnsProcess.stdout.on('data', data => { Services.logger().log(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.on('close', (code, signal) => {
-                    Services.logger().error(`[NSDebugAdapter] The tns command finished its execution with code ${code}.`, Tags.FrontendMessage);
+                    Services.logger().error(`[NSDebugAdapter] The tns command finished its execution with code ${code}.\n`, Tags.FrontendMessage);
 
                     // Sometimes we execute "tns debug android --start" and the process finishes
                     // which is totally fine. If there's an error we need to Terminate the session.
@@ -185,18 +184,18 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
             let promiseResolve = null;
             let promise: Promise<void> = new Promise<void>((res, rej) => { promiseResolve = res; });
-            Services.logger().log('[NSDebugAdapter] Watching the tns CLI output to receive a connection token', Tags.FrontendMessage);
+            Services.logger().log('[NSDebugAdapter] Watching the tns CLI output to receive a connection token\n', Tags.FrontendMessage);
             // Attach to the running application
             cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
-                Services.logger().log(`[NSDebugAdapter] Ready to attach to application on ${connectionToken}`, Tags.FrontendMessage);
+                Services.logger().log(`[NSDebugAdapter] Ready to attach to application on ${connectionToken}\n`, Tags.FrontendMessage);
                 let connection: INSDebugConnection = this._request.isAndroid ? new AndroidConnection() : new IosConnection();
 
                 connection.attach(connectionToken, 'localhost').then(() => {
-                    Services.logger().log(`[NSDebugAdapter] Connection to target application established on ${connectionToken}`, Tags.FrontendMessage);
+                    Services.logger().log(`[NSDebugAdapter] Connection to target application established on ${connectionToken}\n`, Tags.FrontendMessage);
                     this.setConnection(connection);
                     return connection.enable();
                 }).then(() => {
-                    Services.logger().log(`[NSDebugAdapter] Connection to target application successfully enabled`, Tags.FrontendMessage);
+                    Services.logger().log(`[NSDebugAdapter] Connection to target application successfully enabled\n`, Tags.FrontendMessage);
                     this.fireEvent(new InitializedEvent());
                     promiseResolve();
                 }).then(() => {});
@@ -367,7 +366,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
             this._webKitConnection = null;
         }
 
-        return Promise.resolve<void>();
+        return Promise.resolve();
     }
 
     public setBreakpoints(args: DebugProtocol.ISetBreakpointsArgs): Promise<DebugProtocol.ISetBreakpointsResponseBody> {
@@ -402,7 +401,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
     private _clearAllBreakpoints(url: string): Promise<void> {
         if (!this._committedBreakpointsByUrl.has(url)) {
-            return Promise.resolve<void>();
+            return Promise.resolve();
         }
 
         // Remove breakpoints one at a time. Seems like it would be ok to send the removes all at once,
@@ -411,7 +410,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
         // does not break there.
         return this._committedBreakpointsByUrl.get(url).reduce((p, bpId) => {
             return p.then(() => this._webKitConnection.debugger_removeBreakpoint(bpId)).then(() => { });
-        }, Promise.resolve<void>()).then(() => {
+        }, Promise.resolve()).then(() => {
             this._committedBreakpointsByUrl.set(url, null);
         });
     }
@@ -620,7 +619,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
                 return { variables };
             });
         } else {
-            return Promise.resolve();
+            return Promise.resolve(null);
         }
     }
 

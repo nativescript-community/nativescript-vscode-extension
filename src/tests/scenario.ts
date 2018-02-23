@@ -59,7 +59,7 @@ export class Scenario {
             emulator: emulator,
             tnsArgs: process.env.DeviceId ? ['--device', process.env.DeviceId] : []
         };
-        return args;
+        return <DebugProtocol.LaunchRequestArguments>args;
     }
 
     public static getDefaultAttachArgs(platform: string, appRoot: string, emulator: boolean): DebugProtocol.LaunchRequestArguments {
@@ -71,14 +71,14 @@ export class Scenario {
             emulator: emulator,
             tnsArgs: process.env.DeviceId ? ['--device', process.env.DeviceId] : []
         };
-        return args;
+        return <DebugProtocol.LaunchRequestArguments>args;
     }
 
     constructor(client: NsDebugClient) {
         this.client = client;
 
         this.initializedEvent = this.client.onNextTime('initialized');
-        this.firstStoppedEvent = this.client.onNextTime('stopped');
+        this.firstStoppedEvent = <Promise<DebugProtocol.StoppedEvent>>this.client.onNextTime('stopped');
 
         this.initializeRequest = this.started.then(() => {
             return this.client.initializeRequest(this.initializeRequestArgs || Scenario.getDefaultInitArgs());

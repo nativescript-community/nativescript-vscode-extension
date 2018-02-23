@@ -85,7 +85,7 @@ export class NativeScriptCli {
     public executeSync(args: string[], cwd: string): string {
         args.unshift("--analyticsClient", "VSCode");
         let command: string = `${this._path} ${args.join(' ')}`;
-        this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
+        this._logger.log(`[NativeScriptCli] execute: ${command}\n`, Tags.FrontendMessage);
 
         return execSync(command, { encoding: "utf8", cwd: cwd, shell: this._shellPath}).toString().trim();
     }
@@ -93,7 +93,7 @@ export class NativeScriptCli {
     public execute(args: string[], cwd: string): ChildProcess {
         args.unshift("--analyticsClient", "VSCode");
         let command: string = `${this._path} ${args.join(' ')}`;
-        this._logger.log(`[NativeScriptCli] execute: ${command}`, Tags.FrontendMessage);
+        this._logger.log(`[NativeScriptCli] execute: ${command}\n`, Tags.FrontendMessage);
 
         let options = { cwd: cwd, shell: this._shellPath };
         let child: ChildProcess = spawn(this._path, args, options);

@@ -73,18 +73,19 @@ export namespace Tags {
 
 export namespace Handlers {
     export function stdStreamsHandler(args: LoggerMessageEventArgs) {
+        var message = args.message.replace(/\n$/, "");
         switch(args.type) {
             case LoggerMessageType.Log:
-                console.log(args.message);
+                console.log(message);
                 break;
             case LoggerMessageType.Info:
-                console.info(args.message);
+                console.info(message);
                 break;
             case LoggerMessageType.Warning:
-                console.warn(args.message);
+                console.warn(message);
                 break;
             case LoggerMessageType.Error:
-                console.error(args.message);
+                console.error(message);
                 break;
         }
     };
