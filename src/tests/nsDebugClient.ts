@@ -42,7 +42,7 @@ export class NsDebugClient extends DebugClient {
             this.onNextTime(event).then(e => this.onNthTime(--n, event));
     }
 
-    public assertSetBreakpoints(path: string, breakpoints: { line: number, condition?: string }[]): Promise<{}> {
+    public assertSetBreakpoints(path: string, breakpoints: { line: number, condition?: string }[]): Promise<void> {
         return this.setBreakpointsRequest({
             lines: breakpoints.map(b => b.line),
             breakpoints: breakpoints,
