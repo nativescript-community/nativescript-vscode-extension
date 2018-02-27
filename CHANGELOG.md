@@ -1,5 +1,17 @@
+0.7.3
+=====
+
+## Bug Fixes
+ - [Debug via extension broken with VSCode 1.20](https://github.com/NativeScript/nativescript-vscode-extension/issues/158)
+
 0.7.2
 =====
+
+## Bug Fixes
+- [Debug with "Launch on iOS" with 0.7.0 and no provisioning profiles not working](https://github.com/NativeScript/nativescript-vscode-extension/issues/133)
+
+0.7.1
+=======
 
 ## Bug Fixes
 - [Debug with "Launch on iOS" with 0.7.0 and no provisioning profiles not working](https://github.com/NativeScript/nativescript-vscode-extension/issues/133)
