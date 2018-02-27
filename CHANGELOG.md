@@ -1,8 +1,11 @@
 0.7.3
 =====
 
-## Bug Fixes
+## What's new
  - [Debug via extension broken with VSCode 1.20](https://github.com/NativeScript/nativescript-vscode-extension/issues/158)
+ - [Add option to save teamId once it is selected](https://github.com/NativeScript/nativescript-vscode-extension/issues/138)
+ - TypeScript compiler updated to 2.4.0
+ - Upgrade to ES6
 
 0.7.2
 =====
