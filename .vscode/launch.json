@@ -10,8 +10,8 @@
             "args": [ "--server=4712" ],
             "stopOnEntry": false,
             "sourceMaps": true,
-            "outDir": "${workspaceRoot}/out",
-            "cwd": "${workspaceRoot}"
+            "outFiles": [ "${workspaceFolder}/out/**/*.js" ],
+            "cwd": "${workspaceFolder}"
         },
         {
             "name": "launch in extension host",
@@ -22,10 +22,9 @@
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}"
             ],
-            "stopOnEntry": true,
-			"sourceMaps": true,
-            "outDir": "${workspaceRoot}/out",
-            "cwd": "${workspaceRoot}"
+            "stopOnEntry": false,
+            "sourceMaps": true,
+            "outFiles": [ "${workspaceFolder}/out/**/*.js" ],
         },
 		{
 			"name": "run tests on mac",
@@ -75,5 +74,11 @@
 			"outDir": "${workspaceRoot}/out",
 			"cwd": "${workspaceRoot}"
 		}
-    ]
+    ],
+	"compounds": [
+		{
+			"name": "Extension + Server",
+			"configurations": [ "launch in extension host", "launch as server" ]
+		}
+	]
 }

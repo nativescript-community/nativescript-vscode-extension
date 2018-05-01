@@ -1,6 +1,6 @@
 {
   "name": "nativescript",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "minNativescriptCliVersion": "2.5.0",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
@@ -25,13 +25,14 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "vscode-chrome-debug-core": "~3.9.0",
     "node-ipc": "8.10.3",
     "source-map": "0.6.1",
-    "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master",
+    "tree-kill": "^1.2.0",
     "universal-analytics": "0.4.13",
+    "vscode-chrome-debug-core": "~3.9.0",
     "vscode-debugadapter": "1.26.0",
-    "vscode-debugprotocol": "1.26.0"
+    "vscode-debugprotocol": "1.26.0",
+    "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master"
   },
   "devDependencies": {
     "@types/mocha": "2.2.41",
