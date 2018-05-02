@@ -5,7 +5,7 @@
             "name": "launch as server",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/out/debug-adapter/webKitDebug.js",
+            "program": "${workspaceRoot}/out/debug-adapter/nativeScriptDebug.js",
 			"runtimeArgs": ["--nolazy"],
             "args": [ "--server=4712" ],
             "stopOnEntry": false,
@@ -17,7 +17,7 @@
             "name": "launch in extension host",
             "type": "extensionHost",
             "request": "launch",
-            // Path to VSCode executable
+            // Path to VSCode executablensDebugClient
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}"
