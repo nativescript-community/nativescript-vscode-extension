@@ -25,13 +25,13 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "vscode-chrome-debug-core": "~3.9.0",
     "node-ipc": "8.10.3",
     "source-map": "0.6.1",
-    "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master",
     "universal-analytics": "0.4.13",
+    "vscode-chrome-debug-core": "^3.23.11",
     "vscode-debugadapter": "1.26.0",
-    "vscode-debugprotocol": "1.26.0"
+    "vscode-debugprotocol": "1.26.0",
+    "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master"
   },
   "devDependencies": {
     "@types/mocha": "2.2.41",
@@ -50,7 +50,7 @@
     "build": "tsc -p ./src",
     "package": "vsce package",
     "full-build": "npm run clean && npm install && npm run build && npm run package",
-    "launch-as-server": "node --nolazy ./out/debug-adapter/webKitDebug.js --server=4712",
+    "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",
     "test-mac": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/mac.json ./out/tests",
     "test-win": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/win.json ./out/tests",
     "test-custom": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/custom.json ./out/tests"
@@ -118,7 +118,7 @@
             "typescript"
           ]
         },
-        "program": "./out/debug-adapter/webKitDebug.js",
+        "program": "./out/debug-adapter/nativeScriptDebug.js",
         "runtime": "node",
         "initialConfigurations": [
           {

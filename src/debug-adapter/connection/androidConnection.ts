@@ -1,13 +1,41 @@
 import { Services } from '../../services/debugAdapterServices';
 import { INSDebugConnection } from './INSDebugConnection';
-import { ChromeConnection } from 'vscode-chrome-debug-core';
+import { chromeConnection, chromeTargetDiscoveryStrategy, telemetry, logger } from 'vscode-chrome-debug-core';
 import Crdp from 'vscode-chrome-debug-core/lib/crdp/crdp';
 
+class Discovery extends chromeTargetDiscoveryStrategy.ChromeTargetDiscovery {
+    constructor() {
+        super(logger, new telemetry.TelemetryReporter())
+    }
+
+    public getTarget(address: string, port: number, targetFilter?: any, targetUrl?: string): Promise<chromeConnection.ITarget> {
+        return Promise.resolve({
+            webSocketDebuggerUrl: `ws://${address}:${port}`,
+            description: "",
+            id: "1",
+            title: "gg",
+            type: "GG",
+            devtoolsFrontendUrl: "ggg"
+        });
+    }
+
+    getAllTargets(address: string, port: number, targetFilter?: chromeConnection.ITargetFilter, targetUrl?: string): Promise<chromeConnection.ITarget[]> {
+        return Promise.resolve([{
+            webSocketDebuggerUrl: `ws://${address}:${port}`,
+            description: "",
+            id: "1",
+            title: "gg",
+            type: "GG",
+            devtoolsFrontendUrl: "ggg"
+        }]);
+    }
+}
+
 export class AndroidConnection implements INSDebugConnection {
-    private _chromeConnection: ChromeConnection;
+    private _chromeConnection: chromeConnection.ChromeConnection;
 
     constructor() {
-        this._chromeConnection = new ChromeConnection((address: string, port: number, targetFilter?: any, targetUrl?: string): Promise<string> => Promise.resolve(`ws://${address}:${port}`));
+        this._chromeConnection = new chromeConnection.ChromeConnection(new Discovery());
     }
 
     private get api(): Crdp.CrdpClient {
@@ -35,7 +63,8 @@ export class AndroidConnection implements INSDebugConnection {
     }
 
     public enable(): Promise<void> {
-        return this.api.Debugger.enable();
+        //return this.api.Debugger.enable();
+        return Promise.resolve();
     }
 
     public close(): void {
@@ -69,9 +98,7 @@ export class AndroidConnection implements INSDebugConnection {
     }
 
     public debugger_stepIn(): Promise<WebKitProtocol.Response> {
-        return this.api.Debugger.stepInto().then(reponse => {
-           return <WebKitProtocol.Response>{};
-        });
+        return Promise.resolve(<WebKitProtocol.Response>{});
     }
 
     public debugger_stepOut(): Promise<WebKitProtocol.Response> {

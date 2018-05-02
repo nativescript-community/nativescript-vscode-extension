@@ -5,13 +5,13 @@
             "name": "launch as server",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/out/debug-adapter/webKitDebug.js",
+            "program": "${workspaceRoot}/out/debug-adapter/nativeScriptDebug.js",
 			"runtimeArgs": ["--nolazy"],
             "args": [ "--server=4712" ],
             "stopOnEntry": false,
             "sourceMaps": true,
-            "outDir": "${workspaceRoot}/out",
-            "cwd": "${workspaceRoot}"
+			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
+			"cwd": "${workspaceFolder}"
         },
         {
             "name": "launch in extension host",
@@ -22,10 +22,9 @@
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}"
             ],
-            "stopOnEntry": true,
+            "stopOnEntry": false,
 			"sourceMaps": true,
-            "outDir": "${workspaceRoot}/out",
-            "cwd": "${workspaceRoot}"
+			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
         },
 		{
 			"name": "run tests on mac",
@@ -75,5 +74,11 @@
 			"outDir": "${workspaceRoot}/out",
 			"cwd": "${workspaceRoot}"
 		}
-    ]
+    ],
+	"compounds": [
+		{
+			"name": "Extension + Server",
+			"configurations": [ "launch in extension host", "launch as server" ]
+		}
+	]
 }

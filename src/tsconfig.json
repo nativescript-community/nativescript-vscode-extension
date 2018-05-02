@@ -20,6 +20,7 @@
         "custom-typings/debugProtocolExtensions.d.ts",
         "custom-typings/webKitProtocol.d.ts",
 
+        "./debug-adapter/nativeScriptDebug.ts",
         "./debug-adapter/webKitDebug.ts",
         "./main.ts",
         "./tests/adapter.test.ts",
