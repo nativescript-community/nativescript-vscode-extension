@@ -37,7 +37,7 @@
     "@types/mocha": "2.2.41",
     "@types/node": "6.0.46",
     "@types/source-map": "~0.1.0",
-    "chrome-remote-debug-protocol": "git://github.com/roblourens/chrome-remote-debug-protocol.git",
+    "chrome-remote-debug-protocol": "https://github.com/roblourens/chrome-remote-debug-protocol/tarball/master",
     "mocha": "2.5.3",
     "typescript": "2.6.2",
     "vsce": "~1.36.0",
