@@ -4,12 +4,16 @@ import {Services} from './services/extensionHostServices';
 import {Project} from './project/project';
 import {IosProject} from './project/iosProject';
 import {AndroidProject} from './project/androidProject';
+import { LoadedScriptsProvider, pickLoadedScript, openScript } from './loadedScripts';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
     Services.globalState = context.globalState;
     Services.cliPath = Services.workspaceConfigService().tnsPath || Services.cliPath;
     Services.extensionServer().start();
+
+    vscode.window.registerTreeDataProvider('extension.node-debug.loadedScriptsExplorer2', new LoadedScriptsProvider(context));
+    context.subscriptions.push(vscode.commands.registerCommand('extension.node-debug.openScript', (session: vscode.DebugSession, source) => openScript(session, source)));
 
     // Check for newer extension version
     Services.extensionVersionService().isLatestInstalled.then(result => {

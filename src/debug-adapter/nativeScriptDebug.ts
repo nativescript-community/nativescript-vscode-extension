@@ -1,6 +1,7 @@
 import { chromeConnection, chromeTargetDiscoveryStrategy, telemetry, logger, ChromeDebugSession } from 'vscode-chrome-debug-core';
 import * as path from 'path';
 import * as os from 'os';
+// import { PathTransformerNew } from './adapter/PathTransformerNew';
 
 import * as test from 'vscode-chrome-debug-core';
 
@@ -45,5 +46,6 @@ ChromeDebugSession.run(ChromeDebugSession.getSession(
         logFilePath: path.join(os.tmpdir(), 'nativescript-extension.txt'),
         adapter: NativeScriptDebugAdapter,
         extensionName: 'nativescript-extension',
-        chromeConnection: NSAndroidConnection
+        chromeConnection: NSAndroidConnection,
+        // pathTransformer: PathTransformerNew
     }));
