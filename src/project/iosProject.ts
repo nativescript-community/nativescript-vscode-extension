@@ -44,7 +44,9 @@ export class IosProject extends Project {
         return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
-    private configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
+    protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
+        super.configureReadyEvent(readableStream, eventEmitter);
+
         let socketPathPrefix = 'socket-file-location: ';
         let streamScanner = new scanner.StringMatchingScanner(readableStream);
         streamScanner.onEveryMatch(new RegExp(socketPathPrefix + '.*\.sock'), (match: scanner.MatchFound) => {

@@ -169,6 +169,9 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
 
             if (cliCommand.tnsProcess) {
                 this._tnsProcess = cliCommand.tnsProcess;
+                cliCommand.tnsOutputEventEmitter.on("tsCompilationError", () => {
+                    this.fireEvent(new TerminatedEvent());
+                });
                 cliCommand.tnsProcess.stdout.on('data', data => { Services.logger().log(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.stderr.on('data', data => { Services.logger().error(data.toString(), Tags.FrontendMessage); });
                 cliCommand.tnsProcess.on('close', (code, signal) => {
