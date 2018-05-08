@@ -57,7 +57,7 @@ export class SourceMapTransformer implements DebugProtocol.IDebugTransformer {
     public setBreakpoints(args: DebugProtocol.ISetBreakpointsArgs, requestSeq: number): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this._sourceMaps && args.source.path && path.extname(args.source.path) !== ".js") {
-                const argsPath = args.source.path;
+                const argsPath = utils.fixDriveLetterAndSlashes(args.source.path);
                 const mappedPath = this._sourceMaps.MapPathFromSource(argsPath);
                 if (mappedPath) {
                     Services.logger().log(`SourceMaps.setBP: Mapped ${argsPath} to ${mappedPath}`);

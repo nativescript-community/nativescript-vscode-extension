@@ -47,13 +47,13 @@ export class AndroidProject extends Project {
             debugPort = parseInt((<string>match.matches[0]).match("(?:debug port: )([\\d]{5})")[1]);
             if (attach) {
                 // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
-                setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 500);
+                setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 1000);
             }
         });
         if (!attach) {
             new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', (match: scanner.MatchFound) => {
                 // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
-                setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 500);
+                setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 1000);
             });
         }
     }
