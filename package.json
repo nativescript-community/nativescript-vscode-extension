@@ -67,7 +67,7 @@
       "properties": {
         "nativescript.analytics.enabled": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Enables the extension tracking."
         },
         "nativescript.tnsPath": {
