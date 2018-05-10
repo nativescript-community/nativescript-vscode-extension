@@ -24,6 +24,8 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(cliVersion.errorMessage);
     }
 
+    logInfo(cliVersion.version.toString());
+
     let runCommand = (project: Project) => {
         if (vscode.workspace.rootPath === undefined) {
             vscode.window.showErrorMessage('No workspace opened.');
@@ -66,6 +68,18 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(runIosCommand);
     context.subscriptions.push(runAndroidCommand);
+}
+
+function logInfo(cliVersion: string) {
+    let channel = vscode.window.createOutputChannel("NativeScript Extension");
+    const packageJSON = vscode.extensions.getExtension("Telerik.nativescript").packageJSON;
+
+    packageJSON.version && channel.appendLine(`Version: ${packageJSON.version}`);
+    packageJSON.buildNumber && channel.appendLine(`Build version: ${packageJSON.buildNumber}`);
+    packageJSON.commitId && channel.appendLine(`Commit id: ${packageJSON.commitId}`);
+    channel.appendLine(`NativeScript CLI: ${cliVersion}`);
+
+    channel.show();
 }
 
 export function deactivate() {
