@@ -1,7 +1,6 @@
 import * as os from 'os';
 import { Version } from '../common/version';
 import { GUAService } from './guaService';
-import { TelerikAnalyticsService } from './telerikAnalyticsService';
 import { AnalyticsBaseInfo, OperatingSystem } from './analyticsBaseInfo';
 import { Services } from '../services/extensionHostServices';
 import * as utils from '../common/utilities';
@@ -15,7 +14,6 @@ export class AnalyticsService {
     private _globalState: vscode.Memento;
     private _baseInfo: AnalyticsBaseInfo;
     private _gua: GUAService;
-    private _ta: TelerikAnalyticsService;
     private _analyticsEnabled: boolean;
     private disposables: vscode.Disposable[] = [];
 
@@ -53,24 +51,20 @@ export class AnalyticsService {
     public launchDebugger(request: string, platform: string): Promise<any> {
         if(this._analyticsEnabled) {
             try {
-                return Promise.all([
-                    this._gua.launchDebugger(request, platform),
-                    this._ta.launchDebugger(request, platform)
-                ]);
+                return this._gua.launchDebugger(request, platform);
             } catch(e) {}
         }
+
         return Promise.resolve();
     }
 
     public runRunCommand(platform: string): Promise<any> {
         if(this._analyticsEnabled) {
             try {
-                return Promise.all([
-                    this._gua.runRunCommand(platform),
-                    this._ta.runRunCommand(platform)
-                ]);
+                return this._gua.runRunCommand(platform);
             } catch(e) { }
         }
+
         return Promise.resolve();
     }
 
@@ -113,7 +107,6 @@ export class AnalyticsService {
 
         if(this._analyticsEnabled) {
             this._gua = this._gua || new GUAService('UA-111455-29', this._baseInfo);
-            this._ta = this._ta ||  new TelerikAnalyticsService('b8b2e51f188f43e9b0dfb899f7b71cc6', this._baseInfo);
         }
     }
 }
