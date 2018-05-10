@@ -2,6 +2,8 @@ import {ChildProcess} from 'child_process';
 import {EventEmitter} from 'events';
 import {Version} from '../common/version';
 import {NativeScriptCli} from './nativeScriptCli';
+import * as stream from 'stream';
+import * as scanner from './streamScanner';
 
 export type DebugResult = { tnsProcess: ChildProcess, tnsOutputEventEmitter: EventEmitter };
 
@@ -27,6 +29,12 @@ export abstract class Project {
     public abstract attach(tnsArgs?: string[]): DebugResult;
 
     public abstract debug(options: { stopOnEntry: boolean, watch: boolean }, tnsArgs?: string[]): DebugResult;
+
+    protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
+        new scanner.StringMatchingScanner(readableStream).onEveryMatch("TypeScript compiler failed", () => {
+            eventEmitter.emit('tsCompilationError');
+        });
+    }
 
     protected executeRunCommand(args: string[]): ChildProcess {
         return this.cli.execute(["run", this.platformName()].concat(args), this._appRoot);

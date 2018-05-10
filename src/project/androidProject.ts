@@ -40,7 +40,9 @@ export class AndroidProject extends Project {
         return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
     }
 
-    private configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter, attach: boolean): void {
+    protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter, attach?: boolean): void {
+        super.configureReadyEvent(readableStream, eventEmitter);
+
         let debugPort = null;
         new scanner.StringMatchingScanner(readableStream).onEveryMatch(new RegExp("device: .* debug port: [0-9]+"), (match: scanner.MatchFound) => {
             //device: {device-name} debug port: {debug-port}
