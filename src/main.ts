@@ -75,7 +75,7 @@ function logInfo(cliVersion: string) {
     const packageJSON = vscode.extensions.getExtension("Telerik.nativescript").packageJSON;
 
     packageJSON.version && channel.appendLine(`Version: ${packageJSON.version}`);
-    packageJSON.buildNumber && channel.appendLine(`Build version: ${packageJSON.buildNumber}`);
+    packageJSON.buildVersion && channel.appendLine(`Build version: ${packageJSON.buildVersion}`);
     packageJSON.commitId && channel.appendLine(`Commit id: ${packageJSON.commitId}`);
     channel.appendLine(`NativeScript CLI: ${cliVersion}`);
 
