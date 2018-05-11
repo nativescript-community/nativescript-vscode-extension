@@ -358,7 +358,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     public disconnect(): Promise<void> {
         this.clearEverything();
         if (this._tnsProcess) {
-            kill(this._tnsProcess.pid, 'SIGQUIT')
+            kill(this._tnsProcess.pid, 'SIGINT')
             this._tnsProcess = null;
         }
         if (this._webKitConnection) {

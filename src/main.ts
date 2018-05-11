@@ -4,6 +4,7 @@ import {Services} from './services/extensionHostServices';
 import {Project} from './project/project';
 import {IosProject} from './project/iosProject';
 import {AndroidProject} from './project/androidProject';
+import * as kill from 'tree-kill';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -53,6 +54,10 @@ export function activate(context: vscode.ExtensionContext) {
         });
         tnsProcess.on('close', exitCode => {
             runChannel.hide();
+        });
+
+        context.subscriptions.push({
+            dispose: () => kill(tnsProcess.pid, "SIGINT")
         });
     };
 
