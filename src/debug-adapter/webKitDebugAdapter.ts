@@ -16,7 +16,6 @@ import {formatConsoleMessage} from './consoleHelper';
 import {Services} from '../services/debugAdapterServices';
 import {LoggerHandler, Handlers, Tags} from '../common/logger';
 import {DebugRequest} from './debugRequest';
-import * as kill from 'tree-kill';
 
 interface IScopeVarHandle {
     objectId: string;
@@ -361,7 +360,7 @@ export class WebKitDebugAdapter implements DebugProtocol.IDebugAdapter {
     public disconnect(): Promise<void> {
         this.clearEverything();
         if (this._tnsProcess) {
-            kill(this._tnsProcess.pid, 'SIGQUIT')
+            utils.killProcess(this._tnsProcess);
             this._tnsProcess = null;
         }
         if (this._webKitConnection) {

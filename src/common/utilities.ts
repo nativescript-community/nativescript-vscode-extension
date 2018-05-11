@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
 import {Version} from './version';
+import {ChildProcess, exec} from 'child_process';
 
 export const enum Platform {
     Windows, OSX, Linux
@@ -380,4 +381,16 @@ export function getInstalledExtensionVersion(): Version {
 
 export function getMinSupportedCliVersion(): Version {
     return Version.parse(require('../../package.json').minNativescriptCliVersion);
+}
+
+export function killProcess(childProcess: ChildProcess) : void {
+    switch (process.platform) {
+        case "win32":
+            exec(`taskkill /pid ${childProcess.pid} /T /F`);
+            break;
+
+        default:
+            childProcess.kill("SIGINT");
+            break;
+    }
 }
