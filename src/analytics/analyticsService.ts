@@ -5,47 +5,34 @@ import { AnalyticsBaseInfo, OperatingSystem } from './analyticsBaseInfo';
 import { Services } from '../services/extensionHostServices';
 import * as utils from '../common/utilities';
 import * as vscode from 'vscode';
+import * as uuid from "uuid";
 
 export class AnalyticsService {
-    private static HAS_ANALYTICS_PROMPT_SHOWN = "nativescript.hasAnalyticsPromptShown";
-    private static ANALYTICS_PROMPT_MESSAGE = "Help improve NativeScript Extension by allowing Progress to collect data usage.";
-    private static ANALYTICS_PROMPT_ACTION = "Track";
+    private static HAS_ANALYTICS_PROMPT_SHOWN_KEY = "nativescript.hasAnalyticsPromptShown";
+    private static CLIENT_ID_KEY = "nativescript.analyticsClientId";
+    private static ANALYTICS_PROMPT_MESSAGE = "Help improve NativeScript Extension by allowing Progress to collect data usage. " +
+                                              "Read our [privacy statement](https://www.telerik.com/about/privacy-policy) and " +
+                                              "learn how to [disable analytics settings.](https://github.com/NativeScript/nativescript-vscode-extension/blob/master/README.md#how-to-disable-the-analytics). " +
+                                              "Do you want to enable analytics?";
+    private static ANALYTICS_PROMPT_ACCEPT_ACTION = "Yes";
+    private static ANALYTICS_PROMPT_DENY_ACTION = "No";
 
     private _globalState: vscode.Memento;
     private _baseInfo: AnalyticsBaseInfo;
     private _gua: GUAService;
     private _analyticsEnabled: boolean;
-    private disposables: vscode.Disposable[] = [];
-
-    public static generateMachineId(): string {
-        let machineId = '';
-        try {
-            let netInterfaces = os.networkInterfaces();
-            Object.keys(netInterfaces).forEach(interfName => {
-                netInterfaces[interfName].forEach(interf => {
-                    if (!interf.internal) {
-                        machineId += `${interf.mac}-`;
-                    }
-                });
-            });
-        } catch(e) {}
-        return machineId;
-    }
 
     constructor(globalState: vscode.Memento) {
         this._globalState = globalState;
 
-        //TODO: Dispose
         vscode.workspace.onDidChangeConfiguration(() => this.updateAnalyticsEnabled());
 
         this._baseInfo = {
             cliVersion: Services.cli().version.toString(),
             extensionVersion: utils.getInstalledExtensionVersion().toString(),
             operatingSystem: AnalyticsService.getOperatingSystem(),
-            userId: AnalyticsService.generateMachineId()
+            clientId: this.getOrGenerateClientId()
         };
-
-        this.initializeAnalytics();
     }
 
     public launchDebugger(request: string, platform: string): Promise<any> {
@@ -82,10 +69,13 @@ export class AnalyticsService {
         };
     }
 
-    private initializeAnalytics() : void {
-        const hasAnalyticsPromptShown = this._globalState.get(AnalyticsService.HAS_ANALYTICS_PROMPT_SHOWN);
-        if(hasAnalyticsPromptShown) {
-            vscode.window.showInformationMessage(AnalyticsService.ANALYTICS_PROMPT_MESSAGE, AnalyticsService.ANALYTICS_PROMPT_ACTION)
+    public initialize() : void {
+        const hasAnalyticsPromptShown = this._globalState.get<boolean>(AnalyticsService.HAS_ANALYTICS_PROMPT_SHOWN_KEY);
+        if(!hasAnalyticsPromptShown) {
+            vscode.window.showInformationMessage(AnalyticsService.ANALYTICS_PROMPT_MESSAGE,
+                AnalyticsService.ANALYTICS_PROMPT_ACCEPT_ACTION,
+                AnalyticsService.ANALYTICS_PROMPT_DENY_ACTION
+            )
             .then(result => this.onAnalyticsMessageConfirmation(result));
 
             return;
@@ -94,19 +84,31 @@ export class AnalyticsService {
         this.updateAnalyticsEnabled();
     }
 
+    private getOrGenerateClientId(): string {
+        let clientId = this._globalState.get<string>(AnalyticsService.CLIENT_ID_KEY);
+
+        if(!clientId) {
+            clientId = uuid.v4();
+            this._globalState.update(AnalyticsService.CLIENT_ID_KEY, clientId);
+        }
+
+        return clientId;
+    }
+
     private onAnalyticsMessageConfirmation(result: string) : void {
-        const shouldEnableAnalytics = result === AnalyticsService.ANALYTICS_PROMPT_ACTION ? true : false;
+        const shouldEnableAnalytics = result === AnalyticsService.ANALYTICS_PROMPT_ACCEPT_ACTION ? true : false;
+
+        this._globalState.update(AnalyticsService.HAS_ANALYTICS_PROMPT_SHOWN_KEY, true);
 
         Services.workspaceConfigService().isAnalyticsEnabled = shouldEnableAnalytics;
         this.updateAnalyticsEnabled();
-        this._globalState.update(AnalyticsService.HAS_ANALYTICS_PROMPT_SHOWN, true);
     }
 
     private updateAnalyticsEnabled() {
         this._analyticsEnabled = Services.workspaceConfigService().isAnalyticsEnabled;
 
-        if(this._analyticsEnabled) {
-            this._gua = this._gua || new GUAService('UA-111455-29', this._baseInfo);
+        if(this._analyticsEnabled && !this._gua) {
+            this._gua = new GUAService('UA-111455-29', this._baseInfo);
         }
     }
 }

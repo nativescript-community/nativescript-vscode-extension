@@ -6,7 +6,7 @@ export class WorkspaceConfigService {
     }
 
     public set isAnalyticsEnabled(isAnalyticsEnabled: boolean) {
-        vscode.workspace.getConfiguration('nativescript').update('analytics.enabled', isAnalyticsEnabled);
+        vscode.workspace.getConfiguration('nativescript').update('analytics.enabled', isAnalyticsEnabled, vscode.ConfigurationTarget.Global);
     }
 
     public get tnsPath(): string {

@@ -10,6 +10,7 @@ export function activate(context: vscode.ExtensionContext) {
     Services.globalState = context.globalState;
     Services.cliPath = Services.workspaceConfigService().tnsPath || Services.cliPath;
     Services.extensionServer().start();
+    Services.analyticsService().initialize();
 
     // Check for newer extension version
     Services.extensionVersionService().isLatestInstalled.then(result => {

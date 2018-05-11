@@ -31,7 +31,7 @@ Your application will be launched and the VSCode debugger will attach. If you wa
 
 ### NativeScript commands
 
-Type `NativeScript` in the Command Palette and you will see all available commands. 
+Type `NativeScript` in the Command Palette and you will see all available commands.
 
 ![NativeScript Commands](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/screenshots/nativescript-commands.png)
 
@@ -50,7 +50,7 @@ If your version of NativeScript is incompatible with the extension you will see 
     npm install
     npm run build # compiles TypeScript source files to JavaScript
     npm run package # produces nativescript-*.*.*.vsix in the root folder
-    ```    
+    ```
 
 3. To test the extension run the following commands in the root repository folder:
 
@@ -60,6 +60,17 @@ If your version of NativeScript is incompatible with the extension you will see 
     npm run launch-as-server # launches the debug adapter in server mode
     # execute this in a separate terminal
     npm run test-mac # run tests on ios device
-    ```    
+    ```
 
 4. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
+
+### How to disable the analytics
+NativeScript Extension for Visual Studio Code collects usage data and sends it to Progress to help improve our products and services.
+
+If you don’t wish to send usage data to Progress, you can set the **nativescript.analytics.enabled** to **false**.
+
+From **File > Preferences > Settings** (macOS: **Code > Preferences > Settings**), add the following option to disable analytics:
+
+```
+"nativescript.analytics.enabled": false
+```
