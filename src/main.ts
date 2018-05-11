@@ -57,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
         });
 
         context.subscriptions.push({
-            dispose: () => kill(tnsProcess.pid, "SIGINT")
+            dispose: () => kill(tnsProcess.pid, "SIGQUIT")
         });
     };
 
