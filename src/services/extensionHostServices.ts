@@ -36,7 +36,7 @@ export class ExtensionHostServices extends BaseServices {
     }
 
     public analyticsService(): AnalyticsService {
-        this._analyticsService = this._analyticsService || new AnalyticsService();
+        this._analyticsService = this._analyticsService || new AnalyticsService(this.globalState);
         return this._analyticsService;
     }
 }

@@ -9,5 +9,5 @@ export interface AnalyticsBaseInfo {
     operatingSystem: OperatingSystem,
     cliVersion: string,
     extensionVersion: string,
-    userId: string
+    clientId: string
 }

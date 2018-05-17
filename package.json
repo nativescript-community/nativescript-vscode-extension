@@ -28,6 +28,7 @@
     "node-ipc": "8.10.3",
     "source-map": "0.6.1",
     "universal-analytics": "0.4.13",
+    "uuid": "^3.2.1",
     "vscode-chrome-debug-core": "~3.9.0",
     "vscode-debugadapter": "1.26.0",
     "vscode-debugprotocol": "1.26.0",
@@ -66,7 +67,7 @@
       "properties": {
         "nativescript.analytics.enabled": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Enables the extension tracking."
         },
         "nativescript.tnsPath": {

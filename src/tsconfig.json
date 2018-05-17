@@ -22,7 +22,6 @@
 
         "./debug-adapter/webKitDebug.ts",
         "./main.ts",
-        "./tests/adapter.test.ts",
-        "./analytics/eqatecMonitor.min.js"
+        "./tests/adapter.test.ts"
     ]
 }
