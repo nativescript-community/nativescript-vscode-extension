@@ -61,13 +61,13 @@
   ],
   "contributes": {
     "views": {
-			"debug": [
-				{
-					"id": "extension.node-debug.loadedScriptsExplorer2",
-					"name": "Loaded Scripts"
-				}
-			]
-		},
+      "debug": [
+        {
+          "id": "extension.node-debug.loadedScriptsExplorer2",
+          "name": "Loaded Scripts"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "NativeScript Extension Configurations",

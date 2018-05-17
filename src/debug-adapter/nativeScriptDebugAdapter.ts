@@ -1,4 +1,5 @@
-import { ChromeDebugAdapter, IAttachRequestArgs, utils, ISetBreakpointsArgs, ISetBreakpointsResponseBody } from 'vscode-chrome-debug-core';
+import { IInitializeRequestArgs, ChromeDebugAdapter, IAttachRequestArgs, utils, ISetBreakpointsArgs, ISetBreakpointsResponseBody } from 'vscode-chrome-debug-core';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
 export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     public async attach(args: IAttachRequestArgs): Promise<void> {
@@ -14,6 +15,11 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         }
     }
 
+    public initialize(args: IInitializeRequestArgs): DebugProtocol.Capabilities {
+        args.supportsMapURLToFilePathRequest = true;
+        return super.initialize(args);
+    }
+
     public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
         if (args.source.path) {
             args.source.path = utils.fixDriveLetterAndSlashes(args.source.path);
@@ -22,4 +28,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         return super.setBreakpoints(args, requestSeq, ids);
     }
 
+    public mapURLToFilePath(test: any): void {
+        console.log("GG");
+    }
 }
