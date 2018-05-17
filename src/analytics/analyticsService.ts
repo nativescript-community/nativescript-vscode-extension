@@ -10,10 +10,10 @@ import * as uuid from "uuid";
 export class AnalyticsService {
     private static HAS_ANALYTICS_PROMPT_SHOWN_KEY = "nativescript.hasAnalyticsPromptShown";
     private static CLIENT_ID_KEY = "nativescript.analyticsClientId";
-    private static ANALYTICS_PROMPT_MESSAGE = "Help improve NativeScript Extension by allowing Progress to collect data usage. " +
-                                              "Read our [privacy statement](https://www.telerik.com/about/privacy-policy) and " +
-                                              "learn how to [disable analytics settings.](https://github.com/NativeScript/nativescript-vscode-extension/blob/master/README.md#how-to-disable-the-analytics). " +
-                                              "Do you want to enable analytics?";
+    private static ANALYTICS_PROMPT_MESSAGE = `Help us improve the NativeScript extension by allowing Progress to collect anonymous usage data.
+                                               For more information about the gathered information and how it is used, read our [privacy statement](https://www.telerik.com/about/privacy-policy).
+                                               You can [disable the analytics and data collection](https://github.com/NativeScript/nativescript-vscode-extension/blob/master/README.md#how-to-disable-the-analytics) at any given time.
+                                               Do you want to enable analytics?`;
     private static ANALYTICS_PROMPT_ACCEPT_ACTION = "Yes";
     private static ANALYTICS_PROMPT_DENY_ACTION = "No";
 
