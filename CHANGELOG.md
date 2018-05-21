@@ -1,3 +1,13 @@
+0.7.4
+=====
+
+## What's new
+ - [GDPR Compliance](https://github.com/NativeScript/nativescript-vscode-extension/issues/173)
+
+## Bug Fixes
+ - [Debugger stops after Typescript compile error](https://github.com/NativeScript/nativescript-vscode-extension/issues/157)
+ - The breakpoints in TypeScript files are not resolved on Windows
+
 0.7.3
 =====
 
