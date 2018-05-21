@@ -76,3 +76,10 @@ If you have previously enabled the analytics option, you can disable it by follo
 ```
 "nativescript.analytics.enabled": false
 ```
+
+> Note: This option will disable only the analytics for the Visual Studio Code extension. To disable the analytics for the NativeScript CLI, open a command prompt or terminal and run the following commands:
+
+```
+tns usage-reporting disable
+tns error-reporting disable
+```
