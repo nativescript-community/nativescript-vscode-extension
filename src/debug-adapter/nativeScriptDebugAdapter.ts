@@ -16,7 +16,6 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     }
 
     public initialize(args: IInitializeRequestArgs): DebugProtocol.Capabilities {
-        args.supportsMapURLToFilePathRequest = true;
         return super.initialize(args);
     }
 
