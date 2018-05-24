@@ -84,8 +84,6 @@ function logInfo(cliVersion: string) {
     packageJSON.buildVersion && channel.appendLine(`Build version: ${packageJSON.buildVersion}`);
     packageJSON.commitId && channel.appendLine(`Commit id: ${packageJSON.commitId}`);
     channel.appendLine(`NativeScript CLI: ${cliVersion}`);
-
-    channel.show();
 }
 
 export function deactivate() {
