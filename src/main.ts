@@ -26,7 +26,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(cliVersion.errorMessage);
     }
 
-    logInfo(cliVersion.version.toString());
+    let channel = createInfoChannel(cliVersion.version.toString());
+    let showOutputChannelCommand = vscode.commands.registerCommand('nativescript.showOutputChannel', () => {
+        channel.show();
+    });
 
     let runCommand = (project: Project) => {
         if (vscode.workspace.rootPath === undefined) {
@@ -74,9 +77,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(runIosCommand);
     context.subscriptions.push(runAndroidCommand);
+    context.subscriptions.push(showOutputChannelCommand);
 }
 
-function logInfo(cliVersion: string) {
+function createInfoChannel(cliVersion: string): vscode.OutputChannel {
     let channel = vscode.window.createOutputChannel("NativeScript Extension");
     const packageJSON = vscode.extensions.getExtension("Telerik.nativescript").packageJSON;
 
@@ -84,6 +88,8 @@ function logInfo(cliVersion: string) {
     packageJSON.buildVersion && channel.appendLine(`Build version: ${packageJSON.buildVersion}`);
     packageJSON.commitId && channel.appendLine(`Commit id: ${packageJSON.commitId}`);
     channel.appendLine(`NativeScript CLI: ${cliVersion}`);
+
+    return channel;
 }
 
 export function deactivate() {

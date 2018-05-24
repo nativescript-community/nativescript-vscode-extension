@@ -91,6 +91,11 @@
         "command": "nativescript.runAndroid",
         "title": "Run on Android",
         "category": "NativeScript"
+      },
+      {
+        "command": "nativescript.showOutputChannel",
+        "title": "Show Output Channel",
+        "category": "NativeScript"
       }
     ],
     "keybindings": [
@@ -103,6 +108,11 @@
         "command": "nativescript.runAndroid",
         "key": "ctrl+alt+a",
         "mac": "cmd+alt+a"
+      },
+      {
+        "command": "nativescript.showOutputChannel",
+        "key": "ctrl+alt+n ctrl+alt+o",
+        "mac": "cmd+alt+n cmd+alt+o"
       }
     ],
     "debuggers": [
