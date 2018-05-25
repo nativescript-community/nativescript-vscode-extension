@@ -13,13 +13,6 @@ export function activate(context: vscode.ExtensionContext) {
     Services.extensionServer().start();
     Services.analyticsService().initialize();
 
-    // Check for newer extension version
-    Services.extensionVersionService().isLatestInstalled.then(result => {
-        if (!result.result) {
-            vscode.window.showWarningMessage(result.error);
-        }
-    });
-
     // Check if NativeScript CLI is installed globally and if it is compatible with the extension version
     let cliVersion = Services.cli().version;
     if (!cliVersion.isCompatible) {
