@@ -55,6 +55,10 @@ export class ExtensionClient {
         return <Promise<extProtocol.InitSettingsResult>>(this.callRemoteMethod('getInitSettings'));
     }
 
+    public cleanBeforeDebug(): Promise<any> {
+        return this.callRemoteMethod('cleanBeforeDebug');
+    }
+
     public analyticsLaunchDebugger(args: extProtocol.AnalyticsLaunchDebuggerArgs): Promise<any> {
         return this.callRemoteMethod('analyticsLaunchDebugger', args);
     }

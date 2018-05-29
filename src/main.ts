@@ -55,9 +55,13 @@ export function activate(context: vscode.ExtensionContext) {
             runChannel.hide();
         });
 
-        context.subscriptions.push({
+        const disposable = {
             dispose: () => utils.killProcess(tnsProcess)
-        });
+        };
+
+        context.subscriptions.push(disposable);
+
+        Services.extensionServer().registerForCleanBeforeDebug(disposable);
     };
 
     let runIosCommand = vscode.commands.registerCommand('nativescript.runIos', () => {
