@@ -19,6 +19,7 @@ export class NativeScriptDebugLauncher extends EventEmitter {
     public async processRequest(args: any) : Promise<any> {
         args = this.translateArgs(args);
         Services.appRoot = args.appRoot;
+        Services.extensionClient().cleanBeforeDebug();
         const settings = await Services.extensionClient().getInitSettings();
 
         Services.cliPath = settings.tnsPath || Services.cliPath;

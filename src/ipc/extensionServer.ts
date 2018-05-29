@@ -5,11 +5,13 @@ import {QuickPickItem} from 'vscode';
 import * as extProtocol from './extensionProtocol';
 import {Services} from '../services/extensionHostServices';
 import {getSocketId} from "./sockedId";
+import {Disposable} from "vscode";
 
 let ipc = require('node-ipc');
 
 export class ExtensionServer {
     private _isRunning: boolean;
+    private disposablesBeforeDebug: Disposable[] = new Array<Disposable>();
 
     constructor() {
         this._isRunning = false;
@@ -38,6 +40,14 @@ export class ExtensionServer {
             ipc.server.stop();
             this._isRunning = false;
         }
+    }
+
+    public registerForCleanBeforeDebug(...disposables: Disposable[]) {
+        this.disposablesBeforeDebug.push(...disposables)
+    }
+
+    public cleanBeforeDebug() {
+        this.disposablesBeforeDebug.forEach(disposable => disposable.dispose());
     }
 
     public isRunning() {
