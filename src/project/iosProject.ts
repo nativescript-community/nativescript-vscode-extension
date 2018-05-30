@@ -5,8 +5,6 @@ import {Project, DebugResult} from './project';
 import * as scanner from './streamScanner';
 import {Version} from '../common/version';
 import {NativeScriptCli} from './nativeScriptCli';
-import {Services} from '../services/debugAdapterServices';
-import {Tags} from '../common/logger';
 
 export class IosProject extends Project {
 
