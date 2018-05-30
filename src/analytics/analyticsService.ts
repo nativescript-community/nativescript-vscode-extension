@@ -100,12 +100,12 @@ export class AnalyticsService {
 
         this._globalState.update(AnalyticsService.HAS_ANALYTICS_PROMPT_SHOWN_KEY, true);
 
-        Services.workspaceConfigService().isAnalyticsEnabled = shouldEnableAnalytics;
+        Services.workspaceConfigService.isAnalyticsEnabled = shouldEnableAnalytics;
         this.updateAnalyticsEnabled();
     }
 
     private updateAnalyticsEnabled() {
-        this._analyticsEnabled = Services.workspaceConfigService().isAnalyticsEnabled;
+        this._analyticsEnabled = Services.workspaceConfigService.isAnalyticsEnabled;
 
         if(this._analyticsEnabled && !this._gua) {
             this._gua = new GUAService('UA-111455-29', this._baseInfo);

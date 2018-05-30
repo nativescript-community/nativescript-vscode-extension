@@ -2,72 +2,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import {QuickPickItem} from 'vscode';
-import * as extProtocol from './extensionProtocol';
-import {Services} from '../services/extensionHostServices';
-import {getSocketId} from "./sockedId";
-import {Disposable} from "vscode";
 
-let ipc = require('node-ipc');
-
-export class ExtensionServer {
-    private _isRunning: boolean;
-    private disposablesBeforeDebug: Disposable[] = new Array<Disposable>();
-
-    constructor() {
-        this._isRunning = false;
-    }
-
-    public start() {
-        if (!this._isRunning) {
-            ipc.config.id = getSocketId();
-            ipc.serve(
-                () => {
-                    ipc.server.on('extension-protocol-message', (data: extProtocol.Request, socket) => {
-                        return (<Promise<Object>>this[data.method].call(this, data.args)).then(result => {
-                            let response: extProtocol.Response = {requestId: data.id, result: result};
-                            return ipc.server.emit(socket, 'extension-protocol-message', response);
-                        });
-                    });
-                });
-            ipc.server.start();
-            this._isRunning = true;
-        }
-        return this._isRunning;
-    }
-
-    public stop() {
-        if (this._isRunning) {
-            ipc.server.stop();
-            this._isRunning = false;
-        }
-    }
-
-    public registerForCleanBeforeDebug(...disposables: Disposable[]) {
-        this.disposablesBeforeDebug.push(...disposables)
-    }
-
-    public cleanBeforeDebug() {
-        this.disposablesBeforeDebug.forEach(disposable => disposable.dispose());
-        return Promise.resolve();
-    }
-
-    public isRunning() {
-        return this._isRunning;
-    }
-
-    public getInitSettings(): Promise<extProtocol.InitSettingsResult> {
-        let tnsPath = Services.workspaceConfigService().tnsPath;
-        return Promise.resolve({tnsPath: tnsPath});
-    }
-
-    public analyticsLaunchDebugger(args: extProtocol.AnalyticsLaunchDebuggerArgs): Promise<any> {
-        return Services.analyticsService().launchDebugger(args.request, args.platform);
-    }
-
-    public runRunCommand(args: extProtocol.AnalyticsRunRunCommandArgs): Promise<any> {
-        return Services.analyticsService().runRunCommand(args.platform);
-    }
-
+export class iOSTeamService {
     public selectTeam(): Promise<{ id: string, name: string }> {
         return new Promise((resolve, reject) => {
             const workspaceTeamId = vscode.workspace.getConfiguration().get<string>("nativescript.iosTeamId");

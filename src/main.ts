@@ -5,13 +5,14 @@ import {Project} from './project/project';
 import {IosProject} from './project/iosProject';
 import {AndroidProject} from './project/androidProject';
 import * as utils from './common/utilities';
+import * as extProtocol from './common/extensionProtocol';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
     Services.globalState = context.globalState;
-    Services.cliPath = Services.workspaceConfigService().tnsPath || Services.cliPath;
-    Services.extensionServer().start();
-    Services.analyticsService().initialize();
+    Services.cliPath = Services.workspaceConfigService.tnsPath || Services.cliPath;
+
+    Services.analyticsService.initialize();
 
     // Check if NativeScript CLI is installed globally and if it is compatible with the extension version
     let cliVersion = Services.cli().version;
@@ -24,6 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
         channel.show();
     });
 
+    let beforeBuildDisposables = new Array<vscode.Disposable>();
     let runCommand = (project: Project) => {
         if (vscode.workspace.rootPath === undefined) {
             vscode.window.showErrorMessage('No workspace opened.');
@@ -35,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
         runChannel.clear();
         runChannel.show(vscode.ViewColumn.Two);
 
-        Services.analyticsService().runRunCommand(project.platformName());
+        Services.analyticsService.runRunCommand(project.platformName());
 
         let tnsProcess = project.run();
         tnsProcess.on('error', err => {
@@ -60,8 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
         };
 
         context.subscriptions.push(disposable);
-
-        Services.extensionServer().registerForCleanBeforeDebug(disposable);
+        beforeBuildDisposables.push(disposable);
     };
 
     let runIosCommand = vscode.commands.registerCommand('nativescript.runIos', () => {
@@ -71,6 +72,27 @@ export function activate(context: vscode.ExtensionContext) {
     let runAndroidCommand = vscode.commands.registerCommand('nativescript.runAndroid', () => {
         return runCommand(new AndroidProject(vscode.workspace.rootPath, Services.cli()));
     });
+
+    context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(event => {
+        if(event.event === extProtocol.BEFORE_DEBUG_START) {
+            beforeBuildDisposables.forEach(disposable => disposable.dispose());
+        }
+
+        if(event.event === extProtocol.NS_DEBUG_ADAPTER_MESSAGE) {
+            const request = event.body as extProtocol.Request;
+            const service = Services[request.service];
+            const method = service[request.method];
+            const response = typeof method === 'function' ? service[request.method].call(service, ...request.args) : method;
+
+            if(response.then) {
+                response.then(actualResponse => event.session.customRequest("onExtensionResponse", { requestId: request.id, result: actualResponse }));
+
+                return;
+            }
+
+            event.session.customRequest("onExtensionResponse", { requestId: request.id, result: response })
+        }
+    }));
 
     context.subscriptions.push(runIosCommand);
     context.subscriptions.push(runAndroidCommand);
@@ -87,8 +109,4 @@ function createInfoChannel(cliVersion: string): vscode.OutputChannel {
     channel.appendLine(`NativeScript CLI: ${cliVersion}`);
 
     return channel;
-}
-
-export function deactivate() {
-    Services.extensionServer().stop();
 }

@@ -1,5 +1,5 @@
-import { IInitializeRequestArgs, ChromeDebugAdapter, IAttachRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, ILaunchRequestArgs, ITelemetryPropertyCollector } from 'vscode-chrome-debug-core';
-import { OutputEvent, TerminatedEvent } from 'vscode-debugadapter';
+import { ChromeDebugAdapter } from 'vscode-chrome-debug-core';
+import { OutputEvent, TerminatedEvent, Event } from 'vscode-debugadapter';
 import * as utils from '../common/utilities';
 import {IosProject} from '../project/iosProject';
 import {AndroidProject} from '../project/androidProject';
@@ -7,16 +7,21 @@ import { ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {DebugResult} from '../project/project';
-import {Services} from '../services/debugAdapterServices'
+import * as extProtocol from '../common/extensionProtocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
+import {Logger} from '../common/logger';
+import {NativeScriptCli} from '../project/nativeScriptCli';
 
 export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     private _tnsProcess: ChildProcess;
+    private _idCounter = 0;
+    private _pendingRequests: Object= {};
 
     public async attach(args: any): Promise<void> {
         return await this.processRequestAndAttach(args);
     }
 
-    public async launch(args: any, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<void> {
+    public async launch(args: any): Promise<void> {
         return await this.processRequestAndAttach(args);
     }
 
@@ -39,19 +44,24 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         return super.attach(transformedArgs);
     }
 
+    public onExtensionResponse(response) {
+        this._pendingRequests[response.requestId](response.result);
+        delete this._pendingRequests[response.requestId];
+    }
+
     private async processRequest(args: any) : Promise<any> {
         args = this.translateArgs(args);
-        Services.appRoot = args.appRoot;
-        Services.extensionClient().cleanBeforeDebug();
-        const settings = await Services.extensionClient().getInitSettings();
 
-        Services.cliPath = settings.tnsPath || Services.cliPath;
+        this._session.sendEvent(new Event(extProtocol.BEFORE_DEBUG_START));
+
+        const tnsPath = await this.callRemoteMethod<string>('workspaceConfigService', 'tnsPath');
+        const cli = new NativeScriptCli(tnsPath, new Logger());
 
         const project = args.platform == "ios" ?
-            new IosProject(args.appRoot, Services.cli()) :
-            new AndroidProject(args.appRoot, Services.cli());
+            new IosProject(args.appRoot, cli) :
+            new AndroidProject(args.appRoot, cli);
 
-        Services.extensionClient().analyticsLaunchDebugger({ request: args.request, platform: args.platform });
+        this.callRemoteMethod('analyticsService', 'launchDebugger', args.request, args.platform);
 
         // Run CLI Command
         this.log(`[NSDebugAdapter] Using tns CLI v${project.cli.version.version} on path '${project.cli.path}'\n`);
@@ -64,9 +74,9 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             // For iOS the TeamID is required if there's more than one.
             // Therefore if not set, show selection to the user.
             if(args.platform && args.platform.toLowerCase() === 'ios') {
-                let teamId = this.getTeamId(path.join(Services.appRoot, 'app'), tnsArgs);
+                let teamId = this.getTeamId(path.join(args.appRoot, 'app'), tnsArgs);
                 if(!teamId) {
-                    let selectedTeam = (await Services.extensionClient().selectTeam());
+                    let selectedTeam = await this.callRemoteMethod<{ id: string, name: string }>('iOSTeamService', 'selectTeam');
                     if(selectedTeam) {
                         // add the selected by the user Team Id
                         tnsArgs = (tnsArgs || []).concat(['--teamId', selectedTeam.id]);
@@ -174,5 +184,15 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
 
 	private readTeamId(appRoot): string {
 		return this.readXCConfig(appRoot, "DEVELOPMENT_TEAM");
-	}
+    }
+
+    private callRemoteMethod<T>(service: string, method: string, ...args: any[]): Promise<T> {
+        let request: extProtocol.Request = { id: `req${++this._idCounter}`, service: service, method: method, args: args };
+
+        return new Promise<T>((res, rej) => {
+            this._pendingRequests[request.id] = res;
+
+            this._session.sendEvent(new Event(extProtocol.NS_DEBUG_ADAPTER_MESSAGE, request));
+        });
+    }
 }
