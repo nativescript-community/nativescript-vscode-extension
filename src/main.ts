@@ -6,13 +6,17 @@ import {IosProject} from './project/iosProject';
 import {AndroidProject} from './project/androidProject';
 import * as utils from './common/utilities';
 import * as extProtocol from './common/extensionProtocol';
+import { ChannelLogger } from './services/channelLogger';
+import { ILogger } from './common/logger';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
     Services.globalState = context.globalState;
     Services.cliPath = Services.workspaceConfigService.tnsPath || Services.cliPath;
 
-    Services.analyticsService.initialize();
+    const channel = vscode.window.createOutputChannel("NativeScript Extension");
+    const logger = new ChannelLogger(channel);
+    Services.logger = logger;
 
     // Check if NativeScript CLI is installed globally and if it is compatible with the extension version
     let cliVersion = Services.cli().version;
@@ -20,7 +24,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(cliVersion.errorMessage);
     }
 
-    let channel = createInfoChannel(cliVersion.version.toString());
+    logExtensionInfo(logger, cliVersion.version.toString());
+
+    Services.analyticsService.initialize();
+
     let showOutputChannelCommand = vscode.commands.registerCommand('nativescript.showOutputChannel', () => {
         channel.show();
     });
@@ -99,14 +106,11 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(showOutputChannelCommand);
 }
 
-function createInfoChannel(cliVersion: string): vscode.OutputChannel {
-    let channel = vscode.window.createOutputChannel("NativeScript Extension");
+function logExtensionInfo(logger: ILogger, cliVersion: string): void {
     const packageJSON = vscode.extensions.getExtension("Telerik.nativescript").packageJSON;
 
-    packageJSON.version && channel.appendLine(`Version: ${packageJSON.version}`);
-    packageJSON.buildVersion && channel.appendLine(`Build version: ${packageJSON.buildVersion}`);
-    packageJSON.commitId && channel.appendLine(`Commit id: ${packageJSON.commitId}`);
-    channel.appendLine(`NativeScript CLI: ${cliVersion}`);
-
-    return channel;
+    packageJSON.version && logger.log(`Version: ${packageJSON.version}`);
+    packageJSON.buildVersion && logger.log(`Build version: ${packageJSON.buildVersion}`);
+    packageJSON.commitId && logger.log(`Commit id: ${packageJSON.commitId}`);
+    logger.log(`NativeScript CLI: ${cliVersion}`);
 }

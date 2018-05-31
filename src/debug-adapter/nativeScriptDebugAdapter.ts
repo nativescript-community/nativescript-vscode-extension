@@ -1,4 +1,4 @@
-import { ChromeDebugAdapter } from 'vscode-chrome-debug-core';
+import { ChromeDebugAdapter, logger } from 'vscode-chrome-debug-core';
 import { OutputEvent, TerminatedEvent, Event } from 'vscode-debugadapter';
 import * as utils from '../common/utilities';
 import {IosProject} from '../project/iosProject';
@@ -9,7 +9,6 @@ import * as path from 'path';
 import {DebugResult} from '../project/project';
 import * as extProtocol from '../common/extensionProtocol';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import {Logger} from '../common/logger';
 import {NativeScriptCli} from '../project/nativeScriptCli';
 
 export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
@@ -55,7 +54,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         this._session.sendEvent(new Event(extProtocol.BEFORE_DEBUG_START));
 
         const tnsPath = await this.callRemoteMethod<string>('workspaceConfigService', 'tnsPath');
-        const cli = new NativeScriptCli(tnsPath, new Logger());
+        const cli = new NativeScriptCli(tnsPath, logger);
 
         const project = args.platform == "ios" ?
             new IosProject(args.appRoot, cli) :
