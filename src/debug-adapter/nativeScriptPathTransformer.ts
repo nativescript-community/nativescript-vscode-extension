@@ -5,7 +5,8 @@ import * as _ from 'lodash';
 
 export class NativeScriptPathTransformer extends UrlPathTransformer {
     private filePatterns = {
-        android: new RegExp("^(file:)?/*data/(data|user/\\d+)/.*?/files/(.*)$", "i")
+        android: new RegExp("^(file:)?/*data/(data|user/\\d+)/.*?/files/(.*)$", "i"),
+        ios: new RegExp("^(file:)?/*(.*)$", "i")
     };
 
     private targetPlatform: string;
@@ -21,6 +22,8 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         }
 
         if (_.startsWith(scriptUrl, "mdha:"))
+
+
         {
             scriptUrl = _.trimStart(scriptUrl, "mdha:");
         }
@@ -31,14 +34,16 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         }
 
         const filePattern = this.filePatterns[this.targetPlatform];
-        const pathSeparator = "\\";
-        const altSeparator = "/";
-        const altScriptUrl = scriptUrl.replace(pathSeparator, altSeparator);
-        const matches = filePattern.exec(altScriptUrl);
-        let relativePath = matches ? matches[3] : scriptUrl;
 
-        relativePath = relativePath.replace(altSeparator, pathSeparator);
-        relativePath = relativePath.replace("tns_modules", "..\\node_modules");
+        const matches = filePattern.exec(scriptUrl)
+
+        let relativePath = scriptUrl;
+        if(matches) {
+            relativePath = this.targetPlatform === 'android' ? matches[3] : matches[2];
+        }
+
+        const nodePath = path.join("..", "node_modules");
+        relativePath = relativePath.replace("tns_modules", nodePath);
 
         const absolutePath = path.resolve(path.join(webRoot, relativePath));
 
