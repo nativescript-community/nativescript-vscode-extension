@@ -22,8 +22,6 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         }
 
         if (_.startsWith(scriptUrl, "mdha:"))
-
-
         {
             scriptUrl = _.trimStart(scriptUrl, "mdha:");
         }
