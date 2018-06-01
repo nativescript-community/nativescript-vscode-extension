@@ -63,7 +63,8 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         this.callRemoteMethod('analyticsService', 'launchDebugger', args.request, args.platform);
 
         // Run CLI Command
-        this.log(`[NSDebugAdapter] Using tns CLI v${project.cli.version.version} on path '${project.cli.path}'\n`);
+        const version = project.cli.executeGetVersion();
+        this.log(`[NSDebugAdapter] Using tns CLI v${version} on path '${project.cli.path}'\n`);
         this.log('[NSDebugAdapter] Running tns command...\n');
         let cliCommand: DebugResult;
 

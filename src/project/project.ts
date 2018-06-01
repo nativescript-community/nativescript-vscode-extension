@@ -1,6 +1,5 @@
 import {ChildProcess} from 'child_process';
 import {EventEmitter} from 'events';
-import {Version} from '../common/version';
 import {NativeScriptCli} from './nativeScriptCli';
 import * as stream from 'stream';
 import * as scanner from './streamScanner';

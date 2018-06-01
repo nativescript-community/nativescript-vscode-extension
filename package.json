@@ -26,6 +26,7 @@
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
     "lodash": "^4.17.10",
+    "semver": "^5.5.0",
     "universal-analytics": "0.4.13",
     "uuid": "^3.2.1",
     "vscode-chrome-debug-core": "^3.23.11",
