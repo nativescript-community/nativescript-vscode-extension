@@ -13,26 +13,30 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     private _tnsProcess: ChildProcess;
 
     public async attach(args: any): Promise<void> {
-        const attachArgs = await this.processRequest(args);
-        (this.pathTransformer as any).setTargetPlatform(args.platform);
-
-        return super.attach(attachArgs);
+        return await this.processRequestAndAttach(args);
     }
 
     public async launch(args: any, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<void> {
-        const launchArgs = await this.processRequest(args) as any;
-        (this.pathTransformer as any).setTargetPlatform(args.platform);
-
-        return super.attach(launchArgs);
+        return await this.processRequestAndAttach(args);
     }
 
-    public async disconnect(args: any) {
-        if (this._tnsProcess) {
-            utils.killProcess(this._tnsProcess);
-            this._tnsProcess = null;
-        }
-
+    public disconnect(args: any): void {
         super.disconnect(args);
+
+        if (this._tnsProcess) {
+            this._tnsProcess.stdout.removeAllListeners();
+            this._tnsProcess.stderr.removeAllListeners();
+            this._tnsProcess.removeAllListeners();
+            utils.killProcess(this._tnsProcess);
+        }
+    }
+
+    private async processRequestAndAttach(args: any) {
+        const transformedArgs = await this.processRequest(args);
+        (this.pathTransformer as any).setTargetPlatform(args.platform);
+        (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
+
+        return super.attach(transformedArgs);
     }
 
     private async processRequest(args: any) : Promise<any> {
