@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import {CliVersion} from './project/nativeScriptCli';
 import {Services} from './services/extensionHostServices';
 import {Project} from './project/project';
 import {IosProject} from './project/iosProject';
@@ -8,6 +7,7 @@ import * as utils from './common/utilities';
 import * as extProtocol from './common/extensionProtocol';
 import { ChannelLogger } from './services/channelLogger';
 import { ILogger } from './common/logger';
+import * as semver from "semver";
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -15,16 +15,28 @@ export function activate(context: vscode.ExtensionContext) {
     Services.cliPath = Services.workspaceConfigService.tnsPath || Services.cliPath;
 
     const channel = vscode.window.createOutputChannel("NativeScript Extension");
-    const logger = new ChannelLogger(channel);
-    Services.logger = logger;
+    Services.logger = new ChannelLogger(channel);
 
-    // Check if NativeScript CLI is installed globally and if it is compatible with the extension version
-    let cliVersion = Services.cli().version;
-    if (!cliVersion.isCompatible) {
-        vscode.window.showErrorMessage(cliVersion.errorMessage);
+    const packageJSON = vscode.extensions.getExtension("Telerik.nativescript").packageJSON;
+    const cliVersion = Services.cli().executeGetVersion();
+
+    if(!cliVersion) {
+        vscode.window.showErrorMessage("NativeScript CLI not found. Use 'nativescript.tnsPath' workspace setting to explicitly set the absolute path to the NativeScript CLI.");
+
+        return;
     }
 
-    logExtensionInfo(logger, cliVersion.version.toString());
+    if(!semver.gte(cliVersion, packageJSON.minNativescriptCliVersion)) {
+        vscode.window.showErrorMessage( `The existing NativeScript extension is compatible with NativeScript CLI v${packageJSON.minNativescriptCliVersion} or greater.
+            The currently installed NativeScript CLI is v${cliVersion}.You can update the NativeScript CLI by executing 'npm install -g nativescript'.`);
+
+        return;
+    }
+
+    Services.cliVersion = cliVersion;
+    Services.extensionVersion = packageJSON.version;
+
+    logExtensionInfo(cliVersion, packageJSON);
 
     Services.analyticsService.initialize();
 
@@ -106,11 +118,9 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(showOutputChannelCommand);
 }
 
-function logExtensionInfo(logger: ILogger, cliVersion: string): void {
-    const packageJSON = vscode.extensions.getExtension("Telerik.nativescript").packageJSON;
-
-    packageJSON.version && logger.log(`Version: ${packageJSON.version}`);
-    packageJSON.buildVersion && logger.log(`Build version: ${packageJSON.buildVersion}`);
-    packageJSON.commitId && logger.log(`Commit id: ${packageJSON.commitId}`);
-    logger.log(`NativeScript CLI: ${cliVersion}`);
+function logExtensionInfo(cliVersion: string, packageJSON: any): void {
+    packageJSON.version && Services.logger.log(`Version: ${packageJSON.version}`);
+    packageJSON.buildVersion && Services.logger.log(`Build version: ${packageJSON.buildVersion}`);
+    packageJSON.commitId && Services.logger.log(`Commit id: ${packageJSON.commitId}`);
+    Services.logger.log(`NativeScript CLI: ${cliVersion}`);
 }

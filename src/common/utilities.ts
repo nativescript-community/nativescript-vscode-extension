@@ -1,15 +1,5 @@
-import {Version} from './version';
 import {ChildProcess, exec} from 'child_process';
 import * as os from 'os';
-
-
-export function getInstalledExtensionVersion(): Version {
-    return Version.parse(require('../../package.json').version);
-}
-
-export function getMinSupportedCliVersion(): Version {
-    return Version.parse(require('../../package.json').minNativescriptCliVersion);
-}
 
 export function killProcess(childProcess: ChildProcess) : void {
     switch (process.platform) {

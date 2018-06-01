@@ -11,6 +11,9 @@ export class ExtensionHostServices extends BaseServices {
     private _iOSTeamService: iOSTeamService;
     private _analyticsService: AnalyticsService;
 
+    public cliVersion: string;
+    public extensionVersion: string;
+
     public get globalState(): vscode.Memento { return this._globalState; }
 
     public set globalState(globalState: vscode.Memento) { this._globalState = globalState; }
@@ -26,7 +29,7 @@ export class ExtensionHostServices extends BaseServices {
     }
 
     public get analyticsService(): AnalyticsService {
-        this._analyticsService = this._analyticsService || new AnalyticsService(this.globalState);
+        this._analyticsService = this._analyticsService || new AnalyticsService(this.globalState, this.cliVersion, this.extensionVersion);
         return this._analyticsService;
     }
 }

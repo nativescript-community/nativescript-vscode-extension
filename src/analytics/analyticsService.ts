@@ -1,5 +1,4 @@
 import * as os from 'os';
-import { Version } from '../common/version';
 import { GUAService } from './guaService';
 import { AnalyticsBaseInfo, OperatingSystem } from './analyticsBaseInfo';
 import { Services } from '../services/extensionHostServices';
@@ -22,14 +21,14 @@ export class AnalyticsService {
     private _gua: GUAService;
     private _analyticsEnabled: boolean;
 
-    constructor(globalState: vscode.Memento) {
+    constructor(globalState: vscode.Memento, cliVersion: string, extensionVersion: string) {
         this._globalState = globalState;
 
         vscode.workspace.onDidChangeConfiguration(() => this.updateAnalyticsEnabled());
 
         this._baseInfo = {
-            cliVersion: Services.cli().version.toString(),
-            extensionVersion: utils.getInstalledExtensionVersion().toString(),
+            cliVersion,
+            extensionVersion,
             operatingSystem: AnalyticsService.getOperatingSystem(),
             clientId: this.getOrGenerateClientId()
         };
