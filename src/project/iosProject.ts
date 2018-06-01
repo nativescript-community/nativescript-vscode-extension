@@ -47,11 +47,10 @@ export class IosProject extends Project {
     protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
         super.configureReadyEvent(readableStream, eventEmitter);
 
-        let socketPathPrefix = 'socket-file-location: ';
         let streamScanner = new scanner.StringMatchingScanner(readableStream);
-        streamScanner.onEveryMatch(new RegExp(socketPathPrefix + '.*\.sock'), (match: scanner.MatchFound) => {
-            let socketPath = (<string>match.matches[0]).substr(socketPathPrefix.length);
-            eventEmitter.emit('readyForConnection', socketPath);
+        streamScanner.onEveryMatch(new RegExp("Opened localhost (.*)"), (match: scanner.MatchFound) => {
+            let port = parseInt(<string>match.matches[1]);
+            setTimeout(() => { eventEmitter.emit('readyForConnection', port) }, 1000);
         });
     }
 

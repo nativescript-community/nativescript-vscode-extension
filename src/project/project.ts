@@ -41,6 +41,6 @@ export abstract class Project {
     }
 
     protected executeDebugCommand(args: string[]): ChildProcess {
-        return this.cli.execute(["debug", this.platformName(), "--no-client"].concat(args), this._appRoot);
+        return this.cli.execute(["debug", this.platformName()].concat(args), this._appRoot);
     }
 }

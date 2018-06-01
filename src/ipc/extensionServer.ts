@@ -48,6 +48,7 @@ export class ExtensionServer {
 
     public cleanBeforeDebug() {
         this.disposablesBeforeDebug.forEach(disposable => disposable.dispose());
+        return Promise.resolve();
     }
 
     public isRunning() {
