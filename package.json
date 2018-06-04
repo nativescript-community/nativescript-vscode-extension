@@ -58,7 +58,10 @@
   },
   "main": "./out/main",
   "activationEvents": [
-    "*"
+    "onDebugResolve:nativescript",
+    "onCommand:nativescript.runIos",
+    "onCommand:nativescript.runAndroid",
+    "onCommand:nativescript.showOutputChannel"
   ],
   "contributes": {
     "configuration": {
