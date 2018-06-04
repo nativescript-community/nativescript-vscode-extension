@@ -37,6 +37,8 @@
     "@types/mocha": "2.2.41",
     "@types/node": "6.0.46",
     "mocha": "2.5.3",
+    "tslint": "5.10.0",
+    "tslint-eslint-rules": "^5.3.1",
     "typescript": "2.6.2",
     "vsce": "~1.36.0",
     "vscode": "~1.1.10",
@@ -52,7 +54,8 @@
     "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",
     "test-mac": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/mac.json ./out/tests",
     "test-win": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/win.json ./out/tests",
-    "test-custom": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/custom.json ./out/tests"
+    "test-custom": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/custom.json ./out/tests",
+    "tslint": "tslint -p ./src/tsconfig.json -c tslint.json"
   },
   "main": "./out/main",
   "activationEvents": [
