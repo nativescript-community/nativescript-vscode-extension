@@ -1,5 +1,5 @@
-import {ILogger} from '../common/logger';
-import {NativeScriptCli} from '../project/nativeScriptCli';
+import { ILogger } from '../common/logger';
+import { NativeScriptCli } from '../project/nativeScriptCli';
 
 export class Services {
     protected _cliPath: string;
@@ -17,6 +17,7 @@ export class Services {
 
     public cli(): NativeScriptCli {
         this._cli = this._cli || new NativeScriptCli(this._cliPath, this.logger);
+
         return this._cli;
     }
 }

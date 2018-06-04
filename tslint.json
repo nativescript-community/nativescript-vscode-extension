@@ -1,0 +1,35 @@
+{
+    "extends": [
+        "tslint-eslint-rules",
+        "tslint:latest"
+    ],
+    "rules": {
+        "quotemark": [true,
+            "single",
+            "avoid-escape"
+        ],
+        "whitespace": [true,
+            "check-branch",
+            "check-decl",
+            "check-operator",
+            "check-module",
+            "check-separator",
+            "check-type"
+        ],
+        "newline-before-return": true,
+        "no-unused-variable": true,
+        "no-duplicate-variable": true,
+        "no-unused-expression": [true, "allow-fast-null-checks"],
+        "ter-newline-after-var": true,
+        "max-line-length": [ true, 160 ],
+        "max-classes-per-file": false,
+        "variable-name": [ true, "allow-leading-underscore" ],
+        "forin": false,
+        "no-implicit-dependencies": [true, "dev"]
+    },
+    "linterOptions": {
+        "exclude": [
+            "**/tests/**"
+        ]
+    }
+}
