@@ -8,6 +8,7 @@ import * as extProtocol from './common/extensionProtocol';
 import { ChannelLogger } from './services/channelLogger';
 import { ILogger } from './common/logger';
 import * as semver from "semver";
+import { LoadedScriptsProvider, openScript } from './loadedScripts';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -35,6 +36,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     Services.cliVersion = cliVersion;
     Services.extensionVersion = packageJSON.version;
+
+    const loadedScriptsProvider = new LoadedScriptsProvider(context);
+    vscode.window.registerTreeDataProvider('nativescript.loadedScriptsExplorer', loadedScriptsProvider);
+    context.subscriptions.push(vscode.commands.registerCommand('nativescript.openScript', (session: vscode.DebugSession, source) => openScript(session, source)));
 
     logExtensionInfo(cliVersion, packageJSON);
 
