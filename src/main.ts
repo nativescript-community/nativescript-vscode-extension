@@ -8,6 +8,8 @@ import * as extProtocol from './common/extensionProtocol';
 import { ChannelLogger } from './services/channelLogger';
 import { ILogger } from './common/logger';
 import * as semver from "semver";
+import { LoadedScriptsProvider, pickLoadedScript, openScript } from './loadedScripts';
+import * as path from "path";
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -36,6 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
     Services.cliVersion = cliVersion;
     Services.extensionVersion = packageJSON.version;
 
+    activateLoadedScripts(context);
     logExtensionInfo(cliVersion, packageJSON);
 
     Services.analyticsService.initialize();
@@ -116,6 +119,58 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(runIosCommand);
     context.subscriptions.push(runAndroidCommand);
     context.subscriptions.push(showOutputChannelCommand);
+}
+
+function activateLoadedScripts(context: vscode.ExtensionContext) {
+    const nodeDebugExtension = vscode.extensions.getExtension("ms-vscode.node-debug");
+
+    if(nodeDebugExtension) {
+        const loadedScripts = require(path.join(nodeDebugExtension.extensionPath, "out/node/extension/loadedScripts.js"));
+        const loadedScriptsProvider = new LoadedScriptsProvider(context);
+        // loadedScriptsProvider._root.__proto__.__proto__.setSource = setSource;
+
+        vscode.window.registerTreeDataProvider('nativescript.loadedScriptsExplorer', loadedScriptsProvider);
+        context.subscriptions.push(vscode.commands.registerCommand('nativescript.openScript', (session: vscode.DebugSession, source) => openScript(session, source)));
+
+        // context.subscriptions.push(vscode.debug.onDidStartDebugSession(session => {
+		// 	const t = session ? session.type : undefined;
+		// 	if (t === 'nativescript') {
+		// 		loadedScriptsProvider._root.add(session);
+		// 		loadedScriptsProvider._onDidChangeTreeData.fire(undefined);
+		// 	}
+		// }));
+
+		// let timeout: NodeJS.Timer;
+
+		// context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(event => {
+
+		// 	const t = (event.event === 'loadedSource' && event.session) ? event.session.type : undefined;
+		// 	if (t === 'nativescript') {
+		// 		const sessionRoot = loadedScriptsProvider._root.add(event.session);
+
+		// 		sessionRoot.addPath(event.body.source);
+
+		// 		clearTimeout(timeout);
+		// 		timeout = setTimeout(() => {
+		// 			loadedScriptsProvider._onDidChangeTreeData.fire(undefined);
+		// 		}, 300);
+		// 	}
+
+		// }));
+
+		// context.subscriptions.push(vscode.debug.onDidTerminateDebugSession(session => {
+		// 	this._root.remove(session.id);
+		// 	this._onDidChangeTreeData.fire(undefined);
+		// }));
+    }
+}
+
+function setSource(session, source) {
+    this.command = {
+        command: 'nativescript.openScript',
+        arguments: [session, source],
+        title: ''
+    };
 }
 
 function logExtensionInfo(cliVersion: string, packageJSON: any): void {
