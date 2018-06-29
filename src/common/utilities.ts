@@ -1,16 +1,27 @@
-import { ChildProcess, exec } from 'child_process';
+import { ChildProcess, execSync, spawnSync } from 'child_process';
 import * as os from 'os';
+import * as path from 'path';
+import { ILogger, LogLevel } from '../common/logger';
 
-export function killProcess(childProcess: ChildProcess): void {
-    switch (process.platform) {
-        case 'win32':
-            exec(`taskkill /pid ${childProcess.pid} /T /F`);
-            break;
+export function killProcess(childProcess: ChildProcess, logger?: ILogger): void {
+    logger && logger.log(`Stopping process: ${childProcess.pid}`);
 
-        default:
-            childProcess.kill('SIGINT');
-            break;
+    try {
+        switch (process.platform) {
+            case 'win32':
+                execSync(`taskkill /pid ${childProcess.pid} /T /F`);
+                break;
+
+            default:
+                const cmd = path.join(__dirname, 'terminateProcess.sh');
+
+                execSync(`${cmd} ${childProcess.pid.toString()}`);
+                break;
+        }
+    } catch (error) {
+        logger && logger.log(error, LogLevel.Error);
     }
+
 }
 
 export const enum Platform {
