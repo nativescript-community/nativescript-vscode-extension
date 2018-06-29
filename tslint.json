@@ -25,11 +25,7 @@
         "max-classes-per-file": false,
         "variable-name": [ true, "allow-leading-underscore" ],
         "forin": false,
-        "no-implicit-dependencies": [true, "dev"]
-    },
-    "linterOptions": {
-        "exclude": [
-            "**/tests/**"
-        ]
+        "no-implicit-dependencies": [true, "dev"],
+        "only-arrow-functions": [false]
     }
 }
