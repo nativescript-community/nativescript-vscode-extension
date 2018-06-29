@@ -38,6 +38,7 @@
     "@types/node": "6.0.46",
     "@types/source-map": "~0.1.0",
     "chrome-remote-debug-protocol": "https://github.com/roblourens/chrome-remote-debug-protocol/tarball/master",
+    "cpx": "^1.5.0",
     "mocha": "2.5.3",
     "typescript": "2.6.2",
     "vsce": "~1.36.0",
@@ -48,7 +49,7 @@
   "scripts": {
     "clean": "git clean -fdx",
     "postinstall": "node ./node_modules/vscode/bin/install",
-    "build": "tsc -p ./src",
+    "build": "tsc -p ./src && cpx src/common/*.sh out/common",
     "package": "vsce package",
     "full-build": "npm run clean && npm install && npm run build && npm run package",
     "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",
