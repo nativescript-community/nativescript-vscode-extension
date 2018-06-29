@@ -1,15 +1,22 @@
-import { ChildProcess, exec } from 'child_process';
+import { ChildProcess, execSync, spawnSync } from 'child_process';
 import * as os from 'os';
+import * as path from 'path';
 
 export function killProcess(childProcess: ChildProcess): void {
-    switch (process.platform) {
-        case 'win32':
-            exec(`taskkill /pid ${childProcess.pid} /T /F`);
-            break;
+    try {
+        switch (process.platform) {
+            case 'win32':
+                execSync(`taskkill /pid ${childProcess.pid} /T /F`);
+                break;
 
-        default:
-            childProcess.kill('SIGINT');
-            break;
+            default:
+                const cmd = path.join(__dirname, 'terminateProcess.sh');
+
+                spawnSync(cmd, [ childProcess.pid.toString() ]);
+                break;
+        }
+    } catch (error) {
+        // TODO: Log error
     }
 }
 
