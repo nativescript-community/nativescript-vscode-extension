@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
+import * as path from 'path';
 import * as sinon from 'sinon';
 import { NativeScriptPathTransformer } from '../debug-adapter/nativeScriptPathTransformer';
 import * as tests from './pathTransformData';
@@ -17,6 +18,8 @@ describe('NativeScriptPathTransformer', () => {
 
         for (const test of tests as any) {
             it(`should transform [${test.platform}] device path ${test.scriptUrl} -> ${test.expectedResult}`, async () => {
+                (path as any).join = path.win32.join;
+                (path as any).resolve = path.win32.resolve;
                 nativeScriptPathTransformer.setTargetPlatform(test.platform);
                 existsSyncStub = sinon.stub(fs, 'existsSync').callsFake((arg: string) => arg === test.existingPath);
 
