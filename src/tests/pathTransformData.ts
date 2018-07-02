@@ -1,4 +1,3 @@
-/* tslint:disable:max-line-length */
 const tests = [
     { platform: 'android', scriptUrl: 'file:///data/data/org.nativescript.TabNavigation/files/app/main.js', expectedResult: 'C:\\projectpath\\app\\main.js', existingPath: 'C:\\projectpath\\app\\main.js' },
     { platform: 'android', scriptUrl: 'VM1', expectedResult: 'VM1' },
