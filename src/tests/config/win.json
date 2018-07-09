@@ -1,6 +1,0 @@
-{
-    "platforms": ["android"],
-    "emulator": false,
-    "port": 4712,
-    "skipSuitePrepare": false
-}
