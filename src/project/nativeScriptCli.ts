@@ -27,7 +27,8 @@ export class NativeScriptCli {
     public executeGetVersion(): string {
         try {
             const versionOutput = this.executeSync(['--version'], undefined);
-            return this.getVersionFromCLIOutput(versionOutput)
+
+            return this.getVersionFromCLIOutput(versionOutput);
         } catch (e) {
             this._logger.log(e);
 
@@ -64,6 +65,7 @@ export class NativeScriptCli {
 
     private getVersionFromCLIOutput(commandOutput: string): string {
         const matches = commandOutput.match(NativeScriptCli.CLI_OUTPUT_VERSION_REGEXP);
+
         return matches && matches[0];
     }
 }
