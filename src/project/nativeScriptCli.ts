@@ -3,6 +3,8 @@ import { ILogger } from '../common/logger';
 import * as utils from '../common/utilities';
 
 export class NativeScriptCli {
+    private static CLI_OUTPUT_VERSION_REGEXP = /^(?:\d+\.){2}\d+.*?$/m;
+
     private _path: string;
     private _shellPath: string;
     private _logger: ILogger;
@@ -24,7 +26,8 @@ export class NativeScriptCli {
 
     public executeGetVersion(): string {
         try {
-            return this.executeSync(['--version'], undefined);
+            const versionOutput = this.executeSync(['--version'], undefined);
+            return this.getVersionFromCLIOutput(versionOutput)
         } catch (e) {
             this._logger.log(e);
 
@@ -57,5 +60,10 @@ export class NativeScriptCli {
         child.stderr.setEncoding('utf8');
 
         return child;
+    }
+
+    private getVersionFromCLIOutput(commandOutput: string): string {
+        const matches = commandOutput.match(NativeScriptCli.CLI_OUTPUT_VERSION_REGEXP);
+        return matches && matches[0];
     }
 }
