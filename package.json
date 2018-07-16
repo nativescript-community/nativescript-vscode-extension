@@ -26,6 +26,7 @@
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
     "lodash": "^4.17.10",
+    "semver": "^5.5.0",
     "universal-analytics": "0.4.13",
     "uuid": "^3.2.1",
     "vscode-chrome-debug-core": "^3.23.11",
@@ -33,13 +34,15 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.109",
-    "@types/mocha": "2.2.41",
+    "@types/mocha": "^5.2.1",
     "@types/node": "6.0.46",
-    "mocha": "2.5.3",
+    "mocha": "^5.2.0",
+    "sinon": "^5.0.10",
+    "tslint": "5.10.0",
+    "tslint-eslint-rules": "^5.3.1",
     "typescript": "2.6.2",
     "vsce": "~1.36.0",
     "vscode": "~1.1.10",
-    "vscode-debugadapter-testsupport": "1.26.0",
     "vscode-debugprotocol": "^1.28.0-pre.1"
   },
   "scripts": {
@@ -49,9 +52,8 @@
     "package": "vsce package",
     "full-build": "npm run clean && npm install && npm run build && npm run package",
     "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",
-    "test-mac": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/mac.json ./out/tests",
-    "test-win": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/win.json ./out/tests",
-    "test-custom": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/custom.json ./out/tests"
+    "test": "mocha --opts ./src/tests/config/mocha.opts",
+    "tslint": "tslint -p ./src/tsconfig.json -c tslint.json"
   },
   "main": "./out/main",
   "activationEvents": [

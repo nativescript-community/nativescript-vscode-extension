@@ -1,55 +1,15 @@
-import {spawn, execSync, ChildProcess} from 'child_process';
-import {Version} from '../common/version';
-import {Logger, Tags} from '../common/logger';
+import { ChildProcess, execSync, spawn } from 'child_process';
+import { ILogger } from '../common/logger';
 import * as utils from '../common/utilities';
-import * as os from 'os';
-
-export enum CliVersionState {
-    NotExisting,
-    OlderThanSupported,
-    Compatible
-}
-
-export class CliVersion {
-    private _cliVersion: Version = undefined;
-    private _minExpectedCliVersion: Version = undefined;
-    private _cliVersionState: CliVersionState;
-    private _cliVersionErrorMessage: string;
-
-    constructor(cliVersion: Version, minExpectedCliVersion: Version) {
-        this._cliVersion = cliVersion;
-        this._minExpectedCliVersion = minExpectedCliVersion;
-
-        // Calculate CLI version state and CLI version error message
-        this._cliVersionState = CliVersionState.Compatible;
-        if (minExpectedCliVersion) {
-            if (this._cliVersion === null) {
-                this._cliVersionState = CliVersionState.NotExisting;
-                this._cliVersionErrorMessage = "NativeScript CLI not found, please run 'npm -g install nativescript' to install it.";
-            }
-            else if (this._cliVersion.compareBySubminorTo(minExpectedCliVersion) < 0) {
-                this._cliVersionState = CliVersionState.OlderThanSupported;
-                this._cliVersionErrorMessage = `The existing NativeScript extension is compatible with NativeScript CLI v${this._minExpectedCliVersion} or greater. The currently installed NativeScript CLI is v${this._cliVersion}. You can update the NativeScript CLI by executing 'npm install -g nativescript'.`;
-            }
-        }
-    }
-
-    public get version() { return this._cliVersion; }
-
-    public get state() { return this._cliVersionState; }
-
-    public get isCompatible() { return this._cliVersionState == CliVersionState.Compatible; }
-
-    public get errorMessage() { return this._cliVersionErrorMessage; }
-}
 
 export class NativeScriptCli {
+    private static CLI_OUTPUT_VERSION_REGEXP = /^(?:\d+\.){2}\d+.*?$/m;
+
     private _path: string;
     private _shellPath: string;
-    private _cliVersion: CliVersion;
-    private _logger: Logger;
+    private _logger: ILogger;
 
-    constructor(cliPath: string, logger: Logger) {
+    constructor(cliPath: string, logger: ILogger) {
         this._path = cliPath;
         this._logger = logger;
 
@@ -58,47 +18,54 @@ export class NativeScriptCli {
         // always default to cmd on Windows
         // workaround for issue #121 https://github.com/NativeScript/nativescript-vscode-extension/issues/121
         if (utils.getPlatform() === utils.Platform.Windows) {
-            this._shellPath = "cmd.exe";
-        }
-
-        let versionStr = null;
-        try {
-            versionStr = this.executeSync(["--version"], undefined);
-        }
-        catch(e) {
-            this._logger.log(e, Tags.FrontendMessage);
-            throw new Error("NativeScript CLI not found. Use 'nativescript.tnsPath' workspace setting to explicitly set the absolute path to the NativeScript CLI.");
-        }
-        let cliVersion: Version = versionStr ? Version.parse(versionStr) : null;
-        this._cliVersion = new CliVersion(cliVersion, utils.getMinSupportedCliVersion());
-        if (!this._cliVersion.isCompatible) {
-            throw new Error(this._cliVersion.errorMessage);
+            this._shellPath = 'cmd.exe';
         }
     }
 
     public get path(): string { return this._path; }
 
-    public get version(): CliVersion {
-        return this._cliVersion;
+    public executeGetVersion(): string {
+        try {
+            const versionOutput = this.executeSync(['--version'], undefined);
+
+            return this.getVersionFromCLIOutput(versionOutput);
+        } catch (e) {
+            this._logger.log(e);
+
+            const errorMessage = `NativeScript CLI not found. Use 'nativescript.tnsPath' workspace setting
+                                  to explicitly set the absolute path to the NativeScript CLI.`;
+
+            throw new Error(errorMessage);
+        }
     }
 
     public executeSync(args: string[], cwd: string): string {
-        args.unshift("--analyticsClient", "VSCode");
-        let command: string = `${this._path} ${args.join(' ')}`;
-        this._logger.log(`[NativeScriptCli] execute: ${command}\n`, Tags.FrontendMessage);
+        args.unshift('--analyticsClient', 'VSCode');
+        const command: string = `${this._path} ${args.join(' ')}`;
 
-        return execSync(command, { encoding: "utf8", cwd: cwd, shell: this._shellPath}).toString().trim();
+        this._logger.log(`[NativeScriptCli] execute: ${command}`);
+
+        return execSync(command, { encoding: 'utf8', cwd, shell: this._shellPath}).toString().trim();
     }
 
     public execute(args: string[], cwd: string): ChildProcess {
-        args.unshift("--analyticsClient", "VSCode");
-        let command: string = `${this._path} ${args.join(' ')}`;
-        this._logger.log(`[NativeScriptCli] execute: ${command}\n`, Tags.FrontendMessage);
+        args.unshift('--analyticsClient', 'VSCode');
+        const command: string = `${this._path} ${args.join(' ')}`;
 
-        let options = { cwd: cwd, shell: this._shellPath };
-        let child: ChildProcess = spawn(this._path, args, options);
+        this._logger.log(`[NativeScriptCli] execute: ${command}`);
+
+        const options = { cwd, shell: this._shellPath };
+        const child: ChildProcess = spawn(this._path, args, options);
+
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
+
         return child;
+    }
+
+    private getVersionFromCLIOutput(commandOutput: string): string {
+        const matches = commandOutput.match(NativeScriptCli.CLI_OUTPUT_VERSION_REGEXP);
+
+        return matches && matches[0];
     }
 }

@@ -1,96 +1,118 @@
+import * as semver from 'semver';
 import * as vscode from 'vscode';
-import {CliVersion} from './project/nativeScriptCli';
-import {Services} from './services/extensionHostServices';
-import {Project} from './project/project';
-import {IosProject} from './project/iosProject';
-import {AndroidProject} from './project/androidProject';
-import * as utils from './common/utilities';
 import * as extProtocol from './common/extensionProtocol';
+import * as utils from './common/utilities';
+import { AndroidProject } from './project/androidProject';
+import { IosProject } from './project/iosProject';
+import { Project } from './project/project';
+import { ChannelLogger } from './services/channelLogger';
+import { services } from './services/extensionHostServices';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
-    Services.globalState = context.globalState;
-    Services.cliPath = Services.workspaceConfigService.tnsPath || Services.cliPath;
+    services.globalState = context.globalState;
+    services.cliPath = services.workspaceConfigService.tnsPath || services.cliPath;
 
-    Services.analyticsService.initialize();
+    const channel = vscode.window.createOutputChannel('NativeScript Extension');
 
-    // Check if NativeScript CLI is installed globally and if it is compatible with the extension version
-    let cliVersion = Services.cli().version;
-    if (!cliVersion.isCompatible) {
-        vscode.window.showErrorMessage(cliVersion.errorMessage);
+    services.logger = new ChannelLogger(channel);
+
+    const packageJSON = vscode.extensions.getExtension('Telerik.nativescript').packageJSON;
+    const cliVersion = services.cli().executeGetVersion();
+
+    if (!cliVersion) {
+        // tslint:disable-next-line:max-line-length
+        vscode.window.showErrorMessage("NativeScript CLI not found. Use 'nativescript.tnsPath' workspace setting to explicitly set the absolute path to the NativeScript CLI.");
+
+        return;
     }
 
-    let channel = createInfoChannel(cliVersion.version.toString());
-    let showOutputChannelCommand = vscode.commands.registerCommand('nativescript.showOutputChannel', () => {
+    if (!semver.gte(cliVersion, packageJSON.minNativescriptCliVersion)) {
+        // tslint:disable-next-line:max-line-length
+        vscode.window.showErrorMessage(`The existing NativeScript extension is compatible with NativeScript CLI v${packageJSON.minNativescriptCliVersion} or greater.
+            The currently installed NativeScript CLI is v${cliVersion}.You can update the NativeScript CLI by executing 'npm install -g nativescript'.`);
+
+        return;
+    }
+
+    services.cliVersion = cliVersion;
+    services.extensionVersion = packageJSON.version;
+
+    logExtensionInfo(cliVersion, packageJSON);
+
+    services.analyticsService.initialize();
+
+    const showOutputChannelCommand = vscode.commands.registerCommand('nativescript.showOutputChannel', () => {
         channel.show();
     });
 
-    let beforeBuildDisposables = new Array<vscode.Disposable>();
-    let runCommand = (project: Project) => {
+    const beforeBuildDisposables = new Array<vscode.Disposable>();
+    const runCommand = (project: Project) => {
         if (vscode.workspace.rootPath === undefined) {
             vscode.window.showErrorMessage('No workspace opened.');
+
             return;
         }
 
         // Show output channel
-        let runChannel: vscode.OutputChannel = vscode.window.createOutputChannel(`Run on ${project.platformName()}`);
+        const runChannel: vscode.OutputChannel = vscode.window.createOutputChannel(`Run on ${project.platformName()}`);
         runChannel.clear();
         runChannel.show(vscode.ViewColumn.Two);
 
-        Services.analyticsService.runRunCommand(project.platformName());
+        services.analyticsService.runRunCommand(project.platformName());
 
-        let tnsProcess = project.run();
-        tnsProcess.on('error', err => {
+        const tnsProcess = project.run();
+        tnsProcess.on('error', (err) => {
             vscode.window.showErrorMessage('Unexpected error executing NativeScript Run command.');
         });
-        tnsProcess.stderr.on('data', data => {
+        tnsProcess.stderr.on('data', (data) => {
             runChannel.append(data.toString());
         });
-        tnsProcess.stdout.on('data', data => {
+        tnsProcess.stdout.on('data', (data) => {
             runChannel.append(data.toString());
         });
-        tnsProcess.on('exit', exitCode => {
+        tnsProcess.on('exit', (exitCode) => {
             tnsProcess.stdout.removeAllListeners('data');
             tnsProcess.stderr.removeAllListeners('data');
         });
-        tnsProcess.on('close', exitCode => {
+        tnsProcess.on('close', (exitCode) => {
             runChannel.hide();
         });
 
         const disposable = {
-            dispose: () => utils.killProcess(tnsProcess)
+            dispose: () => utils.killProcess(tnsProcess),
         };
 
         context.subscriptions.push(disposable);
         beforeBuildDisposables.push(disposable);
     };
 
-    let runIosCommand = vscode.commands.registerCommand('nativescript.runIos', () => {
-        return runCommand(new IosProject(vscode.workspace.rootPath, Services.cli()));
+    const runIosCommand = vscode.commands.registerCommand('nativescript.runIos', () => {
+        return runCommand(new IosProject(vscode.workspace.rootPath, services.cli()));
     });
 
-    let runAndroidCommand = vscode.commands.registerCommand('nativescript.runAndroid', () => {
-        return runCommand(new AndroidProject(vscode.workspace.rootPath, Services.cli()));
+    const runAndroidCommand = vscode.commands.registerCommand('nativescript.runAndroid', () => {
+        return runCommand(new AndroidProject(vscode.workspace.rootPath, services.cli()));
     });
 
-    context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(event => {
-        if(event.event === extProtocol.BEFORE_DEBUG_START) {
-            beforeBuildDisposables.forEach(disposable => disposable.dispose());
+    context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent((event) => {
+        if (event.event === extProtocol.BEFORE_DEBUG_START) {
+            beforeBuildDisposables.forEach((disposable) => disposable.dispose());
         }
 
-        if(event.event === extProtocol.NS_DEBUG_ADAPTER_MESSAGE) {
-            const request = event.body as extProtocol.Request;
-            const service = Services[request.service];
+        if (event.event === extProtocol.NS_DEBUG_ADAPTER_MESSAGE) {
+            const request = event.body as extProtocol.IRequest;
+            const service = services[request.service];
             const method = service[request.method];
             const response = typeof method === 'function' ? service[request.method].call(service, ...request.args) : method;
 
-            if(response.then) {
-                response.then(actualResponse => event.session.customRequest("onExtensionResponse", { requestId: request.id, result: actualResponse }));
+            if (response.then) {
+                response.then((result) => event.session.customRequest('onExtensionResponse', { requestId: request.id, result }));
 
                 return;
             }
 
-            event.session.customRequest("onExtensionResponse", { requestId: request.id, result: response })
+            event.session.customRequest('onExtensionResponse', { requestId: request.id, result: response });
         }
     }));
 
@@ -99,14 +121,9 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(showOutputChannelCommand);
 }
 
-function createInfoChannel(cliVersion: string): vscode.OutputChannel {
-    let channel = vscode.window.createOutputChannel("NativeScript Extension");
-    const packageJSON = vscode.extensions.getExtension("Telerik.nativescript").packageJSON;
-
-    packageJSON.version && channel.appendLine(`Version: ${packageJSON.version}`);
-    packageJSON.buildVersion && channel.appendLine(`Build version: ${packageJSON.buildVersion}`);
-    packageJSON.commitId && channel.appendLine(`Commit id: ${packageJSON.commitId}`);
-    channel.appendLine(`NativeScript CLI: ${cliVersion}`);
-
-    return channel;
+function logExtensionInfo(cliVersion: string, packageJSON: any): void {
+    packageJSON.version && services.logger.log(`Version: ${packageJSON.version}`);
+    packageJSON.buildVersion && services.logger.log(`Build version: ${packageJSON.buildVersion}`);
+    packageJSON.commitId && services.logger.log(`Commit id: ${packageJSON.commitId}`);
+    services.logger.log(`NativeScript CLI: ${cliVersion}`);
 }
