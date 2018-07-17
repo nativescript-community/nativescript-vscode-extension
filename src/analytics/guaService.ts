@@ -11,6 +11,7 @@ export class GUAService {
     constructor(trackingId: string, baseInfo: IAnalyticsBaseInfo) {
         const proxy = process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
         const requestOptions = proxy ? { proxy } : {};
+
         this._visitor = ua(trackingId, baseInfo.clientId, { requestOptions, strictCidFormat: false });
         this._getBasePayload = () => {
             return {
