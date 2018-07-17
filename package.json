@@ -27,7 +27,7 @@
   "dependencies": {
     "lodash": "^4.17.10",
     "semver": "^5.5.0",
-    "universal-analytics": "0.4.13",
+    "universal-analytics": "0.4.15",
     "uuid": "^3.2.1",
     "vscode-chrome-debug-core": "^3.23.11",
     "vscode-debugadapter": "^1.28.0-pre.2"
@@ -36,6 +36,7 @@
     "@types/lodash": "^4.14.109",
     "@types/mocha": "^5.2.1",
     "@types/node": "6.0.46",
+    "@types/universal-analytics": "0.4.1",
     "mocha": "^5.2.0",
     "sinon": "^5.0.10",
     "tslint": "5.10.0",

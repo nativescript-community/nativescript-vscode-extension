@@ -5,11 +5,14 @@ import { IAnalyticsBaseInfo, OperatingSystem } from './analyticsBaseInfo';
  * Google Universal Analytics Service
  */
 export class GUAService {
-    private _visitor: any;
+    private _visitor: ua.Visitor;
     private _getBasePayload: () => any;
 
     constructor(trackingId: string, baseInfo: IAnalyticsBaseInfo) {
-        this._visitor = ua(trackingId, baseInfo.clientId, { requestOptions: {}, strictCidFormat: false });
+        const proxy = process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
+        const requestOptions = proxy ? { proxy } : {};
+
+        this._visitor = ua(trackingId, baseInfo.clientId, { requestOptions, strictCidFormat: false });
         this._getBasePayload = () => {
             return {
                 cd5: baseInfo.cliVersion,

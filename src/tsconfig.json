@@ -16,7 +16,6 @@
     "include": [
         "./tests/**/*.ts",
         "./debug-adapter/nativeScriptDebug.ts",
-        "./main.ts",
-        "custom-typings/universal-analytics/ua.d.ts"
+        "./main.ts"
     ]
 }
