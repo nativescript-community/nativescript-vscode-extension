@@ -25,25 +25,25 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "node-ipc": "8.10.3",
-    "source-map": "0.6.1",
+    "lodash": "^4.17.10",
+    "semver": "^5.5.0",
     "universal-analytics": "0.4.13",
     "uuid": "^3.2.1",
-    "vscode-chrome-debug-core": "~3.9.0",
-    "vscode-debugadapter": "1.26.0",
-    "vscode-debugprotocol": "1.26.0",
-    "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master"
+    "vscode-chrome-debug-core": "^3.23.11",
+    "vscode-debugadapter": "^1.28.0-pre.2"
   },
   "devDependencies": {
-    "@types/mocha": "2.2.41",
+    "@types/lodash": "^4.14.109",
+    "@types/mocha": "^5.2.1",
     "@types/node": "6.0.46",
-    "@types/source-map": "~0.1.0",
-    "chrome-remote-debug-protocol": "https://github.com/roblourens/chrome-remote-debug-protocol/tarball/master",
-    "mocha": "2.5.3",
+    "mocha": "^5.2.0",
+    "sinon": "^5.0.10",
+    "tslint": "5.10.0",
+    "tslint-eslint-rules": "^5.3.1",
     "typescript": "2.6.2",
     "vsce": "~1.36.0",
     "vscode": "~1.1.10",
-    "vscode-debugadapter-testsupport": "1.26.0"
+    "vscode-debugprotocol": "^1.28.0-pre.1"
   },
   "scripts": {
     "clean": "git clean -fdx",
@@ -51,10 +51,9 @@
     "build": "tsc -p ./src",
     "package": "vsce package",
     "full-build": "npm run clean && npm install && npm run build && npm run package",
-    "launch-as-server": "node --nolazy ./out/debug-adapter/webKitDebug.js --server=4712",
-    "test-mac": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/mac.json ./out/tests",
-    "test-win": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/win.json ./out/tests",
-    "test-custom": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/custom.json ./out/tests"
+    "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",
+    "test": "mocha --opts ./src/tests/config/mocha.opts",
+    "tslint": "tslint -p ./src/tsconfig.json -c tslint.json"
   },
   "main": "./out/main",
   "activationEvents": [
@@ -129,7 +128,7 @@
             "typescript"
           ]
         },
-        "program": "./out/debug-adapter/webKitDebug.js",
+        "program": "./out/debug-adapter/nativeScriptDebug.js",
         "runtime": "node",
         "initialConfigurations": [
           {
