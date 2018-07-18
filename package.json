@@ -25,7 +25,6 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "cpx": "^1.5.0",
     "lodash": "^4.17.10",
     "semver": "^5.5.0",
     "universal-analytics": "0.4.15",
@@ -38,6 +37,7 @@
     "@types/mocha": "^5.2.1",
     "@types/node": "6.0.46",
     "@types/universal-analytics": "0.4.1",
+    "cpx": "^1.5.0",
     "mocha": "^5.2.0",
     "sinon": "^5.0.10",
     "tslint": "5.10.0",

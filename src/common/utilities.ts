@@ -1,4 +1,4 @@
-import { ChildProcess, execSync, spawnSync } from 'child_process';
+import { ChildProcess, execSync } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
 import { ILogger, LogLevel } from '../common/logger';
@@ -21,7 +21,6 @@ export function killProcess(childProcess: ChildProcess, logger?: ILogger): void 
     } catch (error) {
         logger && logger.log(error, LogLevel.Error);
     }
-
 }
 
 export const enum Platform {
