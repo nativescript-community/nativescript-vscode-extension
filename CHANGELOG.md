@@ -1,3 +1,13 @@
+0.8.0
+=====
+## What's new
+- [The debugger now uses *vscode-chrome-debug-core*](https://github.com/NativeScript/nativescript-vscode-extension/pull/181)
+- [Removed IPC, now using the debug adapter events for communication with the extension host process](https://github.com/NativeScript/nativescript-vscode-extension/pull/182)
+- [Added tests/travis](https://github.com/NativeScript/nativescript-vscode-extension/pull/190)
+- [Added tslint](https://github.com/NativeScript/nativescript-vscode-extension/pull/185)
+- [Added source map paths config for debugging with webpack](https://github.com/NativeScript/nativescript-vscode-extension/pull/192)
+- [The NS Extension log is not shown on startup](https://github.com/NativeScript/nativescript-vscode-extension/pull/177)
+
 0.7.4
 =====
 
