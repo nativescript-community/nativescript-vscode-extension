@@ -80,7 +80,10 @@ export function activate(context: vscode.ExtensionContext) {
         });
 
         const disposable = {
-            dispose: () => utils.killProcess(tnsProcess),
+            dispose: () => {
+                services.buildService.disconnect();
+                utils.killProcess(tnsProcess);
+            },
         };
 
         context.subscriptions.push(disposable);
