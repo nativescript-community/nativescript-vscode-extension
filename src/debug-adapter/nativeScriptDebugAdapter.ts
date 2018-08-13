@@ -16,6 +16,7 @@ export function nativeScriptDebugAdapterGenerator(iosProject: typeof IosProject,
         private _pendingRequests: object = {};
         private isLiveSync: boolean = false;
         private portWaitingResolve: any;
+        private isDisconnecting: boolean = false;
 
         public attach(args: any): Promise<void> {
             return this.processRequestAndAttach(args);
@@ -23,14 +24,6 @@ export function nativeScriptDebugAdapterGenerator(iosProject: typeof IosProject,
 
         public launch(args: any): Promise<void> {
             return this.processRequestAndAttach(args);
-        }
-
-        public disconnect(args: any): void {
-            super.disconnect(args);
-
-            if (!args.restart) {
-                this.callRemoteMethod('buildService', 'disconnect');
-            }
         }
 
         public onPortReceived(port) {
@@ -42,13 +35,22 @@ export function nativeScriptDebugAdapterGenerator(iosProject: typeof IosProject,
             delete this._pendingRequests[response.requestId];
         }
 
+        public disconnect(args: any): void {
+            this.isDisconnecting = true;
+            if (!args.restart) {
+                this.callRemoteMethod('buildService', 'disconnect');
+            }
+
+            super.disconnect(args);
+        }
+
         protected async terminateSession(reason: string, disconnectArgs?: DebugProtocol.DisconnectArguments, restart?: IRestartRequestArgs): Promise<void> {
             let restartRequestArgs;
             let timeoutId;
 
-            if (this.isLiveSync) {
+            if (!this.isDisconnecting && this.isLiveSync) {
                 const portProm = new Promise<any>((res, rej) => {
-                    this. portWaitingResolve = res;
+                    this.portWaitingResolve = res;
 
                     timeoutId = setTimeout(() => {
                         res();
