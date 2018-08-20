@@ -135,4 +135,4 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             this._session.sendEvent(new Event(extProtocol.NS_DEBUG_ADAPTER_MESSAGE, request));
         });
     }
-};
+}

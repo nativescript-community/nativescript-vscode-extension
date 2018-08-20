@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import { AnalyticsService } from '../analytics/analyticsService';
 import { WorkspaceConfigService } from '../common/workspaceConfigService';
+import { BuildService } from './buildService';
 import { iOSTeamService } from './iOSTeamService';
 import { Services as BaseServices } from './services';
-import { BuildService } from "./buildService";
 
 export class ExtensionHostServices extends BaseServices {
     public cliVersion: string;
