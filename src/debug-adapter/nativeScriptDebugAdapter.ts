@@ -11,6 +11,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     private isLiveSync: boolean = false;
     private portWaitingResolve: any;
     private isDisconnecting: boolean = false;
+    private isLiveSyncRestart: boolean = false;
 
     public attach(args: any): Promise<void> {
         return this.processRequestAndAttach(args);
@@ -31,7 +32,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
 
     public disconnect(args: any): void {
         this.isDisconnecting = true;
-        if (!args.restart) {
+        if (!this.isLiveSyncRestart) {
             this.callRemoteMethod('buildService', 'disconnect');
         }
 
@@ -39,7 +40,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     }
 
     protected async terminateSession(reason: string, disconnectArgs?: DebugProtocol.DisconnectArguments, restart?: IRestartRequestArgs): Promise<void> {
-        let restartRequestArgs;
+        let restartRequestArgs = restart;
         let timeoutId;
 
         if (!this.isDisconnecting && this.isLiveSync) {
@@ -52,6 +53,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             });
 
             restartRequestArgs = await portProm;
+            this.isLiveSyncRestart = restartRequestArgs && !!restartRequestArgs.port;
             clearTimeout(timeoutId);
         }
 
