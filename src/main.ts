@@ -100,6 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent((event) => {
         if (event.event === extProtocol.BEFORE_DEBUG_START) {
+            channel.show();
             beforeBuildDisposables.forEach((disposable) => disposable.dispose());
         }
 
