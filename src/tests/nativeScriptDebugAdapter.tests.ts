@@ -1,12 +1,16 @@
-import { EventEmitter } from 'events';
 import * as _ from 'lodash';
 import * as sinon from 'sinon';
 import { ChromeDebugAdapter } from 'vscode-chrome-debug-core';
 import { Event } from 'vscode-debugadapter';
 import * as extProtocol from '../common/extensionProtocol';
-import { nativeScriptDebugAdapterGenerator } from '../debug-adapter/nativeScriptDebugAdapter';
+import { NativeScriptDebugAdapter } from '../debug-adapter/nativeScriptDebugAdapter';
+
+const examplePort = 456;
 
 const customMessagesResponses = {
+    buildService: {
+        processRequest: examplePort,
+    },
     workspaceConfigService: {
         tnsPath: 'tnsPathMock',
     },
@@ -32,9 +36,6 @@ describe('NativeScriptDebugAdapter', () => {
     let nativeScriptDebugAdapter: any;
     let chromeSessionMock: any;
     let chromeConnectionMock: any;
-    let projectMock: any;
-    let nativeScriptCliMock: any;
-    let cliCommandMock: any;
     let pathTransformerMock: any;
 
     beforeEach(() => {
@@ -54,39 +55,13 @@ describe('NativeScriptDebugAdapter', () => {
             attach: () => Promise.resolve({}),
         };
 
-        cliCommandMock = {
-            tnsOutputEventEmitter: {
-                on: (event, callback) => {
-                    callback();
-                },
-            },
-        };
-
         pathTransformerMock = {
             attach: () => ({}),
             clearTargetContext: () => ({}),
             setTargetPlatform: () => ({}),
         };
 
-        projectMock = {
-            attach: () => cliCommandMock,
-            debug: () => cliCommandMock,
-        };
-
-        nativeScriptCliMock = {
-            executeGetVersion: () => 'cliVersionMock',
-        };
-
-        const projectClass: any =  function(appRoot, cli) {
-            return _.merge({
-                appRoot,
-                cli,
-            }, projectMock);
-        };
-
-        const nativeScriptDebugAdapterClass = nativeScriptDebugAdapterGenerator(projectClass, projectClass, mockConstructor(nativeScriptCliMock));
-
-        nativeScriptDebugAdapter = new nativeScriptDebugAdapterClass(
+        nativeScriptDebugAdapter = new NativeScriptDebugAdapter(
             { chromeConnection: mockConstructor(chromeConnectionMock), pathTransformer: mockConstructor(pathTransformerMock) },
             chromeSessionMock,
         );
@@ -109,21 +84,6 @@ describe('NativeScriptDebugAdapter', () => {
                 sinon.assert.calledWith(spy, sinon.match({ event: extProtocol.BEFORE_DEBUG_START }));
             });
 
-            it(`${method} for ${platform} should call analyticsService`, async () => {
-                const spy = sinon.spy(chromeSessionMock, 'sendEvent');
-
-                await nativeScriptDebugAdapter[method](argsMock);
-
-                sinon.assert.calledWith(spy, sinon.match({
-                    body: {
-                        args: [method, platform],
-                        method: 'launchDebugger',
-                        service: 'analyticsService',
-                    },
-                    event: extProtocol.NS_DEBUG_ADAPTER_MESSAGE,
-                }));
-            });
-
             it(`${method} for ${platform} should call project setTargetPlatform`, async () => {
                 const spy = sinon.spy(pathTransformerMock, 'setTargetPlatform');
 
@@ -133,15 +93,15 @@ describe('NativeScriptDebugAdapter', () => {
             });
 
             it(`${method} for ${platform} should set debug port`, async () => {
-                const port = 1234;
-
-                sinon.stub(cliCommandMock.tnsOutputEventEmitter, 'on').callsFake((event, callback) => callback(port));
+                const debugPort = 1234;
                 const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
+
+                customMessagesResponses.buildService.processRequest = debugPort;
 
                 await nativeScriptDebugAdapter[method](argsMock);
 
                 sinon.assert.calledWith(spy, sinon.match({
-                    port,
+                    port: debugPort,
                 }));
             });
 
@@ -158,47 +118,15 @@ describe('NativeScriptDebugAdapter', () => {
 
             it(`${method} for ${platform} - after process exit should send Terminate event`, async () => {
                 const spy = sinon.spy(chromeSessionMock, 'sendEvent');
-                const fakeEmitter = {
-                    on: () => ({}),
-                };
 
-                cliCommandMock.tnsProcess = new EventEmitter();
-                cliCommandMock.tnsProcess.stderr = fakeEmitter;
-                cliCommandMock.tnsProcess.stdout = fakeEmitter;
+                customMessagesResponses.buildService.processRequest = undefined;
 
                 await nativeScriptDebugAdapter.attach(argsMock);
-                cliCommandMock.tnsProcess.emit('close', -1);
 
                 sinon.assert.calledWith(spy, sinon.match({
                     event: 'terminated',
                 }));
             });
         });
-    });
-
-    it('attach should call project attach method with correct args', async () => {
-        const attachSpy = sinon.spy(projectMock, 'attach');
-        const debugSpy = sinon.spy(projectMock, 'debug');
-
-        const argsMock = _.merge({}, defaultArgsMock, { request: 'attach' });
-
-        await nativeScriptDebugAdapter.attach(argsMock);
-
-        sinon.assert.calledOnce(attachSpy);
-        sinon.assert.calledWith(attachSpy, argsMock.tnsArgs);
-        sinon.assert.notCalled(debugSpy);
-    });
-
-    it('launch should call project debug method with correct args', async () => {
-        const attachSpy = sinon.spy(projectMock, 'attach');
-        const debugSpy = sinon.spy(projectMock, 'debug');
-
-        const argsMock = _.merge({}, defaultArgsMock, { request: 'launch' });
-
-        await nativeScriptDebugAdapter.launch(argsMock);
-
-        sinon.assert.calledOnce(debugSpy);
-        sinon.assert.calledWith(debugSpy, { stopOnEntry: argsMock.stopOnEntry, watch: argsMock.watch }, argsMock.tnsArgs);
-        sinon.assert.notCalled(attachSpy);
     });
 });

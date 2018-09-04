@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { AnalyticsService } from '../analytics/analyticsService';
 import { WorkspaceConfigService } from '../common/workspaceConfigService';
+import { BuildService } from './buildService';
 import { iOSTeamService } from './iOSTeamService';
 import { Services as BaseServices } from './services';
 
@@ -13,6 +14,7 @@ export class ExtensionHostServices extends BaseServices {
     private _workspaceConfigService: WorkspaceConfigService;
     private _iOSTeamService: iOSTeamService;
     private _analyticsService: AnalyticsService;
+    private _buildService: BuildService;
 
     public get globalState(): vscode.Memento { return this._globalState; }
 
@@ -34,6 +36,12 @@ export class ExtensionHostServices extends BaseServices {
         this._analyticsService = this._analyticsService || new AnalyticsService(this.globalState, this.cliVersion, this.extensionVersion, this._logger);
 
         return this._analyticsService;
+    }
+
+    public get buildService(): BuildService {
+        this._buildService = this._buildService || new BuildService(this._logger);
+
+        return this._buildService;
     }
 }
 
