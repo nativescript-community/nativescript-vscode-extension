@@ -1,3 +1,11 @@
+0.8.1
+=====
+## Bug Fixes
+ - [When file watch is active saving shutdowns emulator](https://github.com/NativeScript/nativescript-vscode-extension/issues/195)
+    - The LiveSync process will no longer stop the emulator and you will be able to continue the debugging session after the changes are synced. **Note that emulators launched through VS Code will be stopped when the currently active debugging session is terminated. To avoid this behavior, you need to launch the emulators manually and not through VS Code.**
+
+- The Debug Console panel now shows only device related logs. All other NativeScript related logs are printed in the Output panel.
+
 0.8.0
 =====
 ## What's new
