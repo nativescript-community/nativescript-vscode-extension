@@ -42,6 +42,21 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
 
         relativePath = relativePath.replace('tns_modules', nodePath);
 
+        const pathToNsconfig = path.join(webRoot, 'nsconfig.json');
+
+        if (fs.existsSync(pathToNsconfig)) {
+            try {
+                const content = fs.readFileSync(pathToNsconfig).toString();
+                const jsonContent = JSON.parse(content);
+
+                if (jsonContent.appPath) {
+                    relativePath = relativePath.replace('app', jsonContent.appPath);
+                }
+            } catch (err) {
+                // Ignore the error for the moment
+            }
+        }
+
         const absolutePath = path.resolve(path.join(webRoot, relativePath));
 
         if (fs.existsSync(absolutePath)) {

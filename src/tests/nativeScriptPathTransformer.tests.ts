@@ -8,6 +8,7 @@ import * as tests from './pathTransformData';
 describe('NativeScriptPathTransformer', () => {
     let nativeScriptPathTransformer: any;
     let existsSyncStub;
+    let readFileSyncStub;
 
     before(() => {
         nativeScriptPathTransformer = new NativeScriptPathTransformer();
@@ -17,11 +18,21 @@ describe('NativeScriptPathTransformer', () => {
         const webRoot = 'C:\\projectpath';
 
         for (const test of tests as any) {
-            it(`should transform [${test.platform}] device path ${test.scriptUrl} -> ${test.expectedResult}`, async () => {
+            const nsConfigPartInTestName = test.nsconfig ? " when there's nsconfig" : '';
+
+            it(`should transform [${test.platform}] device path ${test.scriptUrl} -> ${test.expectedResult}${nsConfigPartInTestName}`, async () => {
                 (path as any).join = path.win32.join;
                 (path as any).resolve = path.win32.resolve;
+                (path as any).basename = path.win32.basename;
                 nativeScriptPathTransformer.setTargetPlatform(test.platform);
-                existsSyncStub = sinon.stub(fs, 'existsSync').callsFake((arg: string) => arg === test.existingPath);
+                const isNsconfigFilePath = (filePath: string) => path.basename(filePath) === 'nsconfig.json';
+
+                existsSyncStub = sinon
+                    .stub(fs, 'existsSync')
+                    .callsFake((arg: string) => arg === test.existingPath || (test.nsconfig && isNsconfigFilePath(arg)));
+                readFileSyncStub = sinon
+                    .stub(fs, 'readFileSync')
+                    .callsFake((filePath: string) => (isNsconfigFilePath(filePath) && test.nsconfig) ? JSON.stringify(test.nsconfig) : null);
 
                 const result = await nativeScriptPathTransformer.targetUrlToClientPath(webRoot, test.scriptUrl);
 
@@ -31,6 +42,7 @@ describe('NativeScriptPathTransformer', () => {
 
         afterEach(() => {
             existsSyncStub.restore();
+            readFileSyncStub.restore();
         });
     });
 
