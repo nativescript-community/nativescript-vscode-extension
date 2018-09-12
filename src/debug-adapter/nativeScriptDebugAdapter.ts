@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 import { ChromeDebugAdapter, IRestartRequestArgs } from 'vscode-chrome-debug-core';
 import { Event, TerminatedEvent } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
@@ -108,12 +110,29 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             this._session.sendEvent(new TerminatedEvent());
         }
 
-        (this.pathTransformer as any).setTargetPlatform(args.platform);
+        const appDirPath = this.getAppDirPath(transformedArgs.webRoot);
+
+        (this.pathTransformer as any).setTransformOptions(args.platform, appDirPath);
         (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
 
         this.isLiveSync = args.watch;
 
         return super.attach(transformedArgs);
+    }
+
+    private getAppDirPath(webRoot: string): string {
+        const pathToNsconfig = join(webRoot, 'nsconfig.json');
+
+        if (existsSync(pathToNsconfig)) {
+            try {
+                const content = readFileSync(pathToNsconfig).toString();
+                const jsonContent = JSON.parse(content);
+
+                return jsonContent.appPath;
+            } catch (err) {
+                // Ignore the error for the moment
+            }
+        }
     }
 
     private translateArgs(args): any {

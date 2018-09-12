@@ -10,9 +10,11 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
     };
 
     private targetPlatform: string;
+    private appDirPath: string;
 
-    public setTargetPlatform(targetPlatform: string) {
+    public setTransformOptions(targetPlatform: string, appDirPath: string) {
         this.targetPlatform = targetPlatform.toLowerCase();
+        this.appDirPath = appDirPath;
     }
 
     protected async targetUrlToClientPath(webRoot: string, scriptUrl: string): Promise<string> {
@@ -41,6 +43,10 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         const nodePath = path.join('..', 'node_modules');
 
         relativePath = relativePath.replace('tns_modules', nodePath);
+
+        if (this.appDirPath) {
+            relativePath = relativePath.replace('app', this.appDirPath);
+        }
 
         const absolutePath = path.resolve(path.join(webRoot, relativePath));
 

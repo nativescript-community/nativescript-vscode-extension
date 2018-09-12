@@ -17,12 +17,16 @@ describe('NativeScriptPathTransformer', () => {
         const webRoot = 'C:\\projectpath';
 
         for (const test of tests as any) {
-            it(`should transform [${test.platform}] device path ${test.scriptUrl} -> ${test.expectedResult}`, async () => {
+            const nsConfigPartInTestName = test.nsconfig ? " when there's nsconfig" : '';
+
+            it(`should transform [${test.platform}] device path ${test.scriptUrl} -> ${test.expectedResult}${nsConfigPartInTestName}`, async () => {
                 (path as any).join = path.win32.join;
                 (path as any).resolve = path.win32.resolve;
-                nativeScriptPathTransformer.setTargetPlatform(test.platform);
-                existsSyncStub = sinon.stub(fs, 'existsSync').callsFake((arg: string) => arg === test.existingPath);
+                nativeScriptPathTransformer.setTransformOptions(test.platform, test.nsconfig ? test.nsconfig.appPath : null);
 
+                existsSyncStub = sinon
+                    .stub(fs, 'existsSync')
+                    .callsFake((arg: string) => arg === test.existingPath);
                 const result = await nativeScriptPathTransformer.targetUrlToClientPath(webRoot, test.scriptUrl);
 
                 assert.equal(result, test.expectedResult);

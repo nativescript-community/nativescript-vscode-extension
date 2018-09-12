@@ -1,3 +1,8 @@
+0.8.2
+=====
+## Bug Fixes
+ - [Unable to debug when project's app directory is renamed](https://github.com/NativeScript/nativescript-vscode-extension/issues/205)
+
 0.8.1
 =====
 ## Bug Fixes

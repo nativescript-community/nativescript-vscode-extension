@@ -58,7 +58,7 @@ describe('NativeScriptDebugAdapter', () => {
         pathTransformerMock = {
             attach: () => ({}),
             clearTargetContext: () => ({}),
-            setTargetPlatform: () => ({}),
+            setTransformOptions: () => ({}),
         };
 
         nativeScriptDebugAdapter = new NativeScriptDebugAdapter(
@@ -84,8 +84,8 @@ describe('NativeScriptDebugAdapter', () => {
                 sinon.assert.calledWith(spy, sinon.match({ event: extProtocol.BEFORE_DEBUG_START }));
             });
 
-            it(`${method} for ${platform} should call project setTargetPlatform`, async () => {
-                const spy = sinon.spy(pathTransformerMock, 'setTargetPlatform');
+            it(`${method} for ${platform} should call project setTransformOptions`, async () => {
+                const spy = sinon.spy(pathTransformerMock, 'setTransformOptions');
 
                 await nativeScriptDebugAdapter[method](argsMock);
 
