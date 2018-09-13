@@ -21,6 +21,12 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         return this.processRequestAndAttach(args);
     }
 
+    initialize(args) {
+        const debugCapabilities = super.initialize(args);
+        debugCapabilities.supportsLoadedSourcesRequest = true;
+        return debugCapabilities;
+    }
+
     public onPortReceived(port) {
         this.portWaitingResolve && this.portWaitingResolve(port);
     }
