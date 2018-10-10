@@ -76,9 +76,9 @@ export class BuildService {
                         const errorMessage = `The tns command finished its execution with code ${code}`;
 
                         this._logger.log(errorMessage);
-
-                        res();
                     }
+
+                    res();
                 });
             }
 
