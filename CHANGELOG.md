@@ -1,3 +1,9 @@
+0.8.3
+=====
+## Bug Fixes
+ - [Debugger hangs if build of app fails](https://github.com/NativeScript/nativescript-vscode-extension/issues/206)
+ - [Unable to debug with webpack enabled.](https://github.com/NativeScript/nativescript-vscode-extension/issues/213)
+
 0.8.2
 =====
 ## Bug Fixes
