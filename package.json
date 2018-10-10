@@ -142,7 +142,7 @@
             "sourceMaps": true,
             "watch": true,
             "sourceMapPathOverrides": {
-               "webpack:///*": "${workspaceRoot}/app/*"
+               "webpack:///*": "${workspaceRoot}/src/*"
             }
           },
           {
@@ -154,7 +154,7 @@
             "sourceMaps": true,
             "watch": false,
             "sourceMapPathOverrides": {
-               "webpack:///*": "${workspaceRoot}/app/*"
+               "webpack:///*": "${workspaceRoot}/src/*"
             }
           },
           {
@@ -166,7 +166,7 @@
             "sourceMaps": true,
             "watch": true,
             "sourceMapPathOverrides": {
-               "webpack:///*": "${workspaceRoot}/app/*"
+               "webpack:///*": "${workspaceRoot}/src/*"
             }
           },
           {
@@ -178,7 +178,7 @@
             "sourceMaps": true,
             "watch": false,
             "sourceMapPathOverrides": {
-               "webpack:///*": "${workspaceRoot}/app/*"
+               "webpack:///*": "${workspaceRoot}/src/*"
             }
           }
         ],
@@ -195,7 +195,7 @@
               "sourceMaps": true,
               "watch": true,
               "sourceMapPathOverrides": {
-                 "webpack:///*": "${workspaceRoot}/app/*"
+                 "webpack:///*": "${workspaceRoot}/src/*"
               }
             }
           },
@@ -211,7 +211,7 @@
               "sourceMaps": true,
               "watch": true,
               "sourceMapPathOverrides": {
-                 "webpack:///*": "${workspaceRoot}/app/*"
+                 "webpack:///*": "${workspaceRoot}/src/*"
               }
             }
           },
@@ -227,7 +227,7 @@
               "sourceMaps": true,
               "watch": false,
               "sourceMapPathOverrides": {
-                 "webpack:///*": "${workspaceRoot}/app/*"
+                 "webpack:///*": "${workspaceRoot}/src/*"
               }
             }
           },
@@ -243,7 +243,7 @@
               "sourceMaps": true,
               "watch": false,
               "sourceMapPathOverrides": {
-                 "webpack:///*": "${workspaceRoot}/app/*"
+                 "webpack:///*": "${workspaceRoot}/src/*"
               }
             }
           }
