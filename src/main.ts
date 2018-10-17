@@ -111,7 +111,11 @@ export function activate(context: vscode.ExtensionContext) {
             const response = typeof method === 'function' ? service[request.method].call(service, ...request.args) : method;
 
             if (response.then) {
-                response.then((result) => event.session.customRequest('onExtensionResponse', { requestId: request.id, result }));
+                response.then((result) => event.session.customRequest('onExtensionResponse', { requestId: request.id, result }),
+                    (err: Error) => {
+                        vscode.window.showErrorMessage(err.message);
+                        event.session.customRequest('onExtensionResponse', { requestId: request.id, isError: true, message: err.message });
+                    });
 
                 return;
             }
