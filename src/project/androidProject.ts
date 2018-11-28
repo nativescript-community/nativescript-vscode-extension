@@ -23,7 +23,7 @@ export class AndroidProject extends Project {
         const debugProcess: ChildProcess = super.executeDebugCommand(args);
         const tnsOutputEventEmitter = new EventEmitter();
 
-        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, true);
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, false);
 
         return { tnsProcess: debugProcess, tnsOutputEventEmitter };
     }
@@ -38,25 +38,23 @@ export class AndroidProject extends Project {
         const debugProcess: ChildProcess = super.executeDebugCommand(args);
         const tnsOutputEventEmitter: EventEmitter = new EventEmitter();
 
-        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, false);
+        this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, args.indexOf('--debug-brk') > -1);
 
         return { tnsProcess: debugProcess, tnsOutputEventEmitter };
     }
 
-    protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter, attach?: boolean): void {
+    protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter, debugBrk?: boolean): void {
         super.configureReadyEvent(readableStream, eventEmitter);
-
         let debugPort = null;
 
         new scanner.StringMatchingScanner(readableStream).onEveryMatch(new RegExp('device: .* debug port: [0-9]+'), (match: scanner.IMatchFound) => {
             // device: {device-name} debug port: {debug-port}
             debugPort = parseInt((match.matches[0] as string).match('(?:debug port: )([\\d]{5})')[1], 10);
-            if (attach) {
-                // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
+            if (!debugBrk) {
                 setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 1000);
             }
         });
-        if (!attach) {
+        if (debugBrk) {
             new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', (match: scanner.IMatchFound) => {
                 // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
                 setTimeout(() => { eventEmitter.emit('readyForConnection', debugPort); }, 1000);
