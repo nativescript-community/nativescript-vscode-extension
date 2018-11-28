@@ -140,10 +140,7 @@
             "platform": "ios",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
-            "watch": true,
-            "sourceMapPathOverrides": {
-               "webpack:///*": "${workspaceRoot}/src/*"
-            }
+            "watch": true
           },
           {
             "name": "Attach on iOS",
@@ -152,10 +149,7 @@
             "platform": "ios",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
-            "watch": false,
-            "sourceMapPathOverrides": {
-               "webpack:///*": "${workspaceRoot}/src/*"
-            }
+            "watch": false
           },
           {
             "name": "Launch on Android",
@@ -164,10 +158,7 @@
             "platform": "android",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
-            "watch": true,
-            "sourceMapPathOverrides": {
-               "webpack:///*": "${workspaceRoot}/src/*"
-            }
+            "watch": true
           },
           {
             "name": "Attach on Android",
@@ -176,10 +167,7 @@
             "platform": "android",
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
-            "watch": false,
-            "sourceMapPathOverrides": {
-               "webpack:///*": "${workspaceRoot}/src/*"
-            }
+            "watch": false
           }
         ],
         "configurationSnippets": [
@@ -193,10 +181,7 @@
               "platform": "ios",
               "appRoot": "^\"\\${workspaceRoot}\"",
               "sourceMaps": true,
-              "watch": true,
-              "sourceMapPathOverrides": {
-                 "webpack:///*": "${workspaceRoot}/src/*"
-              }
+              "watch": true
             }
           },
           {
@@ -209,10 +194,7 @@
               "platform": "android",
               "appRoot": "^\"\\${workspaceRoot}\"",
               "sourceMaps": true,
-              "watch": true,
-              "sourceMapPathOverrides": {
-                 "webpack:///*": "${workspaceRoot}/src/*"
-              }
+              "watch": true
             }
           },
           {
@@ -225,10 +207,7 @@
               "platform": "ios",
               "appRoot": "^\"\\${workspaceRoot}\"",
               "sourceMaps": true,
-              "watch": false,
-              "sourceMapPathOverrides": {
-                 "webpack:///*": "${workspaceRoot}/src/*"
-              }
+              "watch": false
             }
           },
           {
@@ -241,10 +220,7 @@
               "platform": "android",
               "appRoot": "^\"\\${workspaceRoot}\"",
               "sourceMaps": true,
-              "watch": false,
-              "sourceMapPathOverrides": {
-                 "webpack:///*": "${workspaceRoot}/src/*"
-              }
+              "watch": false
             }
           }
         ],
