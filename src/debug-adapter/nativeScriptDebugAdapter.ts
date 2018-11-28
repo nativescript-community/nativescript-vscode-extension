@@ -144,6 +144,17 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.webRoot = args.appRoot;
         }
 
+        if (!args.sourceMapPathOverrides) {
+            args.sourceMapPathOverrides = { };
+        }
+
+        if (!args.sourceMapPathOverrides['webpack:///*']) {
+            const appDirPath = this.getAppDirPath(args.webRoot) || 'app';
+            const fullAppDirPath = join(args.webRoot, appDirPath);
+
+            args.sourceMapPathOverrides['webpack:///*'] = `${fullAppDirPath}/*`;
+        }
+
         return args;
     }
 
