@@ -5,7 +5,7 @@ import { Event, TerminatedEvent } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import * as extProtocol from '../common/extensionProtocol';
 
-const reconnectAfterLiveSyncTimeout = 30 * 1000;
+const reconnectAfterLiveSyncTimeout = 10 * 1000;
 
 export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     private _idCounter = 0;
