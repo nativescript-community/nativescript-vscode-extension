@@ -1,3 +1,10 @@
+0.8.4
+=====
+## Bug Fixes
+ - [Set correct source map path for webpack](https://github.com/NativeScript/nativescript-vscode-extension/issues/222)
+ - [Wait for '# NativeScript Debugger started #' only on `debug-brk` as now we don't restart the app in the other cases](https://github.com/NativeScript/nativescript-vscode-extension/pull/223)
+ - [Make the android debugging backwards compatible](https://github.com/NativeScript/nativescript-vscode-extension/pull/226)
+
 0.8.3
 =====
 ## Bug Fixes
