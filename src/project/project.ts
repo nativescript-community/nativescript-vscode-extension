@@ -27,7 +27,7 @@ export abstract class Project {
 
     public abstract attach(tnsArgs?: string[]): IDebugResult;
 
-    public abstract debug(options: { stopOnEntry: boolean, watch: boolean }, tnsArgs?: string[]): IDebugResult;
+    public abstract debug(options: { stopOnEntry: boolean, watch: boolean, launchTests: boolean }, tnsArgs?: string[]): IDebugResult;
 
     protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
         new scanner.StringMatchingScanner(readableStream).onEveryMatch('TypeScript compiler failed', () => {
@@ -41,5 +41,9 @@ export abstract class Project {
 
     protected executeDebugCommand(args: string[]): ChildProcess {
         return this._cli.execute(['debug', this.platformName()].concat(args), this._appRoot);
+    }
+
+    protected executeTestCommand(args: string[]): ChildProcess {
+        return this._cli.execute(['test', this.platformName()].concat(args), this._appRoot);
     }
 }
