@@ -32,14 +32,15 @@ export class IosProject extends Project {
         return { tnsProcess: debugProcess, tnsOutputEventEmitter };
     }
 
-    public debug(options: { stopOnEntry: boolean, watch: boolean }, tnsArgs?: string[]): IDebugResult {
+    public debug(options: { stopOnEntry: boolean, watch: boolean, launchTests: boolean }, tnsArgs?: string[]): IDebugResult {
         let args: string[] = [];
 
         args.push(options.watch ? '--watch' : '--no-watch');
         if (options.stopOnEntry) { args.push('--debug-brk'); }
         args = args.concat(tnsArgs);
+        const debugProcess: ChildProcess = options.launchTests ?
+            super.executeTestCommand(args) : super.executeDebugCommand(args);
 
-        const debugProcess: ChildProcess = super.executeDebugCommand(args);
         const tnsOutputEventEmitter: EventEmitter = new EventEmitter();
 
         this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter);

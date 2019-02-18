@@ -144,6 +144,20 @@
             "watch": true
           },
           {
+            "name": "Test on iOS",
+            "type": "nativescript",
+            "request": "launch",
+            "platform": "ios",
+            "appRoot": "${workspaceRoot}",
+            "sourceMaps": true,
+            "watch": false,
+            "stopOnEntry": true,
+            "launchTests": true,
+            "tnsArgs": [
+              "--justlaunch"
+            ]
+          },
+          {
             "name": "Attach on iOS",
             "type": "nativescript",
             "request": "attach",
@@ -160,6 +174,20 @@
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "watch": true
+          },
+          {
+            "name": "Test on Android",
+            "type": "nativescript",
+            "request": "launch",
+            "platform": "android",
+            "appRoot": "${workspaceRoot}",
+            "sourceMaps": true,
+            "watch": false,
+            "stopOnEntry": true,
+            "launchTests": true,
+            "tnsArgs": [
+              "--justlaunch"
+            ]
           },
           {
             "name": "Attach on Android",
@@ -281,6 +309,11 @@
                 "type": "object",
                 "description": "A set of mappings for rewriting the locations of source files from what the sourcemap says, to their locations on the disk.",
                 "default": null
+              },
+              "launchTests": {
+                "type": "boolean",
+                "description": "If true, the launch request will run the unit tests instead of the app itself.",
+                "default": false
               }
             }
           },
