@@ -1,3 +1,11 @@
+0.9.0
+====
+## What's new
+ - [Add configurations for unit testing](https://github.com/NativeScript/nativescript-vscode-extension/issues/144)
+
+## Bug Fixes
+ - [Cannot attach to `tns test android --debug-brk`](https://github.com/NativeScript/nativescript-vscode-extension/issues/234)
+
 0.8.4
 =====
 ## Bug Fixes
