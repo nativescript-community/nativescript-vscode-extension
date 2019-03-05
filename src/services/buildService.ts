@@ -56,12 +56,12 @@ export class BuildService {
                 }
             }
 
-            cliCommand = project.debug({ stopOnEntry: args.stopOnEntry, watch: args.watch }, tnsArgs);
+            cliCommand = project.debug({ stopOnEntry: args.stopOnEntry, watch: args.watch, launchTests: args.launchTests }, tnsArgs);
         } else if (args.request === 'attach') {
             cliCommand = project.attach(args.tnsArgs);
         }
 
-        return new Promise<string | number> ((res, rej) => {
+        return new Promise<string | number>((res, rej) => {
             if (cliCommand.tnsProcess) {
                 this._tnsProcess = cliCommand.tnsProcess;
                 cliCommand.tnsProcess.stdout.on('data', (data) => { this._logger.log(data.toString()); });
@@ -109,7 +109,7 @@ export class BuildService {
             const teamIdArgIndex = tnsArgs.indexOf('--teamId');
 
             if (teamIdArgIndex > 0 && teamIdArgIndex + 1 < tnsArgs.length) {
-                return tnsArgs[ teamIdArgIndex + 1 ];
+                return tnsArgs[teamIdArgIndex + 1];
             }
         }
 
@@ -128,7 +128,7 @@ export class BuildService {
         const xcconfigFile = path.join(appRoot, 'App_Resources/iOS/build.xcconfig');
 
         if (fs.existsSync(xcconfigFile)) {
-            const text = fs.readFileSync(xcconfigFile, { encoding: 'utf8'});
+            const text = fs.readFileSync(xcconfigFile, { encoding: 'utf8' });
             let teamId: string;
 
             text.split(/\r?\n/).forEach((line) => {

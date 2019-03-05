@@ -22,6 +22,8 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
             return;
         }
 
+        const isAndroid = this.targetPlatform === 'android';
+
         if (_.startsWith(scriptUrl, 'mdha:')) {
             scriptUrl = _.trimStart(scriptUrl, 'mdha:');
         }
@@ -37,7 +39,7 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         let relativePath = scriptUrl;
 
         if (matches) {
-            relativePath = this.targetPlatform === 'android' ? matches[3] : matches[2];
+            relativePath = isAndroid ? matches[3] : matches[2];
         }
 
         const nodePath = path.join('..', 'node_modules');
@@ -48,22 +50,41 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
             relativePath = relativePath.replace('app', this.appDirPath);
         }
 
-        const absolutePath = path.resolve(path.join(webRoot, relativePath));
+        let absolutePath = path.resolve(path.join(webRoot, relativePath));
+        let platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
 
-        if (fs.existsSync(absolutePath)) {
-            return Promise.resolve(absolutePath);
+        if (platformSpecificPath) {
+            return Promise.resolve(platformSpecificPath);
         }
 
-        const fileExtension = path.extname(absolutePath);
+        if (isAndroid) {
+            // handle files like /data/data/internal/ts_helpers.ts
+            absolutePath = path.resolve(path.join(webRoot, 'platforms', this.targetPlatform.toLowerCase(), 'app', 'src', 'main', 'assets', relativePath));
+            platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
 
-        if (fileExtension) {
-            const platformSpecificPath = absolutePath.replace(fileExtension, `.${this.targetPlatform}${fileExtension}`);
-
-            if (fs.existsSync(platformSpecificPath)) {
+            if (platformSpecificPath) {
                 return Promise.resolve(platformSpecificPath);
             }
         }
 
         return Promise.resolve(scriptUrl);
+    }
+
+    private getPlatformSpecificPath(rawPath: string): string {
+        if (fs.existsSync(rawPath)) {
+            return rawPath;
+        }
+
+        const fileExtension = path.extname(rawPath);
+
+        if (fileExtension) {
+            const platformSpecificPath = rawPath.replace(fileExtension, `.${this.targetPlatform}${fileExtension}`);
+
+            if (fs.existsSync(platformSpecificPath)) {
+                return platformSpecificPath;
+            }
+        }
+
+        return null;
     }
 }
