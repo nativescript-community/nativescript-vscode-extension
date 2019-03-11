@@ -11,13 +11,15 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
 
     private targetPlatform: string;
     private appDirPath: string;
+    private webRoot: string;
 
-    public setTransformOptions(targetPlatform: string, appDirPath: string) {
+    public setTransformOptions(targetPlatform: string, appDirPath: string, webRoot: string) {
         this.targetPlatform = targetPlatform.toLowerCase();
         this.appDirPath = appDirPath;
+        this.webRoot = webRoot;
     }
 
-    protected async targetUrlToClientPath(webRoot: string, scriptUrl: string): Promise<string> {
+    protected async targetUrlToClientPath(scriptUrl: string): Promise<string> {
         if (!scriptUrl) {
             return;
         }
@@ -50,7 +52,7 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
             relativePath = relativePath.replace('app', this.appDirPath);
         }
 
-        let absolutePath = path.resolve(path.join(webRoot, relativePath));
+        let absolutePath = path.resolve(path.join(this.webRoot, relativePath));
         let platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
 
         if (platformSpecificPath) {
@@ -59,7 +61,7 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
 
         if (isAndroid) {
             // handle files like /data/data/internal/ts_helpers.ts
-            absolutePath = path.resolve(path.join(webRoot, 'platforms', this.targetPlatform.toLowerCase(), 'app', 'src', 'main', 'assets', relativePath));
+            absolutePath = path.resolve(path.join(this.webRoot, 'platforms', this.targetPlatform.toLowerCase(), 'app', 'src', 'main', 'assets', relativePath));
             platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
 
             if (platformSpecificPath) {
