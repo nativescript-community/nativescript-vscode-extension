@@ -13,6 +13,7 @@ export class NativeScriptTargetDiscovery extends chromeTargetDiscoveryStrategy.C
             id: uuid.v4(),
             title: 'NS Debug Target',
             type: 'node',
+            version: null,
             webSocketDebuggerUrl: `ws://${address}:${port}`,
         });
     }

@@ -65,7 +65,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     protected hookConnectionEvents(): void {
         super.hookConnectionEvents();
 
-        this.chrome.Log.onEntryAdded((params) => this.onEntryAdded(params));
+        this.chrome.Log.on('entryAdded', (params) => this.onEntryAdded(params));
     }
 
     protected onEntryAdded(params: any): void {
@@ -112,7 +112,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
 
         const appDirPath = this.getAppDirPath(transformedArgs.webRoot);
 
-        (this.pathTransformer as any).setTransformOptions(args.platform, appDirPath);
+        (this.pathTransformer as any).setTransformOptions(args.platform, appDirPath, transformedArgs.webRoot);
         (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
 
         this.isLiveSync = args.watch;
