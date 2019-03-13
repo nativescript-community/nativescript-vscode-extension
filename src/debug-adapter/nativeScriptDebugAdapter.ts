@@ -1,9 +1,17 @@
 import { existsSync, readFileSync } from 'fs';
+import * as _ from 'lodash';
 import { join } from 'path';
-import { ChromeDebugAdapter, IRestartRequestArgs } from 'vscode-chrome-debug-core';
+import {
+    ChromeDebugAdapter,
+    IRestartRequestArgs,
+    ISetBreakpointsArgs,
+    ISetBreakpointsResponseBody,
+    ITelemetryPropertyCollector,
+} from 'vscode-chrome-debug-core';
 import { Event, TerminatedEvent } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import * as extProtocol from '../common/extensionProtocol';
+import { NativeScriptSourceMapTransformer } from './nativeScriptSourceMapTransformer';
 
 const reconnectAfterLiveSyncTimeout = 10 * 1000;
 
@@ -14,6 +22,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     private portWaitingResolve: any;
     private isDisconnecting: boolean = false;
     private isLiveSyncRestart: boolean = false;
+    private breakPointsCache: { [file: string]: { args: ISetBreakpointsArgs, requestSeq: number, ids: number[] } } = {};
 
     public attach(args: any): Promise<void> {
         return this.processRequestAndAttach(args);
@@ -39,6 +48,27 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         }
 
         super.disconnect(args);
+    }
+
+    public async setCachedBreakpointsForScript(script: string): Promise<void> {
+        const breakPointData = this.breakPointsCache[script];
+
+        if (breakPointData) {
+            await this.setBreakpoints(breakPointData.args, null, breakPointData.requestSeq, breakPointData.ids);
+        }
+    }
+
+    public async setBreakpoints(
+        args: ISetBreakpointsArgs,
+        telemetryPropertyCollector: ITelemetryPropertyCollector,
+        requestSeq: number,
+        ids?: number[]): Promise<ISetBreakpointsResponseBody> {
+
+        if (args && args.source && args.source.path) {
+            this.breakPointsCache[args.source.path] = { args: _.cloneDeep(args), requestSeq, ids };
+        }
+
+        return super.setBreakpoints(args, telemetryPropertyCollector, requestSeq, ids);
     }
 
     protected async terminateSession(reason: string, disconnectArgs?: DebugProtocol.DisconnectArguments, restart?: IRestartRequestArgs): Promise<void> {
@@ -113,6 +143,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         const appDirPath = this.getAppDirPath(transformedArgs.webRoot);
 
         (this.pathTransformer as any).setTransformOptions(args.platform, appDirPath, transformedArgs.webRoot);
+        (this.sourceMapTransformer as NativeScriptSourceMapTransformer).setDebugAdapter(this);
         (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
 
         this.isLiveSync = args.watch;
@@ -145,7 +176,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         }
 
         if (!args.sourceMapPathOverrides) {
-            args.sourceMapPathOverrides = { };
+            args.sourceMapPathOverrides = {};
         }
 
         if (!args.sourceMapPathOverrides['webpack:///*']) {

@@ -25,13 +25,14 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         }
 
         const isAndroid = this.targetPlatform === 'android';
+        const isIOS = this.targetPlatform === 'ios';
 
         if (_.startsWith(scriptUrl, 'mdha:')) {
             scriptUrl = _.trimStart(scriptUrl, 'mdha:');
         }
 
         if (path.isAbsolute(scriptUrl) && fs.existsSync(scriptUrl)) {
-            return Promise.resolve(scriptUrl);
+            return scriptUrl;
         }
 
         const filePattern = this.filePatterns[this.targetPlatform];
@@ -56,20 +57,23 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         let platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
 
         if (platformSpecificPath) {
-            return Promise.resolve(platformSpecificPath);
+            return platformSpecificPath;
         }
 
         if (isAndroid) {
             // handle files like /data/data/internal/ts_helpers.ts
             absolutePath = path.resolve(path.join(this.webRoot, 'platforms', this.targetPlatform.toLowerCase(), 'app', 'src', 'main', 'assets', relativePath));
-            platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
-
-            if (platformSpecificPath) {
-                return Promise.resolve(platformSpecificPath);
-            }
+        } else if (isIOS) {
+            absolutePath = path.resolve(path.join(this.webRoot, 'platforms', this.targetPlatform.toLowerCase(), this.getAppName(this.webRoot), relativePath));
         }
 
-        return Promise.resolve(scriptUrl);
+        platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
+
+        if (platformSpecificPath) {
+            return platformSpecificPath;
+        }
+
+        return scriptUrl;
     }
 
     private getPlatformSpecificPath(rawPath: string): string {
@@ -88,5 +92,9 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         }
 
         return null;
+    }
+
+    private getAppName(projectDir: string): string {
+        return _.filter(projectDir.split(''), (c) => /[a-zA-Z0-9]/.test(c)).join('');
     }
 }

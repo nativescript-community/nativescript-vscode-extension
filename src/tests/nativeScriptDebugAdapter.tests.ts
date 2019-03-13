@@ -22,7 +22,7 @@ const defaultArgsMock: any = {
     platform: 'android',
     request: 'attach',
     stopOnEntry: true,
-    tnsArgs: [ 'mockArgs'],
+    tnsArgs: ['mockArgs'],
     watch: true,
 };
 
@@ -37,6 +37,7 @@ describe('NativeScriptDebugAdapter', () => {
     let chromeSessionMock: any;
     let chromeConnectionMock: any;
     let pathTransformerMock: any;
+    let sourceMapTransformer: any;
 
     beforeEach(() => {
         chromeSessionMock = {
@@ -61,16 +62,24 @@ describe('NativeScriptDebugAdapter', () => {
             setTransformOptions: () => ({}),
         };
 
-        nativeScriptDebugAdapter = new NativeScriptDebugAdapter(
-            { chromeConnection: mockConstructor(chromeConnectionMock), pathTransformer: mockConstructor(pathTransformerMock) },
+        sourceMapTransformer = {
+            clearTargetContext: () => undefined,
+            setDebugAdapter: () => undefined,
+        };
+
+        nativeScriptDebugAdapter = new NativeScriptDebugAdapter({
+            chromeConnection: mockConstructor(chromeConnectionMock),
+            pathTransformer: mockConstructor(pathTransformerMock),
+            sourceMapTransformer: mockConstructor(sourceMapTransformer),
+        },
             chromeSessionMock,
         );
 
         ChromeDebugAdapter.prototype.attach = () => Promise.resolve();
     });
 
-    const platforms = [ 'android', 'ios' ];
-    const launchMethods = [ 'launch', 'attach' ];
+    const platforms = ['android', 'ios'];
+    const launchMethods = ['launch', 'attach'];
 
     platforms.forEach((platform) => {
         launchMethods.forEach((method) => {
