@@ -3,6 +3,7 @@ import * as path from 'path';
 import { chromeConnection, ChromeDebugSession } from 'vscode-chrome-debug-core';
 import { NativeScriptDebugAdapter } from './nativeScriptDebugAdapter';
 import { NativeScriptPathTransformer } from './nativeScriptPathTransformer';
+import { NativeScriptSourceMapTransformer } from './nativeScriptSourceMapTransformer';
 import { NativeScriptTargetDiscovery } from './nativeScriptTargetDiscovery';
 
 class NSAndroidConnection extends chromeConnection.ChromeConnection {
@@ -18,4 +19,5 @@ ChromeDebugSession.run(ChromeDebugSession.getSession(
         extensionName: 'nativescript-extension',
         logFilePath: path.join(os.tmpdir(), 'nativescript-extension.txt'),
         pathTransformer: NativeScriptPathTransformer,
+        sourceMapTransformer: NativeScriptSourceMapTransformer,
     }));
