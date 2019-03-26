@@ -9,19 +9,19 @@ describe('NativeScriptPathTransformer', () => {
     let nativeScriptPathTransformer: any;
     let existsSyncStub;
 
-    before(() => {
+    beforeEach(() => {
         nativeScriptPathTransformer = new NativeScriptPathTransformer();
     });
 
     describe('targetUrlToClientPath() method', () => {
-        const webRoot = 'C:\\projectpath';
-
         for (const test of tests as any) {
+            const webRoot = test.webRoot || 'C:\\projectpath';
             const nsConfigPartInTestName = test.nsconfig ? " when there's nsconfig" : '';
 
             it(`should transform [${test.platform}] device path ${test.scriptUrl} -> ${test.expectedResult}${nsConfigPartInTestName}`, async () => {
                 (path as any).join = path.win32.join;
                 (path as any).resolve = path.win32.resolve;
+                (path as any).basename = path.win32.basename;
                 nativeScriptPathTransformer.setTransformOptions(test.platform, test.nsconfig ? test.nsconfig.appPath : null, webRoot);
 
                 existsSyncStub = sinon

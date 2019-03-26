@@ -12,20 +12,21 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
     private targetPlatform: string;
     private appDirPath: string;
     private webRoot: string;
+    private isAndroid: boolean;
+    private isIOS: boolean;
 
     public setTransformOptions(targetPlatform: string, appDirPath: string, webRoot: string) {
         this.targetPlatform = targetPlatform.toLowerCase();
         this.appDirPath = appDirPath;
         this.webRoot = webRoot;
+        this.isAndroid = this.targetPlatform === 'android';
+        this.isIOS = this.targetPlatform === 'ios';
     }
 
     protected async targetUrlToClientPath(scriptUrl: string): Promise<string> {
         if (!scriptUrl) {
             return;
         }
-
-        const isAndroid = this.targetPlatform === 'android';
-        const isIOS = this.targetPlatform === 'ios';
 
         if (_.startsWith(scriptUrl, 'mdha:')) {
             scriptUrl = _.trimStart(scriptUrl, 'mdha:');
@@ -42,38 +43,47 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
         let relativePath = scriptUrl;
 
         if (matches) {
-            relativePath = isAndroid ? matches[3] : matches[2];
+            relativePath = this.isAndroid ? matches[3] : matches[2];
         }
 
+        return this.getFileFromAppDir(relativePath) ||
+            this.getFileFromNodeModulesDir(relativePath) ||
+            this.getFileFromPlatformsDir(relativePath) ||
+            scriptUrl;
+    }
+
+    private getFileFromAppDir(rawDevicePath: string): string {
+        if (this.appDirPath) {
+            rawDevicePath = rawDevicePath.replace('app', this.appDirPath);
+        }
+
+        const absolutePath = path.resolve(path.join(this.webRoot, rawDevicePath));
+
+        return this.getPlatformSpecificPath(absolutePath);
+    }
+
+    private getFileFromNodeModulesDir(rawDevicePath: string): string {
         const nodePath = path.join('..', 'node_modules');
 
-        relativePath = relativePath.replace('tns_modules', nodePath);
+        rawDevicePath = rawDevicePath.replace('tns_modules', nodePath);
 
-        if (this.appDirPath) {
-            relativePath = relativePath.replace('app', this.appDirPath);
-        }
+        const absolutePath = path.resolve(path.join(this.webRoot, rawDevicePath));
 
-        let absolutePath = path.resolve(path.join(this.webRoot, relativePath));
-        let platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
+        return this.getPlatformSpecificPath(absolutePath);
+    }
 
-        if (platformSpecificPath) {
-            return platformSpecificPath;
-        }
+    private getFileFromPlatformsDir(rawDevicePath: string): string {
+        let absolutePath: string = null;
 
-        if (isAndroid) {
+        // handle files like file://app/starter.js (produced with bundle and required when using with --debug-brk)
+        if (this.isAndroid) {
             // handle files like /data/data/internal/ts_helpers.ts
-            absolutePath = path.resolve(path.join(this.webRoot, 'platforms', this.targetPlatform.toLowerCase(), 'app', 'src', 'main', 'assets', relativePath));
-        } else if (isIOS) {
-            absolutePath = path.resolve(path.join(this.webRoot, 'platforms', this.targetPlatform.toLowerCase(), this.getAppName(this.webRoot), relativePath));
+            absolutePath = path.resolve(path.join(this.webRoot, 'platforms', this.targetPlatform.toLowerCase(), 'app', 'src', 'main', 'assets', rawDevicePath));
+        } else if (this.isIOS) {
+            absolutePath = path.resolve(path.join(this.webRoot, 'platforms', this.targetPlatform.toLowerCase(), this.getAppName(this.webRoot), rawDevicePath));
         }
 
-        platformSpecificPath = this.getPlatformSpecificPath(absolutePath);
-
-        if (platformSpecificPath) {
-            return platformSpecificPath;
-        }
-
-        return scriptUrl;
+        return this.getPlatformSpecificPath(absolutePath);
     }
 
     private getPlatformSpecificPath(rawPath: string): string {
@@ -95,6 +105,6 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
     }
 
     private getAppName(projectDir: string): string {
-        return _.filter(projectDir.split(''), (c) => /[a-zA-Z0-9]/.test(c)).join('');
+        return _.filter(path.basename(projectDir).split(''), (c) => /[a-zA-Z0-9]/.test(c)).join('');
     }
 }
