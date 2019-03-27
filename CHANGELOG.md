@@ -1,3 +1,8 @@
+0.10.0
+====
+## What's new
+ - [Add support for debug with hot module replacement](https://github.com/NativeScript/nativescript-vscode-extension/issues/221)
+
 0.9.0
 ====
 ## What's new
