@@ -7,22 +7,22 @@ const tests = [
         scriptUrl: 'file:///data/data/org.nativescript.TabNavigation/files/app/main.js',
     },
     {
-        expectedResult: 'VM1',
+        expectedResult: '',
         platform: 'android',
         scriptUrl: 'VM1',
     },
     {
-        expectedResult: 'native prologue.js',
+        expectedResult: '',
         platform: 'android',
         scriptUrl: 'native prologue.js',
     },
     {
-        expectedResult: 'v8/gc',
+        expectedResult: '',
         platform: 'android',
         scriptUrl: 'v8/gc',
     },
     {
-        expectedResult: 'VM25',
+        expectedResult: '',
         platform: 'android',
         scriptUrl: 'VM25',
     },
@@ -81,7 +81,7 @@ const tests = [
         scriptUrl: 'file:///data/data/org.nativescript.TabNavigation/files/app/tns_modules/tns-core-modules/ui/layouts/layout-base.js',
     },
     {
-        expectedResult: 'ng:///css/0/data/data/org.nativescript.TabNavigation/files/app/tabs/tabs.component.scss.ngstyle.js',
+        expectedResult: '',
         platform: 'android',
         scriptUrl: 'ng:///css/0/data/data/org.nativescript.TabNavigation/files/app/tabs/tabs.component.scss.ngstyle.js',
     },

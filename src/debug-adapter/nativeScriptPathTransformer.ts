@@ -46,10 +46,12 @@ export class NativeScriptPathTransformer extends UrlPathTransformer {
             relativePath = this.isAndroid ? matches[3] : matches[2];
         }
 
-        return this.getFileFromAppDir(relativePath) ||
+        const result = this.getFileFromAppDir(relativePath) ||
             this.getFileFromNodeModulesDir(relativePath) ||
             this.getFileFromPlatformsDir(relativePath) ||
-            scriptUrl;
+            await super.targetUrlToClientPath(scriptUrl);
+
+        return result;
     }
 
     private getFileFromAppDir(rawDevicePath: string): string {
