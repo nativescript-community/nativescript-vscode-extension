@@ -52,7 +52,7 @@ export class iOSTeamService {
 
             for (const file of files) {
                 const filePath = path.join(dir, file);
-                const data = fs.readFileSync(filePath, {encoding: 'utf8'});
+                const data = fs.readFileSync(filePath, { encoding: 'utf8' });
                 const teamId = this.getProvisioningProfileValue('TeamIdentifier', data);
                 const teamName = this.getProvisioningProfileValue('TeamName', data);
 
@@ -64,7 +64,7 @@ export class iOSTeamService {
             const teamIdsArray = new Array<{ id: string, name: string }>();
 
             for (const teamId in teamIds) {
-                teamIdsArray.push({id: teamId, name: teamIds[teamId]});
+                teamIdsArray.push({ id: teamId, name: teamIds[teamId] });
             }
 
             return teamIdsArray;
