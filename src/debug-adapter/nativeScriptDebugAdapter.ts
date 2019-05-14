@@ -143,7 +143,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         const appDirPath = this.getAppDirPath(transformedArgs.webRoot);
 
         (this.pathTransformer as any).setTransformOptions(args.platform, appDirPath, transformedArgs.webRoot);
-        (this.sourceMapTransformer as NativeScriptSourceMapTransformer).setDebugAdapter(this);
+        (this.sourceMapTransformer as NativeScriptSourceMapTransformer).setTransformOptions(args.platform.toLowerCase(), this);
         (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
 
         this.isLiveSync = args.watch;

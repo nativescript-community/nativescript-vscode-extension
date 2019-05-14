@@ -27,7 +27,7 @@ const defaultArgsMock: any = {
 };
 
 const mockConstructor = (mockObject: any): any => {
-    return function() {
+    return function () {
         return mockObject;
     };
 };
@@ -64,7 +64,7 @@ describe('NativeScriptDebugAdapter', () => {
 
         sourceMapTransformer = {
             clearTargetContext: () => undefined,
-            setDebugAdapter: () => undefined,
+            setTransformOptions: () => undefined,
         };
 
         nativeScriptDebugAdapter = new NativeScriptDebugAdapter({
