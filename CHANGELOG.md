@@ -1,3 +1,10 @@
+0.10.1
+====
+## Bug Fixes
+ - [Could not load source 'undefined' when debugging unit tests](https://github.com/NativeScript/nativescript-vscode-extension/issues/237)
+ - [[Debugging] Break points in platform specific files and/or symlink files in `node_modules` are not hit with "@next" version](https://github.com/NativeScript/nativescript-vscode-extension/issues/252)
+ - [Cannot debug unit tests with HMR](https://github.com/NativeScript/nativescript-vscode-extension/issues/251)
+
 0.10.0
 ====
 ## What's new
