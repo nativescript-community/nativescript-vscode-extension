@@ -96,6 +96,13 @@ export class NativeScriptSourceMapTransformer extends BaseSourceMapTransformer {
                 // handle platform-specific files
                 const { dir, name, ext } = path.parse(mappedPath);
 
+                const tnsFileName = `${name}.tns${ext}`;
+                const tnsPath = path.join(dir, tnsFileName);
+
+                if (vsCodeChromeDebugUtils.existsSync(tnsPath)) {
+                    mappedPath = tnsPath;
+                }
+
                 const platformFileName = `${name}.${this.targetPlatform}${ext}`;
                 const platformPath = path.join(dir, platformFileName);
 
