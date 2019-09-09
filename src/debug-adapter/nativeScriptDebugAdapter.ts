@@ -8,7 +8,7 @@ import {
     ISetBreakpointsResponseBody,
     ITelemetryPropertyCollector,
 } from 'vscode-chrome-debug-core';
-import { Event, TerminatedEvent } from 'vscode-debugadapter';
+import { Event, logger, TerminatedEvent } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import * as extProtocol from '../common/extensionProtocol';
 import { NativeScriptSourceMapTransformer } from './nativeScriptSourceMapTransformer';
@@ -179,11 +179,30 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.sourceMapPathOverrides = {};
         }
 
-        if (!args.sourceMapPathOverrides['webpack:///*']) {
-            const appDirPath = this.getAppDirPath(args.webRoot) || 'app';
-            const fullAppDirPath = join(args.webRoot, appDirPath);
+        const appDirPath = this.getAppDirPath(args.webRoot) || 'app';
+        const fullAppDirPath = join(args.webRoot, appDirPath);
 
+        if (!args.sourceMapPathOverrides['webpack:///*']) {
             args.sourceMapPathOverrides['webpack:///*'] = `${fullAppDirPath}/*`;
+        }
+
+        const webpackConfigFile = join(`./${args.webRoot}`, 'webpack.config.js');
+
+        if (existsSync(webpackConfigFile)) {
+            try {
+                const webpackConfig = require(webpackConfigFile);
+                const platform = args.platform && args.platform.toLowerCase();
+                const config = webpackConfig({ [`${platform}`]: platform });
+
+                if (config && config.output && config.output.library) {
+                    const sourceMapPathOverrideWithLib = `webpack://${config.output.library}/*`;
+
+                    args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] = args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] ||
+                        `${fullAppDirPath}/*`;
+                }
+            } catch (err) {
+                logger.warn(`Error when trying to require webpack.config.js file from path '${webpackConfigFile}'. Error is: ${err}`);
+            }
         }
 
         return args;

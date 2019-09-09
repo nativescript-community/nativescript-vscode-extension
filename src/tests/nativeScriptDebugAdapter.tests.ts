@@ -1,9 +1,18 @@
+import * as fs from 'fs';
 import * as _ from 'lodash';
+import { join } from 'path';
+import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { ChromeDebugAdapter } from 'vscode-chrome-debug-core';
 import { Event } from 'vscode-debugadapter';
 import * as extProtocol from '../common/extensionProtocol';
-import { NativeScriptDebugAdapter } from '../debug-adapter/nativeScriptDebugAdapter';
+const appRoot = 'appRootMock';
+const webpackConfigFunctionStub = sinon.stub();
+
+proxyquire.noCallThru();
+const nativeScriptDebugAdapterLib = proxyquire('../debug-adapter/nativeScriptDebugAdapter', {
+    [join(appRoot, 'webpack.config.js')]: webpackConfigFunctionStub,
+});
 
 const examplePort = 456;
 
@@ -17,7 +26,7 @@ const customMessagesResponses = {
 };
 
 const defaultArgsMock: any = {
-    appRoot: 'appRootMock',
+    appRoot,
     diagnosticLogging: true,
     platform: 'android',
     request: 'attach',
@@ -67,7 +76,7 @@ describe('NativeScriptDebugAdapter', () => {
             setTransformOptions: () => undefined,
         };
 
-        nativeScriptDebugAdapter = new NativeScriptDebugAdapter({
+        nativeScriptDebugAdapter = new nativeScriptDebugAdapterLib.NativeScriptDebugAdapter({
             chromeConnection: mockConstructor(chromeConnectionMock),
             pathTransformer: mockConstructor(pathTransformerMock),
             sourceMapTransformer: mockConstructor(sourceMapTransformer),
@@ -83,7 +92,11 @@ describe('NativeScriptDebugAdapter', () => {
 
     platforms.forEach((platform) => {
         launchMethods.forEach((method) => {
-            const argsMock = _.merge({}, defaultArgsMock, { platform, request: method });
+            let argsMock: any;
+
+            beforeEach(() => {
+                argsMock = _.merge({}, defaultArgsMock, { platform, request: method });
+            });
 
             it(`${method} for ${platform} should raise debug start event`, async () => {
                 const spy = sinon.spy(chromeSessionMock, 'sendEvent');
@@ -121,7 +134,51 @@ describe('NativeScriptDebugAdapter', () => {
 
                 sinon.assert.calledWith(spy, sinon.match({
                     trace: true,
-                    webRoot: 'appRootMock',
+                    webRoot: appRoot,
+                }));
+            });
+
+            it(`${method} for ${platform} should add sourceMapPathOverrides data`, async () => {
+                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
+                const existsSyncStub = sinon.stub(fs, 'existsSync');
+
+                existsSyncStub.returns(true);
+                webpackConfigFunctionStub
+                    .withArgs({ [platform]: platform })
+                    .returns({ output: { library: 'myLib' } });
+
+                await nativeScriptDebugAdapter[method](argsMock);
+
+                existsSyncStub.restore();
+                sinon.assert.calledWith(spy, sinon.match({
+                    sourceMapPathOverrides: {
+                        'webpack:///*': `${join(appRoot, 'app')}/*`,
+                        'webpack://myLib/*': `${join(appRoot, 'app')}/*`,
+                    },
+                    trace: true,
+                    webRoot: appRoot,
+                }));
+
+            });
+
+            it(`${method} for ${platform} should not fail when unable to require webpack.config.js`, async () => {
+                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
+                const existsSyncStub = sinon.stub(fs, 'existsSync');
+
+                existsSyncStub.returns(true);
+                webpackConfigFunctionStub
+                    .withArgs({ [platform]: platform })
+                    .throws(new Error('test'));
+
+                await nativeScriptDebugAdapter[method](argsMock);
+
+                existsSyncStub.restore();
+                sinon.assert.calledWith(spy, sinon.match({
+                    sourceMapPathOverrides: {
+                        'webpack:///*': `${join(appRoot, 'app')}/*`,
+                    },
+                    trace: true,
+                    webRoot: appRoot,
                 }));
             });
 
