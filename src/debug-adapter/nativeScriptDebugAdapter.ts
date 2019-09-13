@@ -186,7 +186,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.sourceMapPathOverrides['webpack:///*'] = `${fullAppDirPath}/*`;
         }
 
-        const webpackConfigFile = join(`./${args.webRoot}`, 'webpack.config.js');
+        const webpackConfigFile = join(args.webRoot, 'webpack.config.js');
 
         if (existsSync(webpackConfigFile)) {
             try {
