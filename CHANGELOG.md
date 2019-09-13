@@ -1,3 +1,9 @@
+0.10.2
+====
+## Bug Fixes
+ - [Unable to debug applications when output.library in webpack.config.js is set](https://github.com/NativeScript/nativescript-vscode-extension/issues/263)
+
+
 0.10.1
 ====
 ## Bug Fixes
