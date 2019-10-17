@@ -13,9 +13,8 @@ export function killProcess(childProcess: ChildProcess, logger?: ILogger): void 
                 break;
 
             default:
-                const cmd = path.join(__dirname, 'terminateProcess.sh');
-
-                execSync(`${cmd} ${childProcess.pid.toString()}`);
+                // ctrl + c
+                execSync(`kill -2 ${childProcess.pid.toString()}`);
                 break;
         }
     } catch (error) {
