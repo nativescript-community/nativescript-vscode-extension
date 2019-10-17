@@ -1,3 +1,11 @@
+0.11.0
+====
+## What's new
+ - [Android Emulators are not killed when the debugging is stopped](https://github.com/NativeScript/nativescript-vscode-extension/issues/260)
+
+## Bug Fixes
+ - [[iOS 13] Emulator cannot restart app on second run with VSCode #267](https://github.com/NativeScript/nativescript-vscode-extension/issues/267)
+
 0.10.2
 ====
 ## Bug Fixes
