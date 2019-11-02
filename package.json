@@ -25,7 +25,7 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "lodash": "4.17.11",
+    "lodash": "4.17.15",
     "semver": "5.6.0",
     "universal-analytics": "0.4.15",
     "uuid": "3.3.2",
