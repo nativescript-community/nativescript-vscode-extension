@@ -21,8 +21,9 @@ export class BuildService {
 
     public async processRequest(args: any): Promise<any> {
         const tnsPath = services.workspaceConfigService.tnsPath;
+
         this._logger.log(`[NSDebugAdapter] Using tns CLI on path '${tnsPath}'\n`);
-        const tnsPathResolved = (tnsPath !== "tns" && !path.isAbsolute(tnsPath)) ? path.join(args.appRoot, tnsPath) : tnsPath
+        const tnsPathResolved = (tnsPath !== 'tns' && !path.isAbsolute(tnsPath)) ? path.join(args.appRoot, tnsPath) : tnsPath;
         const cli = new NativeScriptCli(tnsPathResolved, this._logger);
 
         const project = args.platform === 'ios' ?

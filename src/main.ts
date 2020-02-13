@@ -11,7 +11,7 @@ import { services } from './services/extensionHostServices';
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
     services.globalState = context.globalState;
-    services.cliPath = "tns";
+    services.cliPath = 'tns';
 
     const channel = vscode.window.createOutputChannel('NativeScript Extension');
 
