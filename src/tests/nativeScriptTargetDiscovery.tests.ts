@@ -21,7 +21,7 @@ describe('NativeScriptTargetDiscovery', () => {
     });
 
     it(`getTargets calls getTarget`, async () => {
-        const testTarget = {
+        const testTarget: any = {
             devtoolsFrontendUrl: 'url',
             webSocketDebuggerUrl: 'socket',
         };
