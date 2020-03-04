@@ -8,9 +8,8 @@ import { Project } from './project/project';
 import { ChannelLogger } from './services/channelLogger';
 import { services } from './services/extensionHostServices';
 import { COMPLETION_PROVIDER } from './services/language-services/autocomplete';
-import { SUGGESTION_PROVIDERS } from './services/language-services/suggestions';
 import { HOVER_PROVIDERS } from './services/language-services/hover/hover';
-
+import { SUGGESTION_PROVIDERS } from './services/language-services/suggestions';
 
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -133,9 +132,8 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(showOutputChannelCommand);
 
     context.subscriptions.push(COMPLETION_PROVIDER);
-	context.subscriptions.concat(SUGGESTION_PROVIDERS);
-	context.subscriptions.concat(HOVER_PROVIDERS);
-
+    context.subscriptions.concat(SUGGESTION_PROVIDERS);
+    context.subscriptions.concat(HOVER_PROVIDERS);
 }
 
 function logExtensionInfo(cliVersion: string, packageJSON: any): void {
