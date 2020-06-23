@@ -6,6 +6,9 @@ import { AndroidProject } from './project/androidProject';
 import { IosProject } from './project/iosProject';
 import { Project } from './project/project';
 import { ChannelLogger } from './services/channelLogger';
+import { ILogger } from './common/logger';
+import * as semver from "semver";
+import { LoadedScriptsProvider, openScript } from './loadedScripts';
 import { services } from './services/extensionHostServices';
 
 // this method is called when the extension is activated
@@ -37,6 +40,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     services.cliVersion = cliVersion;
     services.extensionVersion = packageJSON.version;
+
+    const loadedScriptsProvider = new LoadedScriptsProvider(context);
+    vscode.window.registerTreeDataProvider('nativescript.loadedScriptsExplorer', loadedScriptsProvider);
+    context.subscriptions.push(vscode.commands.registerCommand('nativescript.openScript', (session: vscode.DebugSession, source) => openScript(session, source)));
 
     logExtensionInfo(cliVersion, packageJSON);
 

@@ -60,6 +60,14 @@
     "*"
   ],
   "contributes": {
+    "views": {
+      "debug": [
+        {
+          "id": "nativescript.loadedScriptsExplorer",
+          "name": "Loaded Scripts"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "NativeScript Extension Configurations",
