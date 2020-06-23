@@ -10,4 +10,4 @@ interface ILogger {
     log(msg: string, level?: LogLevel): void;
 }
 
-export { ILogger, LogLevel  }
+export { ILogger, LogLevel  };
