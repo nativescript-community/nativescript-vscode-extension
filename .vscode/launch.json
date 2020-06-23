@@ -2,11 +2,11 @@
     "version": "0.1.0",
     "configurations": [
         {
-            "name": "launch as server",
+            "name": "Launch as server",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/out/debug-adapter/webKitDebug.js",
-			"runtimeArgs": ["--nolazy"],
+            "program": "${workspaceRoot}/out/debug-adapter/nativeScriptDebug.js",
+            "runtimeArgs": ["--nolazy"],
             "args": [ "--server=4712" ],
             "stopOnEntry": false,
             "sourceMaps": true,
@@ -14,71 +14,32 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "launch in extension host",
+            "name": "Launch in extension host",
             "type": "extensionHost",
             "request": "launch",
-            // Path to VSCode executable
+            // Path to VSCode executablensDebugClient
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}"
             ],
             "stopOnEntry": false,
             "sourceMaps": true,
-            "outFiles": [ "${workspaceFolder}/out/**/*.js" ],
+            "outFiles": [ "${workspaceFolder}/out/**/*.js" ]
         },
-		{
-			"name": "run tests on mac",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
-			"runtimeArgs": [ "--nolazy" ],
-			"args": [
-				"--opts", "${workspaceRoot}/src/tests/config/mocha.opts",
-				"--config", "${workspaceRoot}/src/tests/config/mac.json",
-				"${workspaceRoot}/out/tests/"
-			],
-            "stopOnEntry": false,
-			"sourceMaps": true,
-			"outDir": "${workspaceRoot}/out",
-			"cwd": "${workspaceRoot}"
-		},
-		{
-			"name": "run tests on win",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
-			"runtimeArgs": [ "--nolazy" ],
-			"args": [
-				"--opts", "${workspaceRoot}/src/tests/config/mocha.opts",
-				"--config", "${workspaceRoot}/src/tests/config/win.json",
-				"${workspaceRoot}/out/tests/"
-			],
-            "stopOnEntry": false,
-			"sourceMaps": true,
-			"outDir": "${workspaceRoot}/out",
-			"cwd": "${workspaceRoot}"
-		},
-		{
-			"name": "run tests (custom)",
-			"type": "node",
-			"request": "launch",
-			"program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
-			"runtimeArgs": [ "--nolazy" ],
-			"args": [
-				"--opts", "${workspaceRoot}/src/tests/config/mocha.opts",
-				"--config", "${workspaceRoot}/src/tests/config/custom.json",
-				"${workspaceRoot}/out/tests/"
-			],
-            "stopOnEntry": false,
-			"sourceMaps": true,
-			"outDir": "${workspaceRoot}/out",
-			"cwd": "${workspaceRoot}"
-		}
+        {
+            "name": "Run tests",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run", "test", "--"
+            ]
+        }
     ],
-	"compounds": [
-		{
-			"name": "Extension + Server",
-			"configurations": [ "launch in extension host", "launch as server" ]
-		}
-	]
+    "compounds": [
+        {
+            "name": "Extension + Server",
+            "configurations": [ "Launch in extension host", "Launch as server" ]
+        }
+    ]
 }

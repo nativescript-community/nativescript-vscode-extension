@@ -1,6 +1,6 @@
 {
   "name": "nativescript",
-  "version": "0.7.4",
+  "version": "0.11.0",
   "minNativescriptCliVersion": "2.5.0",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
@@ -25,36 +25,41 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "node-ipc": "8.10.3",
-    "source-map": "0.6.1",
-    "universal-analytics": "0.4.13",
-    "uuid": "^3.2.1",
-    "vscode-chrome-debug-core": "~3.9.0",
-    "vscode-debugadapter": "1.26.0",
-    "vscode-debugprotocol": "1.26.0",
-    "xmlhttprequest": "https://github.com/telerik/node-XMLHttpRequest/tarball/master"
+    "lodash": "4.17.11",
+    "semver": "5.6.0",
+    "universal-analytics": "0.4.15",
+    "uuid": "3.3.2",
+    "vscode-chrome-debug-core": "6.7.46",
+    "vscode-debugadapter": "1.34.0"
   },
   "devDependencies": {
-    "@types/mocha": "2.2.41",
+    "@types/lodash": "4.14.121",
+    "@types/mocha": "5.2.6",
     "@types/node": "6.0.46",
-    "@types/source-map": "~0.1.0",
-    "chrome-remote-debug-protocol": "https://github.com/roblourens/chrome-remote-debug-protocol/tarball/master",
-    "mocha": "2.5.3",
-    "typescript": "2.6.2",
-    "vsce": "~1.36.0",
-    "vscode": "~1.1.10",
-    "vscode-debugadapter-testsupport": "1.26.0"
+    "@types/proxyquire": "1.3.28",
+    "@types/semver": "5.5.0",
+    "@types/sinon": "7.0.13",
+    "@types/universal-analytics": "0.4.1",
+    "cpx": "1.5.0",
+    "mocha": "5.2.0",
+    "proxyquire": "2.1.3",
+    "sinon": "7.4.2",
+    "tslint": "5.19.0",
+    "tslint-eslint-rules": "5.4.0",
+    "typescript": "3.6.2",
+    "vsce": "1.57.1",
+    "vscode": "1.1.30",
+    "vscode-debugprotocol": "1.34.0"
   },
   "scripts": {
     "clean": "git clean -fdx",
     "postinstall": "node ./node_modules/vscode/bin/install",
-    "build": "tsc -p ./src",
+    "build": "tsc -p ./src && cpx src/common/*.sh out/common",
     "package": "vsce package",
     "full-build": "npm run clean && npm install && npm run build && npm run package",
-    "launch-as-server": "node --nolazy ./out/debug-adapter/webKitDebug.js --server=4712",
-    "test-mac": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/mac.json ./out/tests",
-    "test-win": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/win.json ./out/tests",
-    "test-custom": "mocha --opts ./src/tests/config/mocha.opts --config ../../src/tests/config/custom.json ./out/tests"
+    "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",
+    "test": "mocha --opts ./src/tests/config/mocha.opts",
+    "tslint": "tslint -p ./src/tsconfig.json -c tslint.json"
   },
   "main": "./out/main",
   "activationEvents": [
@@ -132,7 +137,7 @@
             "typescript"
           ]
         },
-        "program": "./out/debug-adapter/webKitDebug.js",
+        "program": "./out/debug-adapter/nativeScriptDebug.js",
         "runtime": "node",
         "initialConfigurations": [
           {
@@ -143,6 +148,20 @@
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "watch": true
+          },
+          {
+            "name": "Test on iOS",
+            "type": "nativescript",
+            "request": "launch",
+            "platform": "ios",
+            "appRoot": "${workspaceRoot}",
+            "sourceMaps": true,
+            "watch": false,
+            "stopOnEntry": true,
+            "launchTests": true,
+            "tnsArgs": [
+              "--justlaunch"
+            ]
           },
           {
             "name": "Attach on iOS",
@@ -161,6 +180,20 @@
             "appRoot": "${workspaceRoot}",
             "sourceMaps": true,
             "watch": true
+          },
+          {
+            "name": "Test on Android",
+            "type": "nativescript",
+            "request": "launch",
+            "platform": "android",
+            "appRoot": "${workspaceRoot}",
+            "sourceMaps": true,
+            "watch": false,
+            "stopOnEntry": true,
+            "launchTests": true,
+            "tnsArgs": [
+              "--justlaunch"
+            ]
           },
           {
             "name": "Attach on Android",
@@ -277,6 +310,16 @@
                 "type": "boolean",
                 "description": "Whether the watch and reconnect on file change.",
                 "default": true
+              },
+              "sourceMapPathOverrides": {
+                "type": "object",
+                "description": "A set of mappings for rewriting the locations of source files from what the sourcemap says, to their locations on the disk.",
+                "default": null
+              },
+              "launchTests": {
+                "type": "boolean",
+                "description": "If true, the launch request will run the unit tests instead of the app itself.",
+                "default": false
               }
             }
           },
@@ -320,6 +363,11 @@
                 "type": "boolean",
                 "description": "Whether the watch and reconnect on file change.",
                 "default": true
+              },
+              "sourceMapPathOverrides": {
+                "type": "object",
+                "description": "A set of mappings for rewriting the locations of source files from what the sourcemap says, to their locations on the disk.",
+                "default": null
               }
             }
           }

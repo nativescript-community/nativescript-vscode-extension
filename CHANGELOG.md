@@ -1,3 +1,74 @@
+0.11.0
+====
+## What's new
+ - [Android Emulators are not killed when the debugging is stopped](https://github.com/NativeScript/nativescript-vscode-extension/issues/260)
+
+## Bug Fixes
+ - [[iOS 13] Emulator cannot restart app on second run with VSCode #267](https://github.com/NativeScript/nativescript-vscode-extension/issues/267)
+
+0.10.2
+====
+## Bug Fixes
+ - [Unable to debug applications when output.library in webpack.config.js is set](https://github.com/NativeScript/nativescript-vscode-extension/issues/263)
+
+
+0.10.1
+====
+## Bug Fixes
+ - [Could not load source 'undefined' when debugging unit tests](https://github.com/NativeScript/nativescript-vscode-extension/issues/237)
+ - [[Debugging] Break points in platform specific files and/or symlink files in `node_modules` are not hit with "@next" version](https://github.com/NativeScript/nativescript-vscode-extension/issues/252)
+ - [Cannot debug unit tests with HMR](https://github.com/NativeScript/nativescript-vscode-extension/issues/251)
+
+0.10.0
+====
+## What's new
+ - [Add support for debug with hot module replacement](https://github.com/NativeScript/nativescript-vscode-extension/issues/221)
+
+0.9.0
+====
+## What's new
+ - [Add configurations for unit testing](https://github.com/NativeScript/nativescript-vscode-extension/issues/144)
+
+## Bug Fixes
+ - [Cannot attach to `tns test android --debug-brk`](https://github.com/NativeScript/nativescript-vscode-extension/issues/234)
+
+0.8.4
+=====
+## Bug Fixes
+ - [Set correct source map path for webpack](https://github.com/NativeScript/nativescript-vscode-extension/issues/222)
+ - [Wait for '# NativeScript Debugger started #' only on `debug-brk` as now we don't restart the app in the other cases](https://github.com/NativeScript/nativescript-vscode-extension/pull/223)
+ - [Make the android debugging backwards compatible](https://github.com/NativeScript/nativescript-vscode-extension/pull/226)
+
+0.8.3
+=====
+## Bug Fixes
+ - [Debugger hangs if build of app fails](https://github.com/NativeScript/nativescript-vscode-extension/issues/206)
+ - [Unable to debug with webpack enabled.](https://github.com/NativeScript/nativescript-vscode-extension/issues/213)
+ - ["Launch on iOS" on Windows hangs VS Code](https://github.com/NativeScript/nativescript-vscode-extension/issues/217)
+
+0.8.2
+=====
+## Bug Fixes
+ - [Unable to debug when project's app directory is renamed](https://github.com/NativeScript/nativescript-vscode-extension/issues/205)
+
+0.8.1
+=====
+## Bug Fixes
+ - [When file watch is active saving shutdowns emulator](https://github.com/NativeScript/nativescript-vscode-extension/issues/195)
+    - The LiveSync process will no longer stop the emulator and you will be able to continue the debugging session after the changes are synced. **Note that emulators launched through VS Code will be stopped when the currently active debugging session is terminated. To avoid this behavior, you need to launch the emulators manually and not through VS Code.**
+
+- The Debug Console panel now shows only device related logs. All other NativeScript related logs are printed in the Output panel.
+
+0.8.0
+=====
+## What's new
+- [The debugger now uses *vscode-chrome-debug-core*](https://github.com/NativeScript/nativescript-vscode-extension/pull/181)
+- [Removed IPC, now using the debug adapter events for communication with the extension host process](https://github.com/NativeScript/nativescript-vscode-extension/pull/182)
+- [Added tests/travis](https://github.com/NativeScript/nativescript-vscode-extension/pull/190)
+- [Added tslint](https://github.com/NativeScript/nativescript-vscode-extension/pull/185)
+- [Added source map paths config for debugging with webpack](https://github.com/NativeScript/nativescript-vscode-extension/pull/192)
+- [The NS Extension log is not shown on startup](https://github.com/NativeScript/nativescript-vscode-extension/pull/177)
+
 0.7.4
 =====
 

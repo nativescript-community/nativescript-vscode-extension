@@ -1,12 +1,9 @@
-import {ChildProcess} from 'child_process';
+import { ChildProcess } from 'child_process';
+import { EventEmitter } from 'events';
 import * as stream from 'stream';
-import {EventEmitter} from 'events';
-import {Project, DebugResult} from './project';
+import { NativeScriptCli } from './nativeScriptCli';
+import { IDebugResult, Project } from './project';
 import * as scanner from './streamScanner';
-import {Version} from '../common/version';
-import {NativeScriptCli} from './nativeScriptCli';
-import {Services} from '../services/debugAdapterServices';
-import {Tags} from '../common/logger';
 
 export class IosProject extends Project {
 
@@ -19,39 +16,47 @@ export class IosProject extends Project {
     }
 
     public platformName(): string {
-        return "ios";
+        return 'ios';
     }
 
-    public attach(tnsArgs?: string[]): DebugResult {
-        let args: string[] = ["--start"];
+    public attach(tnsArgs?: string[]): IDebugResult {
+        let args: string[] = ['--start'];
+
         args = args.concat(tnsArgs);
 
-        let debugProcess : ChildProcess = super.executeDebugCommand(args);
-        let tnsOutputEventEmitter: EventEmitter = new EventEmitter();
+        const debugProcess: ChildProcess = super.executeDebugCommand(args);
+        const tnsOutputEventEmitter: EventEmitter = new EventEmitter();
+
         this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter);
-        return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
+
+        return { tnsProcess: debugProcess, tnsOutputEventEmitter };
     }
 
-    public debug(options: { stopOnEntry: boolean, watch: boolean }, tnsArgs?: string[]): DebugResult {
+    public debug(options: { stopOnEntry: boolean, watch: boolean, launchTests: boolean }, tnsArgs?: string[]): IDebugResult {
         let args: string[] = [];
-        args.push(options.watch ? "--watch" : "--no-watch");
-        if (options.stopOnEntry) { args.push("--debug-brk"); }
-        args = args.concat(tnsArgs);
 
-        let debugProcess : ChildProcess = super.executeDebugCommand(args);
-        let tnsOutputEventEmitter: EventEmitter = new EventEmitter();
+        args.push(options.watch ? '--watch' : '--no-watch');
+        if (options.stopOnEntry) { args.push('--debug-brk'); }
+        args = args.concat(tnsArgs);
+        const debugProcess: ChildProcess = options.launchTests ?
+            super.executeTestCommand(args) : super.executeDebugCommand(args);
+
+        const tnsOutputEventEmitter: EventEmitter = new EventEmitter();
+
         this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter);
-        return { tnsProcess: debugProcess, tnsOutputEventEmitter: tnsOutputEventEmitter };
+
+        return { tnsProcess: debugProcess, tnsOutputEventEmitter };
     }
 
     protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
         super.configureReadyEvent(readableStream, eventEmitter);
 
-        let socketPathPrefix = 'socket-file-location: ';
-        let streamScanner = new scanner.StringMatchingScanner(readableStream);
-        streamScanner.onEveryMatch(new RegExp(socketPathPrefix + '.*\.sock'), (match: scanner.MatchFound) => {
-            let socketPath = (<string>match.matches[0]).substr(socketPathPrefix.length);
-            eventEmitter.emit('readyForConnection', socketPath);
+        const streamScanner = new scanner.StringMatchingScanner(readableStream);
+
+        streamScanner.onEveryMatch(new RegExp('Opened localhost (.*)'), (match: scanner.IMatchFound) => {
+            const port = parseInt(match.matches[1] as string, 10);
+
+            setTimeout(() => { eventEmitter.emit('readyForConnection', port); }, 1000);
         });
     }
 
