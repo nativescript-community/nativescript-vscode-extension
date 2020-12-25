@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     services.logger = new ChannelLogger(channel);
 
-    const packageJSON = vscode.extensions.getExtension('Telerik.nativescript').packageJSON;
+    const packageJSON = vscode.extensions.getExtension('nativescript.nativescript').packageJSON;
     const cliVersion = services.cli().executeGetVersion();
 
     if (!cliVersion) {
