@@ -141,8 +141,12 @@ describe('NativeScriptDebugAdapter', () => {
             it(`${method} for ${platform} should add sourceMapPathOverrides data`, async () => {
                 const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
                 const existsSyncStub = sinon.stub(fs, 'existsSync');
+                // Need to also stub isAngularProject to return false or it will always return true bc it utilizes
+                // `fs.existsSync` which is also stubbed and made to return true in this test.
+                const isAngularProjectStub = sinon.stub(nativeScriptDebugAdapter, 'isAngularProject');
 
                 existsSyncStub.returns(true);
+                isAngularProjectStub.returns(false);
                 webpackConfigFunctionStub
                     .withArgs({ [platform]: platform })
                     .returns({ output: { library: 'myLib' } });
@@ -164,8 +168,12 @@ describe('NativeScriptDebugAdapter', () => {
             it(`${method} for ${platform} should not fail when unable to require webpack.config.js`, async () => {
                 const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
                 const existsSyncStub = sinon.stub(fs, 'existsSync');
+                // Need to also stub isAngularProject to return false or it will always return true bc it utilizes
+                // `fs.existsSync` which is also stubbed and made to return true in this test.
+                const isAngularProjectStub = sinon.stub(nativeScriptDebugAdapter, 'isAngularProject');
 
                 existsSyncStub.returns(true);
+                isAngularProjectStub.returns(false);
                 webpackConfigFunctionStub
                     .withArgs({ [platform]: platform })
                     .throws(new Error('test'));
