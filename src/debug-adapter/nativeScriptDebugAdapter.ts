@@ -166,6 +166,22 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         }
     }
 
+    /**
+     * Determines if the NativeScript project being debugged is an Angular based
+     * project by returning true if an **angular.json** file exists at the base
+     * of the project or returns false if not found.
+     * @param webRoot The root of the project.
+     */
+    private isAngularProject(webRoot): boolean {
+        const isAngularProject = existsSync(join(webRoot, 'angular.json'));
+
+        if (isAngularProject) {
+            logger.log('Angular project detected, found angular.json file.');
+        }
+
+        return isAngularProject;
+    }
+
     private translateArgs(args): any {
         if (args.diagnosticLogging) {
             args.trace = args.diagnosticLogging;
@@ -179,7 +195,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.sourceMapPathOverrides = {};
         }
 
-        const appDirPath = this.getAppDirPath(args.webRoot) || 'app';
+        const appDirPath = this.getAppDirPath(args.webRoot) || (this.isAngularProject(args.webRoot) ? 'src' : 'app');
         const fullAppDirPath = join(args.webRoot, appDirPath);
 
         if (!args.sourceMapPathOverrides['webpack:///*']) {
