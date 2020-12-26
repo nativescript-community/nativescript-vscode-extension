@@ -14,7 +14,7 @@ import { SUGGESTION_PROVIDERS } from './services/language-services/suggestions';
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
     services.globalState = context.globalState;
-    services.cliPath = services.workspaceConfigService.tnsPath || services.cliPath;
+    services.cliPath = 'tns';
 
     const channel = vscode.window.createOutputChannel('NativeScript Extension');
 
