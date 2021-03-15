@@ -17,8 +17,8 @@ export class NativeScriptSourceMapTransformer extends BaseSourceMapTransformer {
         this.debugAdapter = debugAdapter;
     }
 
-    public async scriptParsed(pathToGenerated: string, sourceMapURL: string): Promise<string[]> {
-        const scriptParsedResult = await super.scriptParsed(pathToGenerated, sourceMapURL);
+    public async scriptParsed(pathToGenerated: string, originalUrlToGenerated: string, sourceMapURL: string): Promise<string[]> {
+        const scriptParsedResult = await super.scriptParsed(pathToGenerated, originalUrlToGenerated, sourceMapURL);
 
         if (scriptParsedResult && scriptParsedResult.length) {
             for (const script of scriptParsedResult) {
