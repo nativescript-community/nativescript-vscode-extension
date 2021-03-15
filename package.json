@@ -1,6 +1,6 @@
 {
   "name": "nativescript",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "minNativescriptCliVersion": "2.5.0",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
@@ -25,12 +25,13 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "lodash": "4.17.19",
+    "lodash": "4.17.21",
     "semver": "5.6.0",
-    "universal-analytics": "0.4.15",
-    "uuid": "3.3.2",
-    "vscode-chrome-debug-core": "6.7.46",
-    "vscode-debugadapter": "1.34.0"
+    "strip-json-comments": "~3.1.1",
+    "universal-analytics": "0.4.23",
+    "uuid": "8.3.2",
+    "vscode-chrome-debug-core": "6.8.9",
+    "vscode-debugadapter": "1.45.0"
   },
   "devDependencies": {
     "@types/lodash": "4.14.121",
@@ -46,10 +47,10 @@
     "sinon": "7.4.2",
     "tslint": "5.19.0",
     "tslint-eslint-rules": "5.4.0",
-    "typescript": "3.6.2",
-    "vsce": "1.57.1",
-    "vscode": "1.1.30",
-    "vscode-debugprotocol": "1.34.0"
+    "typescript": "~4.0.0",
+    "vsce": "1.87.0",
+    "vscode": "1.1.37",
+    "vscode-debugprotocol": "1.45.0"
   },
   "scripts": {
     "clean": "git clean -fdx",

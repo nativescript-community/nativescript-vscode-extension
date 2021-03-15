@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'fs';
+import * as stripJsonComments from 'strip-json-comments';
 import * as _ from 'lodash';
 import { join } from 'path';
 import {
@@ -153,16 +154,34 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
 
     private getAppDirPath(webRoot: string): string {
         const pathToNsconfig = join(webRoot, 'nsconfig.json');
+        const pathToNativeScriptConfig = join(webRoot, 'nativescript.config.ts');
 
         if (existsSync(pathToNsconfig)) {
             try {
                 const content = readFileSync(pathToNsconfig).toString();
-                const jsonContent = JSON.parse(content);
+                const jsonContent = JSON.parse(stripJsonComments(content));
 
                 return jsonContent.appPath;
             } catch (err) {
                 // Ignore the error for the moment
             }
+        } else if (existsSync(pathToNativeScriptConfig)) {
+          try {
+            const nativeScriptConfigTSContent = readFileSync(pathToNativeScriptConfig, {
+              encoding: 'UTF-8',
+            });
+            if (nativeScriptConfigTSContent) {
+              // need a AST parser here - ridumentary check for now
+              // assuming 3 likely values: www, build or dist
+              if (nativeScriptConfigTSContent.indexOf(`appPath: 'src'`) === -1) {
+                // not using default, parse it out
+                const appPath = nativeScriptConfigTSContent.split(/appPath:\s*["'`](\w+)["'`]/gim)[1];
+                return appPath;
+              }
+            }
+          } catch (err) {
+            // ignore
+          }
         }
     }
 
@@ -173,10 +192,25 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
      * @param webRoot The root of the project.
      */
     private isAngularProject(webRoot): boolean {
-        const isAngularProject = existsSync(join(webRoot, 'angular.json'));
+        let isAngularProject = existsSync(join(webRoot, 'angular.json'));
 
         if (isAngularProject) {
             logger.log('Angular project detected, found angular.json file.');
+        } else {
+          let packageJson = existsSync(join(webRoot, 'package.json'));
+          if (packageJson) {
+            try {
+              const packageJsonContent = readFileSync(join(webRoot, 'package.json'), {
+                encoding: 'UTF-8',
+              });
+              const jsonContent = JSON.parse(stripJsonComments(packageJsonContent));
+              if (jsonContent && jsonContent.dependencies && jsonContent.dependencies['@angular/core']) {
+                isAngularProject = true;
+              }
+            } catch (err) {
+
+            }
+          }
         }
 
         return isAngularProject;
