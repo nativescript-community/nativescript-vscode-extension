@@ -41,8 +41,9 @@ export class AndroidProject extends Project {
         const debugProcess: ChildProcess = options.launchTests ?
             super.executeTestCommand(args) : super.executeDebugCommand(args);
         const tnsOutputEventEmitter: EventEmitter = new EventEmitter();
-        const shouldWaitAfterRestartMessage = semver.lt(semver.coerce(this.cliVersion), '5.1.0');
-        const waitForRestartMessage = shouldWaitAfterRestartMessage || args.indexOf('--debug-brk') > -1;
+        // const shouldWaitAfterRestartMessage = semver.lt(semver.coerce(this.cliVersion), '5.1.0');
+        // const waitForRestartMessage = shouldWaitAfterRestartMessage || args.indexOf('--debug-brk') > -1;
+        const waitForRestartMessage = args.indexOf('--debug-brk') > -1;
 
         this.configureReadyEvent(debugProcess.stdout, tnsOutputEventEmitter, waitForRestartMessage);
 

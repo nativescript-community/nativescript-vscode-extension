@@ -20,7 +20,8 @@ export class BuildService {
     }
 
     public async processRequest(args: any): Promise<any> {
-        const tnsPath = services.workspaceConfigService.tnsPath;
+        const tnsPath = services.workspaceConfigService.tnsPath || services.cliPath ||
+        'tns';
 
         this._logger.log(`[NSDebugAdapter] Using tns CLI on path '${tnsPath}'\n`);
         const tnsPathResolved = (tnsPath !== 'tns' && !path.isAbsolute(tnsPath)) ? path.join(args.appRoot, tnsPath) : tnsPath;
@@ -33,9 +34,9 @@ export class BuildService {
         services.analyticsService.launchDebugger(args.request, args.platform);
 
         // Run CLI Command
-        const version = project.cli.executeGetVersion();
+        // const version = project.cli.executeGetVersion();
 
-        this._logger.log(`[NSDebugAdapter] Using tns CLI v${version} on path '${project.cli.path}'\n`);
+        // this._logger.log(`[NSDebugAdapter] Using tns CLI v${version} on path '${project.cli.path}'\n`);
         this._logger.log('[NSDebugAdapter] Running tns command...\n');
 
         let cliCommand: IDebugResult;

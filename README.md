@@ -65,7 +65,7 @@ If your version of NativeScript is incompatible with the extension you will see 
 4. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
 
 ### How to disable the analytics
-The anonymous usage data collected by Progress from the NativeScript extension for Visual Studio Code is used strictly to improve the product and its services, and enhance the overall user experience.
+The anonymous usage data collected by us from the NativeScript extension for Visual Studio Code is used strictly to improve the product and its services, and enhance the overall user experience.
 
 If you have previously enabled the analytics option, you can disable it by following the steps outlined below:
 

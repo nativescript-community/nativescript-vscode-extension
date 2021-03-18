@@ -14,34 +14,35 @@ import { SUGGESTION_PROVIDERS } from './services/language-services/suggestions';
 // this method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
     services.globalState = context.globalState;
-    services.cliPath = 'tns';
+    services.cliPath = services.workspaceConfigService.tnsPath || services.cliPath ||
+    'tns';
 
     const channel = vscode.window.createOutputChannel('NativeScript Extension');
 
     services.logger = new ChannelLogger(channel);
 
     const packageJSON = vscode.extensions.getExtension('nativescript.nativescript').packageJSON;
-    const cliVersion = services.cli().executeGetVersion();
+    // const cliVersion = services.cli().executeGetVersion();
 
-    if (!cliVersion) {
-        // tslint:disable-next-line:max-line-length
-        vscode.window.showErrorMessage("NativeScript CLI not found. Use 'nativescript.tnsPath' workspace setting to explicitly set the absolute path to the NativeScript CLI.");
+    // if (!cliVersion) {
+    //     // tslint:disable-next-line:max-line-length
+    //     vscode.window.showErrorMessage("NativeScript CLI not found. Use 'nativescript.tnsPath' workspace setting to explicitly set the absolute path to the NativeScript CLI.");
 
-        return;
-    }
+    //     return;
+    // }
 
-    if (!semver.gte(cliVersion, packageJSON.minNativescriptCliVersion)) {
-        // tslint:disable-next-line:max-line-length
-        vscode.window.showErrorMessage(`The existing NativeScript extension is compatible with NativeScript CLI v${packageJSON.minNativescriptCliVersion} or greater.
-            The currently installed NativeScript CLI is v${cliVersion}.You can update the NativeScript CLI by executing 'npm install -g nativescript'.`);
+    // if (!semver.gte(cliVersion, packageJSON.minNativescriptCliVersion)) {
+    //     // tslint:disable-next-line:max-line-length
+    //     vscode.window.showErrorMessage(`The existing NativeScript extension is compatible with NativeScript CLI v${packageJSON.minNativescriptCliVersion} or greater.
+    //         The currently installed NativeScript CLI is v${cliVersion}.You can update the NativeScript CLI by executing 'npm install -g nativescript'.`);
 
-        return;
-    }
+    //     return;
+    // }
 
-    services.cliVersion = cliVersion;
+    // services.cliVersion = cliVersion;
     services.extensionVersion = packageJSON.version;
 
-    logExtensionInfo(cliVersion, packageJSON);
+    // logExtensionInfo(cliVersion, packageJSON);
 
     services.analyticsService.initialize();
 
