@@ -81,7 +81,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
                 this.portWaitingResolve = res;
 
                 timeoutId = setTimeout(() => {
-                    res();
+                    res(null);
                 }, reconnectAfterLiveSyncTimeout);
             });
 
@@ -148,6 +148,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
 
         this.isLiveSync = args.watch;
+        transformedArgs.address = this.convertIosLoopbackAddress(transformedArgs.address, args.platform.toLowerCase());
 
         return super.attach(transformedArgs);
     }
@@ -166,22 +167,22 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
                 // Ignore the error for the moment
             }
         } else if (existsSync(pathToNativeScriptConfig)) {
-          try {
-            const nativeScriptConfigTSContent = readFileSync(pathToNativeScriptConfig, {
-              encoding: 'UTF-8',
-            });
-            if (nativeScriptConfigTSContent) {
-              // need a AST parser here - ridumentary check for now
-              // assuming 3 likely values: www, build or dist
-              if (nativeScriptConfigTSContent.indexOf(`appPath: 'src'`) === -1) {
-                // not using default, parse it out
-                const appPath = nativeScriptConfigTSContent.split(/appPath:\s*["'`](\w+)["'`]/gim)[1];
-                return appPath;
-              }
+            try {
+                const nativeScriptConfigTSContent = readFileSync(pathToNativeScriptConfig, {
+                    encoding: 'utf8'
+                });
+                if (nativeScriptConfigTSContent) {
+                    // need a AST parser here - ridumentary check for now
+                    // assuming 3 likely values: www, build or dist
+                    if (nativeScriptConfigTSContent.indexOf(`appPath: 'src'`) === -1) {
+                        // not using default, parse it out
+                        const appPath = nativeScriptConfigTSContent.split(/appPath:\s*["'`](\w+)["'`]/gim)[1];
+                        return appPath;
+                    }
+                }
+            } catch (err) {
+                // ignore
             }
-          } catch (err) {
-            // ignore
-          }
         }
     }
 
@@ -197,20 +198,20 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         if (isAngularProject) {
             logger.log('Angular project detected, found angular.json file.');
         } else {
-          let packageJson = existsSync(join(webRoot, 'package.json'));
-          if (packageJson) {
-            try {
-              const packageJsonContent = readFileSync(join(webRoot, 'package.json'), {
-                encoding: 'UTF-8',
-              });
-              const jsonContent = JSON.parse(stripJsonComments(packageJsonContent));
-              if (jsonContent && jsonContent.dependencies && jsonContent.dependencies['@angular/core']) {
-                isAngularProject = true;
-              }
-            } catch (err) {
+            let packageJson = existsSync(join(webRoot, 'package.json'));
+            if (packageJson) {
+                try {
+                    const packageJsonContent = readFileSync(join(webRoot, 'package.json'), {
+                        encoding: 'utf8',
+                    });
+                    const jsonContent = JSON.parse(stripJsonComments(packageJsonContent));
+                    if (jsonContent && jsonContent.dependencies && jsonContent.dependencies['@angular/core']) {
+                        isAngularProject = true;
+                    }
+                } catch (err) {
 
+                }
             }
-          }
         }
 
         return isAngularProject;
@@ -266,5 +267,13 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
 
             this._session.sendEvent(new Event(extProtocol.NS_DEBUG_ADAPTER_MESSAGE, request));
         });
+    }
+
+    private convertIosLoopbackAddress(address: string, platform: string) {
+        if (address === undefined && platform === "ios") {
+            // If it is undefined it will use 127.0.0.1 and will fail on iOS
+            return "localhost";
+        }
+        return address;
     }
 }

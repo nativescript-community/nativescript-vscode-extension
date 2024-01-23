@@ -29,8 +29,8 @@ export class iOSTeamService {
 
                 vscode.window.showQuickPick(
                     quickPickItems, {
-                        placeHolder: 'Select your development team',
-                    })
+                    placeHolder: 'Select your development team',
+                })
                     .then((val: vscode.QuickPickItem) => {
                         vscode.workspace.getConfiguration().update('nativescript.iosTeamId', val.description);
                         resolve({
@@ -39,7 +39,7 @@ export class iOSTeamService {
                         });
                     });
             } else {
-                resolve();
+                resolve(null);
             }
         });
     }
