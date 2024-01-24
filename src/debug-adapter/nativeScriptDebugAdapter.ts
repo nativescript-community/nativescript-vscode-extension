@@ -237,8 +237,20 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.sourceMapPathOverrides['webpack:///*'] = `${fullAppDirPath}/*`;
         }
 
+        // Apply sourceMapPathOverrides for all file extions: "webpack://name_package/*.extensionFile": "${workspaceRoot}/*.extensionFile"
+        const packageFilePath = join(args.webRoot, 'package.json');
+        if (existsSync(packageFilePath)) {
+            try {
+                const packageFile = require(packageFilePath) as { name: string };
+                const extensions = ["js", "ts", "vue", "svelte", "jsx", "tsx"];
+                extensions.forEach(extension => {
+                    args.sourceMapPathOverrides[`webpack://${packageFile.name}/*.${extension}`] = `${args.webRoot}/*.${extension}`;
+                })
+            } catch (err) {
+                logger.warn(`Error when trying to require package.json file from path '${packageFilePath}'. Error is: ${err}`);
+            }
+        }
         const webpackConfigFile = join(args.webRoot, 'webpack.config.js');
-
         if (existsSync(webpackConfigFile)) {
             try {
                 const webpackConfig = require(webpackConfigFile);
