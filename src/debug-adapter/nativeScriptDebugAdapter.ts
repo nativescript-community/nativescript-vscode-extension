@@ -148,7 +148,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
 
         this.isLiveSync = args.watch;
-        transformedArgs.address = this.applyLoopbackAddress(transformedArgs.address, args.platform.toLowerCase());
+        transformedArgs.address = this.getNormalizedAddress(transformedArgs.address, args.platform.toLowerCase());
 
         return super.attach(transformedArgs);
     }
@@ -269,9 +269,9 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         });
     }
 
-    private applyLoopbackAddress(address: string, platform: string) {
+    private getNormalizedAddress(address: string, platform: string) {
+        // If it is undefined it will use 127.0.0.1 and will fail on iOS
         if (address === undefined && platform === "ios") {
-            // If it is undefined it will use 127.0.0.1 and will fail on iOS
             return "localhost";
         }
         return address;
