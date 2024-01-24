@@ -53,6 +53,7 @@
   "scripts": {
     "clean": "git clean -fdx",
     "build": "tsc -p ./src && cpx src/common/*.sh out/common",
+    "build:watch": "tsc -w -p ./src && cpx src/common/*.sh out/common",
     "package": "vsce package",
     "full-build": "npm run clean && npm install && npm run build && npm run package",
     "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",

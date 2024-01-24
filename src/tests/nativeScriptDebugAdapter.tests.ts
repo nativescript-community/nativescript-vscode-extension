@@ -127,6 +127,16 @@ describe('NativeScriptDebugAdapter', () => {
                 }));
             });
 
+            it(`${method} for ${platform} should set debug address`, async () => {
+                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
+
+                await nativeScriptDebugAdapter[method](argsMock);
+
+                sinon.assert.calledWith(spy, sinon.match({
+                    address: platform === "ios" ? "localhost" : undefined,
+                }));
+            });
+
             it(`${method} for ${platform} should translate args to chrome debug args`, async () => {
                 const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
 
