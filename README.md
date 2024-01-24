@@ -24,15 +24,6 @@ and choose NativeScript debug environment.
 ### Debug your NativeScript application
 
 #### SourceMaps configuration
-Add in `webpack.config.js` file the next configuration.
-
-```js
-webpack.chainWebpack(config => {
-    config.output.devtoolNamespace('app')
-})
-```
-
-#### Start debug
 
 To start the application with attached debugger, choose one of the launch configurations from the drop-down list and then click the start button.
 
