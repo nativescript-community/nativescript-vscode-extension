@@ -4,7 +4,7 @@ import { join } from 'path';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { ChromeDebugAdapter } from 'vscode-chrome-debug-core';
-import { Event } from 'vscode-debugadapter';
+import { Event } from '@vscode/debugadapter';
 import * as extProtocol from '../common/extensionProtocol';
 const appRoot = 'appRootMock';
 const webpackConfigFunctionStub = sinon.stub();

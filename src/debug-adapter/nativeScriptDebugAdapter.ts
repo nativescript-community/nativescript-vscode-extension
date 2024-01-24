@@ -9,8 +9,8 @@ import {
     ISetBreakpointsResponseBody,
     ITelemetryPropertyCollector,
 } from 'vscode-chrome-debug-core';
-import { Event, logger, TerminatedEvent } from 'vscode-debugadapter';
-import { DebugProtocol } from 'vscode-debugprotocol';
+import { Event, logger, TerminatedEvent } from '@vscode/debugadapter';
+import { DebugProtocol } from '@vscode/debugprotocol';
 import * as extProtocol from '../common/extensionProtocol';
 import { NativeScriptSourceMapTransformer } from './nativeScriptSourceMapTransformer';
 
