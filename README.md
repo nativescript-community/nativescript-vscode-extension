@@ -23,8 +23,6 @@ and choose NativeScript debug environment.
 
 ### Debug your NativeScript application
 
-#### SourceMaps configuration
-
 To start the application with attached debugger, choose one of the launch configurations from the drop-down list and then click the start button.
 
 ![Launch settings](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/screenshots/nativescript-launch-configurations.png)
