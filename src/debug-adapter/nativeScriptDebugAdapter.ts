@@ -77,15 +77,15 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         let timeoutId;
 
         if (!this.isDisconnecting && this.isLiveSync) {
-            const portProm = new Promise<any>((res, rej) => {
+            const portProm = new Promise<void>((res, rej) => {
                 this.portWaitingResolve = res;
 
                 timeoutId = setTimeout(() => {
-                    res(null);
+                    res();
                 }, reconnectAfterLiveSyncTimeout);
             });
 
-            restartRequestArgs = await portProm;
+            restartRequestArgs = await portProm as any;
             this.isLiveSyncRestart = restartRequestArgs && !!restartRequestArgs.port;
             clearTimeout(timeoutId);
         }
@@ -148,7 +148,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
 
         this.isLiveSync = args.watch;
-        transformedArgs.address = this.convertIosLoopbackAddress(transformedArgs.address, args.platform.toLowerCase());
+        transformedArgs.address = this.applyLoopbackAddress(transformedArgs.address, args.platform.toLowerCase());
 
         return super.attach(transformedArgs);
     }
@@ -269,7 +269,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         });
     }
 
-    private convertIosLoopbackAddress(address: string, platform: string) {
+    private applyLoopbackAddress(address: string, platform: string) {
         if (address === undefined && platform === "ios") {
             // If it is undefined it will use 127.0.0.1 and will fail on iOS
             return "localhost";

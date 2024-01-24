@@ -43,9 +43,9 @@ export class GUAService {
     }
 
     private sendEvent(params): Promise<any> {
-        return new Promise<any>((res, rej) => {
+        return new Promise<void>((res, rej) => {
             this._visitor.event(params, (err) => {
-                return err ? rej(err) : res(params);
+                return err ? rej(err) : res();
             });
         });
     }
