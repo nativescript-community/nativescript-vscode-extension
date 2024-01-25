@@ -148,7 +148,6 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         (ChromeDebugAdapter as any).SET_BREAKPOINTS_TIMEOUT = 20000;
 
         this.isLiveSync = args.watch;
-        transformedArgs.address = this.getNormalizedAddress(transformedArgs.address, args.platform.toLowerCase());
 
         return super.attach(transformedArgs);
     }
@@ -229,6 +228,8 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         if (!args.sourceMapPathOverrides) {
             args.sourceMapPathOverrides = {};
         }
+
+        args.address = this.getNormalizedAddress(args.address, args.platform.toLowerCase());
 
         const appDirPath = this.getAppDirPath(args.webRoot) || (this.isAngularProject(args.webRoot) ? 'src' : 'app');
         const fullAppDirPath = join(args.webRoot, appDirPath);
