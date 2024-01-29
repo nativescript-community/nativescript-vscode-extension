@@ -238,35 +238,34 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.sourceMapPathOverrides['webpack:///*'] = `${fullAppDirPath}/*`;
         }
 
-        // Apply sourceMapPathOverrides for all file extions: "webpack://name_package/*.extensionFile": "${workspaceRoot}/*.extensionFile"
         const packageFilePath = join(args.webRoot, 'package.json');
+        const webpackConfig = this.getWebpackConfig(args.webRoot, args.platform && args.platform.toLowerCase());
+
+        // Apply sourceMapPathOverrides for all file extensions: "webpack://packageName|devtoolNamespace/*.extensionFile": "${workspaceRoot}/*.extensionFile"
         if (existsSync(packageFilePath)) {
             try {
                 const packageFile = require(packageFilePath) as { name: string };
                 const extensions = ["js", "ts", "vue", "svelte", "jsx", "tsx"];
+                let sourceMap = packageFile.name;
+
+                // if user declare devtoolNamespace, use this property for sourceMaps
+                if (webpackConfig?.output?.devtoolNamespace) {
+                    sourceMap = webpackConfig.output.devtoolNamespace;
+                }
+
                 extensions.forEach(extension => {
-                    args.sourceMapPathOverrides[`webpack://${packageFile.name}/*.${extension}`] = `${args.webRoot}/*.${extension}`;
+                    args.sourceMapPathOverrides[`webpack://${sourceMap}/*.${extension}`] = `${args.webRoot}/*.${extension}`;
                 })
             } catch (err) {
                 logger.warn(`Error when trying to require package.json file from path '${packageFilePath}'. Error is: ${err}`);
             }
         }
-        const webpackConfigFile = join(args.webRoot, 'webpack.config.js');
-        if (existsSync(webpackConfigFile)) {
-            try {
-                const webpackConfig = require(webpackConfigFile);
-                const platform = args.platform && args.platform.toLowerCase();
-                const config = webpackConfig({ [`${platform}`]: platform });
 
-                if (config && config.output && config.output.library) {
-                    const sourceMapPathOverrideWithLib = `webpack://${config.output.library}/*`;
+        if (webpackConfig?.output?.library) {
+            const sourceMapPathOverrideWithLib = `webpack://${webpackConfig.output.library}/*`;
 
-                    args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] = args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] ||
-                        `${fullAppDirPath}/*`;
-                }
-            } catch (err) {
-                logger.warn(`Error when trying to require webpack.config.js file from path '${webpackConfigFile}'. Error is: ${err}`);
-            }
+            args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] = args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] ||
+                `${fullAppDirPath}/*`;
         }
 
         return args;
@@ -288,5 +287,18 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             return "localhost";
         }
         return address;
+    }
+
+    private getWebpackConfig(webRoot: string, platform: string) {
+        const webpackConfigFile = join(webRoot, 'webpack.config.js');
+        if (existsSync(webpackConfigFile)) {
+            try {
+                const webpackConfig = require(webpackConfigFile);
+                return webpackConfig({ [`${platform}`]: platform });
+            } catch (err) {
+                logger.warn(`Error when trying to require webpack.config.js file from path '${webpackConfigFile}'. Error is: ${err}`);
+            }
+        }
+        return null;
     }
 }
