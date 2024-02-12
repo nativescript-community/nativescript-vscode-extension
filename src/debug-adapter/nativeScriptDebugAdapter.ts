@@ -291,11 +291,18 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
 
     private getWebpackConfig(webRoot: string, platform: string) {
         const webpackConfigFile = join(webRoot, 'webpack.config.js');
+        const pathProcess = process.cwd();
+
         if (existsSync(webpackConfigFile)) {
             try {
+                // Apply the project path so that ns/webpack can resolve the path
+                process.chdir(webRoot);
                 const webpackConfig = require(webpackConfigFile);
-                return webpackConfig({ [`${platform}`]: platform });
+                const webpackConfigResult = webpackConfig({ [`${platform}`]: platform });
+                process.chdir(pathProcess);
+                return webpackConfigResult;
             } catch (err) {
+                process.chdir(pathProcess);
                 logger.warn(`Error when trying to require webpack.config.js file from path '${webpackConfigFile}'. Error is: ${err}`);
             }
         }
