@@ -155,6 +155,7 @@ describe('NativeScriptDebugAdapter', () => {
                 // `fs.existsSync` which is also stubbed and made to return true in this test.
                 const isAngularProjectStub = sinon.stub(nativeScriptDebugAdapter, 'isAngularProject');
 
+                process.chdir = () => null;
                 existsSyncStub.returns(true);
                 isAngularProjectStub.returns(false);
                 webpackConfigFunctionStub
@@ -172,7 +173,6 @@ describe('NativeScriptDebugAdapter', () => {
                     trace: true,
                     webRoot: appRoot,
                 }));
-
             });
 
             it(`${method} for ${platform} should not fail when unable to require webpack.config.js`, async () => {
