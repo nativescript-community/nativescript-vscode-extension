@@ -9,8 +9,8 @@ import {
     ISetBreakpointsResponseBody,
     ITelemetryPropertyCollector,
 } from 'vscode-chrome-debug-core';
-import { Event, logger, TerminatedEvent } from 'vscode-debugadapter';
-import { DebugProtocol } from 'vscode-debugprotocol';
+import { Event, logger, TerminatedEvent } from '@vscode/debugadapter';
+import { DebugProtocol } from '@vscode/debugprotocol';
 import * as extProtocol from '../common/extensionProtocol';
 import { NativeScriptSourceMapTransformer } from './nativeScriptSourceMapTransformer';
 
@@ -77,7 +77,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         let timeoutId;
 
         if (!this.isDisconnecting && this.isLiveSync) {
-            const portProm = new Promise<any>((res, rej) => {
+            const portProm = new Promise<void>((res, rej) => {
                 this.portWaitingResolve = res;
 
                 timeoutId = setTimeout(() => {
@@ -85,7 +85,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
                 }, reconnectAfterLiveSyncTimeout);
             });
 
-            restartRequestArgs = await portProm;
+            restartRequestArgs = await portProm as any;
             this.isLiveSyncRestart = restartRequestArgs && !!restartRequestArgs.port;
             clearTimeout(timeoutId);
         }
@@ -166,22 +166,22 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
                 // Ignore the error for the moment
             }
         } else if (existsSync(pathToNativeScriptConfig)) {
-          try {
-            const nativeScriptConfigTSContent = readFileSync(pathToNativeScriptConfig, {
-              encoding: 'UTF-8',
-            });
-            if (nativeScriptConfigTSContent) {
-              // need a AST parser here - ridumentary check for now
-              // assuming 3 likely values: www, build or dist
-              if (nativeScriptConfigTSContent.indexOf(`appPath: 'src'`) === -1) {
-                // not using default, parse it out
-                const appPath = nativeScriptConfigTSContent.split(/appPath:\s*["'`](\w+)["'`]/gim)[1];
-                return appPath;
-              }
+            try {
+                const nativeScriptConfigTSContent = readFileSync(pathToNativeScriptConfig, {
+                    encoding: 'utf8'
+                });
+                if (nativeScriptConfigTSContent) {
+                    // need a AST parser here - ridumentary check for now
+                    // assuming 3 likely values: www, build or dist
+                    if (nativeScriptConfigTSContent.indexOf(`appPath: 'src'`) === -1) {
+                        // not using default, parse it out
+                        const appPath = nativeScriptConfigTSContent.split(/appPath:\s*["'`](\w+)["'`]/gim)[1];
+                        return appPath;
+                    }
+                }
+            } catch (err) {
+                // ignore
             }
-          } catch (err) {
-            // ignore
-          }
         }
     }
 
@@ -197,20 +197,20 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
         if (isAngularProject) {
             logger.log('Angular project detected, found angular.json file.');
         } else {
-          let packageJson = existsSync(join(webRoot, 'package.json'));
-          if (packageJson) {
-            try {
-              const packageJsonContent = readFileSync(join(webRoot, 'package.json'), {
-                encoding: 'UTF-8',
-              });
-              const jsonContent = JSON.parse(stripJsonComments(packageJsonContent));
-              if (jsonContent && jsonContent.dependencies && jsonContent.dependencies['@angular/core']) {
-                isAngularProject = true;
-              }
-            } catch (err) {
+            let packageJson = existsSync(join(webRoot, 'package.json'));
+            if (packageJson) {
+                try {
+                    const packageJsonContent = readFileSync(join(webRoot, 'package.json'), {
+                        encoding: 'utf8',
+                    });
+                    const jsonContent = JSON.parse(stripJsonComments(packageJsonContent));
+                    if (jsonContent && jsonContent.dependencies && jsonContent.dependencies['@angular/core']) {
+                        isAngularProject = true;
+                    }
+                } catch (err) {
 
+                }
             }
-          }
         }
 
         return isAngularProject;
@@ -229,6 +229,8 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.sourceMapPathOverrides = {};
         }
 
+        args.address = this.getNormalizedAddress(args.address, args.platform.toLowerCase());
+
         const appDirPath = this.getAppDirPath(args.webRoot) || (this.isAngularProject(args.webRoot) ? 'src' : 'app');
         const fullAppDirPath = join(args.webRoot, appDirPath);
 
@@ -236,23 +238,34 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.sourceMapPathOverrides['webpack:///*'] = `${fullAppDirPath}/*`;
         }
 
-        const webpackConfigFile = join(args.webRoot, 'webpack.config.js');
+        const packageFilePath = join(args.webRoot, 'package.json');
+        const webpackConfig = this.getWebpackConfig(args.webRoot, args.platform && args.platform.toLowerCase());
 
-        if (existsSync(webpackConfigFile)) {
+        // Apply sourceMapPathOverrides for all file extensions: "webpack://packageName|devtoolNamespace/*.extensionFile": "${workspaceRoot}/*.extensionFile"
+        if (existsSync(packageFilePath)) {
             try {
-                const webpackConfig = require(webpackConfigFile);
-                const platform = args.platform && args.platform.toLowerCase();
-                const config = webpackConfig({ [`${platform}`]: platform });
+                const packageFile = require(packageFilePath) as { name: string };
+                const extensions = ["js", "ts", "vue", "svelte", "jsx", "tsx"];
+                let sourceMap = packageFile.name;
 
-                if (config && config.output && config.output.library) {
-                    const sourceMapPathOverrideWithLib = `webpack://${config.output.library}/*`;
-
-                    args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] = args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] ||
-                        `${fullAppDirPath}/*`;
+                // if user declare devtoolNamespace, use this property for sourceMaps
+                if (webpackConfig?.output?.devtoolNamespace) {
+                    sourceMap = webpackConfig.output.devtoolNamespace;
                 }
+
+                extensions.forEach(extension => {
+                    args.sourceMapPathOverrides[`webpack://${sourceMap}/*.${extension}`] = `${args.webRoot}/*.${extension}`;
+                })
             } catch (err) {
-                logger.warn(`Error when trying to require webpack.config.js file from path '${webpackConfigFile}'. Error is: ${err}`);
+                logger.warn(`Error when trying to require package.json file from path '${packageFilePath}'. Error is: ${err}`);
             }
+        }
+
+        if (webpackConfig?.output?.library) {
+            const sourceMapPathOverrideWithLib = `webpack://${webpackConfig.output.library}/*`;
+
+            args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] = args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] ||
+                `${fullAppDirPath}/*`;
         }
 
         return args;
@@ -266,5 +279,33 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
 
             this._session.sendEvent(new Event(extProtocol.NS_DEBUG_ADAPTER_MESSAGE, request));
         });
+    }
+
+    private getNormalizedAddress(address: string, platform: string) {
+        // If it is undefined it will use 127.0.0.1 and will fail on iOS
+        if (address === undefined && platform === "ios") {
+            return "localhost";
+        }
+        return address;
+    }
+
+    private getWebpackConfig(webRoot: string, platform: string) {
+        const webpackConfigFile = join(webRoot, 'webpack.config.js');
+        const pathProcess = process.cwd();
+
+        if (existsSync(webpackConfigFile)) {
+            try {
+                // Apply the project path so that ns/webpack can resolve the path
+                process.chdir(webRoot);
+                const webpackConfig = require(webpackConfigFile);
+                const webpackConfigResult = webpackConfig({ [`${platform}`]: platform });
+                process.chdir(pathProcess);
+                return webpackConfigResult;
+            } catch (err) {
+                process.chdir(pathProcess);
+                logger.warn(`Error when trying to require webpack.config.js file from path '${webpackConfigFile}'. Error is: ${err}`);
+            }
+        }
+        return null;
     }
 }

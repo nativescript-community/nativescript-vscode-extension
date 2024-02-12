@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 
 // tslint:disable-next-line:class-name
 export class iOSTeamService {
-    public selectTeam(): Promise<{ id: string, name: string }> {
+    public selectTeam(): Promise<{ id: string, name: string } | void> {
         return new Promise((resolve, reject) => {
             const workspaceTeamId = vscode.workspace.getConfiguration().get<string>('nativescript.iosTeamId');
 
@@ -29,8 +29,8 @@ export class iOSTeamService {
 
                 vscode.window.showQuickPick(
                     quickPickItems, {
-                        placeHolder: 'Select your development team',
-                    })
+                    placeHolder: 'Select your development team',
+                })
                     .then((val: vscode.QuickPickItem) => {
                         vscode.workspace.getConfiguration().update('nativescript.iosTeamId', val.description);
                         resolve({

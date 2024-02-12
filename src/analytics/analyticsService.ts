@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import * as uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import * as vscode from 'vscode';
 import { ILogger } from '../common/logger';
 import { services } from '../services/extensionHostServices';
@@ -71,7 +71,7 @@ export class AnalyticsService {
                 return this._gua.runRunCommand(platform);
             } catch (e) {
                 this._logger.log(`Analytics error: ${_.isString(e) ? e : e.message}`);
-             }
+            }
         }
 
         return Promise.resolve();
@@ -85,7 +85,7 @@ export class AnalyticsService {
                 AnalyticsService.ANALYTICS_PROMPT_ACCEPT_ACTION,
                 AnalyticsService.ANALYTICS_PROMPT_DENY_ACTION,
             )
-            .then((result) => this.onAnalyticsMessageConfirmation(result));
+                .then((result) => this.onAnalyticsMessageConfirmation(result));
 
             return;
         }
@@ -97,7 +97,7 @@ export class AnalyticsService {
         let clientId = this._globalState.get<string>(AnalyticsService.CLIENT_ID_KEY);
 
         if (!clientId) {
-            clientId = uuid.v4();
+            clientId = uuidv4();
             this._globalState.update(AnalyticsService.CLIENT_ID_KEY, clientId);
         }
 

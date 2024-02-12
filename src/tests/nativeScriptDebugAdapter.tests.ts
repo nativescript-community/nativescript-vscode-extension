@@ -4,7 +4,7 @@ import { join } from 'path';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { ChromeDebugAdapter } from 'vscode-chrome-debug-core';
-import { Event } from 'vscode-debugadapter';
+import { Event } from '@vscode/debugadapter';
 import * as extProtocol from '../common/extensionProtocol';
 const appRoot = 'appRootMock';
 const webpackConfigFunctionStub = sinon.stub();
@@ -127,6 +127,16 @@ describe('NativeScriptDebugAdapter', () => {
                 }));
             });
 
+            it(`${method} for ${platform} should set debug address`, async () => {
+                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
+
+                await nativeScriptDebugAdapter[method](argsMock);
+
+                sinon.assert.calledWith(spy, sinon.match({
+                    address: platform === "ios" ? "localhost" : undefined,
+                }));
+            });
+
             it(`${method} for ${platform} should translate args to chrome debug args`, async () => {
                 const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
 
@@ -145,6 +155,7 @@ describe('NativeScriptDebugAdapter', () => {
                 // `fs.existsSync` which is also stubbed and made to return true in this test.
                 const isAngularProjectStub = sinon.stub(nativeScriptDebugAdapter, 'isAngularProject');
 
+                process.chdir = () => null;
                 existsSyncStub.returns(true);
                 isAngularProjectStub.returns(false);
                 webpackConfigFunctionStub
@@ -162,7 +173,6 @@ describe('NativeScriptDebugAdapter', () => {
                     trace: true,
                     webRoot: appRoot,
                 }));
-
             });
 
             it(`${method} for ${platform} should not fail when unable to require webpack.config.js`, async () => {

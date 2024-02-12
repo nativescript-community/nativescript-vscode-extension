@@ -64,7 +64,7 @@ export class BuildService {
             cliCommand = project.attach(args.tnsArgs);
         }
 
-        return new Promise<string | number>((res, rej) => {
+        return new Promise<string | number | void>((res, rej) => {
             if (cliCommand.tnsProcess) {
                 this._tnsProcess = cliCommand.tnsProcess;
                 cliCommand.tnsProcess.stdout.on('data', (data) => { this._logger.log(data.toString()); });

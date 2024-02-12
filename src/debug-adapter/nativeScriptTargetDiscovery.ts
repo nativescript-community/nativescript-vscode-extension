@@ -1,4 +1,4 @@
-import * as uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { chromeConnection, chromeTargetDiscoveryStrategy, logger, telemetry } from 'vscode-chrome-debug-core';
 
 export class NativeScriptTargetDiscovery extends chromeTargetDiscoveryStrategy.ChromeTargetDiscovery {
@@ -10,7 +10,7 @@ export class NativeScriptTargetDiscovery extends chromeTargetDiscoveryStrategy.C
         return Promise.resolve({
             description: 'NS Debug Target',
             devtoolsFrontendUrl: `chrome-devtools://devtools/bundled/inspector.html?experiments=true&ws=${address}:${port}`,
-            id: uuid.v4(),
+            id: uuidv4(),
             title: 'NS Debug Target',
             type: 'node',
             version: null,
@@ -19,10 +19,10 @@ export class NativeScriptTargetDiscovery extends chromeTargetDiscoveryStrategy.C
     }
 
     public async getAllTargets(address: string,
-                               port: number, targetFilter?: chromeConnection.ITargetFilter,
-                               targetUrl?: string): Promise<chromeConnection.ITarget[]> {
+        port: number, targetFilter?: chromeConnection.ITargetFilter,
+        targetUrl?: string): Promise<chromeConnection.ITarget[]> {
         const target = await this.getTarget(address, port);
 
-        return Promise.resolve([ target ]);
+        return Promise.resolve([target]);
     }
 }
