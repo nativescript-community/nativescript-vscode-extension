@@ -267,7 +267,7 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
             args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] = args.sourceMapPathOverrides[sourceMapPathOverrideWithLib] ||
                 `${fullAppDirPath}/*`;
         }
-        this.callRemoteMethod("buildService", "log", args.sourceMapPathOverrides)
+
         return args;
     }
 

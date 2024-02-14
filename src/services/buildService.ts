@@ -96,7 +96,9 @@ export class BuildService {
             });
         });
     }
-
+    public log(args): void {
+        this._logger.log(JSON.stringify(args))
+    }
     public disconnect(): void {
         if (this._tnsProcess) {
             this._tnsProcess.stdout.removeAllListeners();

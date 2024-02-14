@@ -5,6 +5,14 @@ import { NativeScriptDebugAdapter } from './nativeScriptDebugAdapter';
 import { NativeScriptPathTransformer } from './nativeScriptPathTransformer';
 import { NativeScriptSourceMapTransformer } from './nativeScriptSourceMapTransformer';
 import { NativeScriptTargetDiscovery } from './nativeScriptTargetDiscovery';
+import { DebugSession, } from '@vscode/debugadapter';
+
+class NSAndroidConnection extends chromeConnection.ChromeConnection {
+    constructor() {
+        super(new NativeScriptTargetDiscovery());
+    }
+}
+
 class NSAndroidConnection extends chromeConnection.ChromeConnection {
     constructor() {
         super(new NativeScriptTargetDiscovery());
@@ -20,3 +28,7 @@ ChromeDebugSession.run(ChromeDebugSession.getSession(
         pathTransformer: NativeScriptPathTransformer,
         sourceMapTransformer: NativeScriptSourceMapTransformer,
     }));
+
+DebugSession.run(
+
+)
