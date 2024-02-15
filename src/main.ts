@@ -58,9 +58,30 @@ export function activate(context: vscode.ExtensionContext) {
     const beforeBuildDisposables = new Array<vscode.Disposable>();
     const runCommand = (session: any) => {
         console.log("RUN COMMAND");
+        const panel = vscode.window.createWebviewPanel(
+            'NativeScript', // Identifies the type of the webview. Used internally
+            'NativeScript', // Title of the panel displayed to the user
+            vscode.ViewColumn.Active, // Editor column to show the new webview panel in.
+            {} // Webview options. More on these later.
+        );
+        function getWebviewContent() {
+            return `<!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Cat Coding</title>
+          </head>
+          <body>
+              <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" width="300" />
+          </body>
+          </html>`;
+        }
+        panel.webview.html = getWebviewContent();
 
         async function connect() {
             if (!entry) {
+
                 entry = true;
                 try {
                     console.log(uuidv4());
@@ -84,7 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
                             //   toTarget = new Connection(await WebSocketTransport.create("ws://localhost:41000"));
 
                             // toTarget = new Connection();
-                            toTarget = new Connection(await WebSocketTransport.create("ws://127.0.0.1:40000"));
+                            toTarget = new Connection(await WebSocketTransport.create("ws://127.0.0.1:41000"));
                             console.log('Connected to target');
                             services.logger.log('Connected to target')
                         } catch (error) {
@@ -100,10 +121,44 @@ export function activate(context: vscode.ExtensionContext) {
                         // sendCommand();
 
                         toTarget.onError(err => console.error('Error on target transport', err));
+                        function parseInspector(evt) {
+                            if (evt.method === "Network.requestWillBeSent") {
+                                if (evt.params?.request?.url) {
+                                    const requestId = evt.params?.requestId
+                                    const timestamp = evt.params?.timestamp
+                                    const method = evt.params?.request?.method
+                                    const url = evt.params?.request?.url
 
+                                }
+                            }
+                            if (evt.method === "Network.responseReceived") {
+                                if (evt.params?.request?.url) {
+                                    const requestId = evt.params?.requestId
+                                    const timestamp = evt.params?.timestamp
+                                    const fromDiskCache = evt.params?.response?.fromDiskCache
+                                    const url = evt.params?.request?.url
+                                    const statusText = evt.params?.request?.statusText
+                                    const mimeType = evt.params?.request?.mimeType
+                                    const status = evt.params?.request?.status
+                                    const headers: {} = evt.params?.request?.headers
+                                }
+                            }
+                            if (evt.method === "Network.loadingFinished") {
+                                if (evt.params?.request?.url) {
+                                    const requestId = evt.params?.requestId
+                                    const timestamp = evt.params?.timestamp
+                                    const url = evt.params?.request?.url
+                                    const statusText = evt.params?.request?.statusText
+                                    const mimeType = evt.params?.request?.mimeType
+                                    const status = evt.params?.request?.status
+                                    const headers: {} = evt.params?.request?.headers
+                                }
+                            }
+                        }
                         // Copy commands (requests) from one pipe to the other.
                         toTarget.onCommand(evt => {
                             console.log(`onCommand target -> debugger`, evt);
+                            parseInspector(evt)
                             toDebugger.send({ ...{ id: i++ }, ...evt });
                         });
                         toDebugger.onCommand((evt: any) => {
