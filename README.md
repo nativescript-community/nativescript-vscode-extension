@@ -7,7 +7,7 @@ The NativeScript extension for Visual Studio Code aids your [NativeScript](https
 
 ### Install NativeScript
 
-To install [NativeScript](https://www.nativescript.org/) and all its dependencies, follow the instructions in our [getting started guide](http://docs.nativescript.org/start/getting-started#getting-up-and-running).
+To install [NativeScript](https://www.nativescript.org/) and all its dependencies, follow the instructions in our [getting started guide](https://docs.nativescript.org/setup/).
 
 > Note: The VS Code extension requires [nativescript node module](https://www.npmjs.com/package/nativescript) to be globally installed. If you are using [nvm](https://github.com/creationix/nvm) to manage your node versions, make sure that `nativescript` is installed in your default nodeJS version. To check which is your default node version execute 'nvm ls' on the command prompt and you should see something like 'default -> 5.5.0 (-> v5.5.0)' in the output.
 
@@ -43,7 +43,12 @@ If your version of NativeScript is incompatible with the extension you will see 
 
 ### Get the latest bits
 
-1. Clone the [extension repository](https://github.com/NativeScript/nativescript-vscode-extension): `git clone git@github.com:NativeScript/nativescript-vscode-extension.git`
+1. Clone the [extension repository](https://github.com/nativescript-community/nativescript-vscode-extension/)
+
+    ```
+    git clone https://github.com/nativescript-community/nativescript-vscode-extension.git
+    ```
+
 2. To build the extension run the following commands in the root repository folder:
 
     ```
@@ -52,17 +57,19 @@ If your version of NativeScript is incompatible with the extension you will see 
     npm run package # produces nativescript-*.*.*.vsix in the root folder
     ```
 
-3. To test the extension run the following commands in the root repository folder:
+3. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
+
+### Contribute
+To test the extension run the following commands in the root repository folder:
 
     ```
     npm install
-    npm run build # compiles TypeScript source files to JavaScript
-    npm run launch-as-server # launches the debug adapter in server mode
-    # execute this in a separate terminal
-    npm run test-mac # run tests on ios device
+    npm run build:watch
+    launch manually `Extension + Server` in VSCode from the debug section
     ```
 
-4. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
+You must choose a project to debug, launch the phases that involve testing the extension in the application, modify any code of the extension, stop the debug and launch it again (F5)
+
 
 ### How to disable the analytics
 The anonymous usage data collected by Progress from the NativeScript extension for Visual Studio Code is used strictly to improve the product and its services, and enhance the overall user experience.

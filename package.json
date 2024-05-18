@@ -6,15 +6,15 @@
   "displayName": "NativeScript",
   "description": "NativeScript support for Visual Studio Code",
   "galleryBanner": {
-    "color": "#425df4",
+    "color": "#65adf1",
     "theme": "dark"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/NativeScript/nativescript-vscode-extension/"
+    "url": "https://github.com/nativescript-community/nativescript-vscode-extension/"
   },
   "publisher": "NativeScript",
-  "bugs": "https://github.com/NativeScript/nativescript-vscode-extension/issues",
+  "bugs": "https://github.com/nativescript-community/nativescript-vscode-extension/issues",
   "engines": {
     "vscode": "^1.85.0"
   },
