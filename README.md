@@ -62,11 +62,11 @@ If your version of NativeScript is incompatible with the extension you will see 
 ### Contribute
 To test the extension run the following commands in the root repository folder:
 
-    ```
-    npm install
-    npm run build:watch
-    launch manually `Extension + Server` in VSCode from the debug section
-    ```
+```
+npm install
+npm run build:watch
+launch manually `Extension + Server` in VSCode from the debug section
+```
 
 You must choose a project to debug, launch the phases that involve testing the extension in the application, modify any code of the extension, stop the debug and launch it again (F5)
 
