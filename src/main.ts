@@ -101,6 +101,12 @@ export function activate(context: vscode.ExtensionContext) {
         return runCommand(new AndroidProject(vscode.workspace.rootPath, services.cli()));
     });
 
+    context.subscriptions.push(vscode.debug.onDidTerminateDebugSession((session) => {
+        if (session.type === 'nativescript') {
+            services.buildService.disconnect();
+        }
+    }));
+
     context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent((event) => {
         if (event.event === extProtocol.BEFORE_DEBUG_START) {
             channel.show();

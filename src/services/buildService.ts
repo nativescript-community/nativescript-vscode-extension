@@ -90,7 +90,15 @@ export class BuildService {
             cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
                 this._logger.log(`[NSDebugAdapter] Ready to attach to application on ${connectionToken}\n`);
                 args.port = connectionToken;
-                vscode.debug.activeDebugSession && vscode.debug.activeDebugSession.customRequest('onPortReceived', { port: connectionToken });
+                const session = vscode.debug.activeDebugSession;
+                if (session) {
+                    session.customRequest('onPortReceived', { port: connectionToken }).then(
+                        () => this._logger.log(`[NSDebugAdapter] Port ${connectionToken} delivered to debug session\n`),
+                        (err) => this._logger.log(`[NSDebugAdapter] Failed to deliver port to debug session: ${err}\n`),
+                    );
+                } else {
+                    this._logger.log(`[NSDebugAdapter] No active debug session to deliver port ${connectionToken}\n`);
+                }
 
                 res(connectionToken);
             });

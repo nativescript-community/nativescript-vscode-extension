@@ -14,7 +14,7 @@ import { DebugProtocol } from '@vscode/debugprotocol';
 import * as extProtocol from '../common/extensionProtocol';
 import { NativeScriptSourceMapTransformer } from './nativeScriptSourceMapTransformer';
 
-const reconnectAfterLiveSyncTimeout = 10 * 1000;
+const reconnectAfterLiveSyncTimeout = 60 * 1000;
 
 export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
     private _idCounter = 0;
@@ -44,6 +44,12 @@ export class NativeScriptDebugAdapter extends ChromeDebugAdapter {
 
     public disconnect(args: any): void {
         this.isDisconnecting = true;
+
+        if (this.portWaitingResolve) {
+            this.portWaitingResolve();
+            this.portWaitingResolve = null;
+        }
+
         if (!this.isLiveSyncRestart) {
             this.callRemoteMethod('buildService', 'disconnect');
         }
