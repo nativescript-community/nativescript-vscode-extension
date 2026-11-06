@@ -109,14 +109,14 @@ export class DebugManager implements vscode.Disposable {
         () => active.stopping,
       );
     } catch (e) {
-      this.cleanup(parentSession.id);
+      void this.cleanup(parentSession.id);
       void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
       throw e;
     }
 
     if (!buildSession || active.stopping) {
-      buildSession?.disconnect();
-      this.cleanup(parentSession.id);
+      void buildSession?.disconnect();
+      void this.cleanup(parentSession.id);
       return false;
     }
 
@@ -138,26 +138,27 @@ export class DebugManager implements vscode.Disposable {
 
     if (!port || active.stopping) {
       this.logger.log('[NativeScript] No debug port received, terminating\n');
-      this.cleanup(parentSession.id);
+      void this.cleanup(parentSession.id);
       return false;
     }
 
     const attached = await this.queueChildStart(active, port);
     if (!attached && !active.stopping) {
-      this.cleanup(parentSession.id);
+      void this.cleanup(parentSession.id);
       void vscode.window.showErrorMessage(`Could not attach the debugger to the app on port ${port}.`);
       return false;
     }
     return !active.stopping;
   }
 
-  public stopDebugging(parentSessionId: string): void {
-    this.cleanup(parentSessionId);
+  /** Resolves once the ns process has exited, so a restart can't race the old CLI. */
+  public stopDebugging(parentSessionId: string): Promise<void> {
+    return this.cleanup(parentSessionId);
   }
 
   public dispose(): void {
     for (const id of [...this.activeSessions.keys()]) {
-      this.cleanup(id);
+      void this.cleanup(id);
     }
     for (const disposable of this.disposables) {
       disposable.dispose();
@@ -184,7 +185,7 @@ export class DebugManager implements vscode.Disposable {
     if (previous) {
       active.replacedChildIds.add(previous.id);
       active.childSession = null;
-      await vscode.debug.stopDebugging(previous);
+      await this.disconnectChild(previous);
       await delay(CHILD_STOP_SETTLE_MS);
     }
 
@@ -245,7 +246,7 @@ export class DebugManager implements vscode.Disposable {
     const active = this.activeSessions.get(parentId);
     if (!active) {
       // The parent was stopped while this child's startDebugging was still in flight.
-      void vscode.debug.stopDebugging(session);
+      void this.disconnectChild(session);
       return;
     }
 
@@ -257,7 +258,7 @@ export class DebugManager implements vscode.Disposable {
     this.logger.log(`[NativeScript] Session terminated: ${session.name} (type=${session.type})\n`);
 
     if (this.activeSessions.has(session.id)) {
-      this.cleanup(session.id);
+      void this.cleanup(session.id);
       return;
     }
 
@@ -288,8 +289,20 @@ export class DebugManager implements vscode.Disposable {
 
   private terminate(active: ActiveSession): void {
     if (active.stopping) return;
-    this.cleanup(active.parentSession.id);
-    active.onTerminated();
+    // Notify only after the CLI exited, so an immediate relaunch can't overlap the old ns process.
+    void this.cleanup(active.parentSession.id).then(() => active.onTerminated());
+  }
+
+  /**
+   * Children are started with lifecycleManagedByParent, so vscode.debug.stopDebugging(child) would be routed to the
+   * NativeScript parent and end the whole session. Sending DAP disconnect straight to js-debug detaches only the child.
+   */
+  private async disconnectChild(session: vscode.DebugSession): Promise<void> {
+    try {
+      await session.customRequest('disconnect', { terminateDebuggee: false });
+    } catch (e) {
+      this.logger.log(`[NativeScript] Failed to disconnect child debug session: ${String(e)}\n`);
+    }
   }
 
   private clearReconnectTimer(active: ActiveSession): void {
@@ -299,7 +312,7 @@ export class DebugManager implements vscode.Disposable {
     }
   }
 
-  private cleanup(parentSessionId: string): void {
+  private async cleanup(parentSessionId: string): Promise<void> {
     const active = this.activeSessions.get(parentSessionId);
     if (!active) return;
 
@@ -307,15 +320,18 @@ export class DebugManager implements vscode.Disposable {
     this.activeSessions.delete(parentSessionId);
     this.clearReconnectTimer(active);
 
+    let buildExited: Promise<void> | undefined;
     if (active.buildSession) {
       active.buildSession.removeAllListeners();
-      active.buildSession.disconnect();
+      buildExited = active.buildSession.disconnect();
     }
 
     if (active.childSession) {
-      void vscode.debug.stopDebugging(active.childSession);
+      void this.disconnectChild(active.childSession);
       active.childSession = null;
     }
+
+    await buildExited;
   }
 }
 

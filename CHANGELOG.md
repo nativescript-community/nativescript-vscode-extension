@@ -7,8 +7,10 @@ Unreleased
  - New launch attributes: `address`, `resolveSourceMapLocations`, `skipFiles`, `smartStep`, `trace`.
  - Analytics use the GA4 Measurement Protocol and respect VS Code's telemetry setting.
 
+## Deprecations
+ - `nativescript.tnsPath` is deprecated in favor of `nativescript.nsPath` (default `ns`); it is still honored when `nsPath` is not set.
+
 ## Breaking changes
- - The `nativescript.tnsPath` setting is now `nativescript.nsPath` (default `ns`).
  - Requires VS Code 1.109+ and NativeScript CLI 8.0+.
  - Removed the unused `tnsOutput` and `noDebug` launch attributes; `diagnosticLogging` is deprecated in favor of `trace`.
 

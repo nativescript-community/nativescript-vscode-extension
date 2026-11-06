@@ -10,7 +10,7 @@ import { AnalyticsService } from '../analytics/analyticsService';
 import * as utils from '../common/utilities';
 import { NativeScriptCli } from '../project/nativeScriptCli';
 import { IDebugResult } from '../project/project';
-import { BuildArgs, BuildService, BuildSession } from '../services/buildService';
+import { BuildArgs, BuildService, BuildSession, CLI_EXIT_TIMEOUT_MS } from '../services/buildService';
 import { services } from '../services/extensionHostServices';
 import { iOSTeamService } from '../services/iOSTeamService';
 
@@ -49,7 +49,14 @@ vi.mock('../common/utilities', async (importOriginal) => ({
 }));
 
 function createFakeProcess() {
-  return Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough(), pid: 4242 });
+  return Object.assign(new EventEmitter(), {
+    stdout: new PassThrough(),
+    stderr: new PassThrough(),
+    pid: 4242,
+    exitCode: null as number | null,
+    signalCode: null as NodeJS.Signals | null,
+    kill: vi.fn((_signal?: NodeJS.Signals) => true),
+  });
 }
 
 type FakeProcess = ReturnType<typeof createFakeProcess>;
@@ -149,31 +156,90 @@ describe('BuildSession', () => {
     expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('spawn ns ENOENT'));
   });
 
-  it('disconnect kills the process, resolves initialPort with undefined and is idempotent', async () => {
+  it('disconnect interrupts the process, resolves initialPort with undefined and detaches listeners', async () => {
     const { proc, result } = createDebugResult();
     const session = new BuildSession(result, logger);
     const closed = vi.fn();
     session.on('closed', closed);
 
-    session.disconnect();
-    session.disconnect();
+    const exited = session.disconnect();
 
     await expect(session.initialPort).resolves.toBeUndefined();
     expect(utils.killProcess).toHaveBeenCalledExactlyOnceWith(proc, logger);
-    expect(proc.listenerCount('close')).toBe(0);
     expect(proc.stdout.listenerCount('data')).toBe(0);
 
     proc.emit('close', 0);
+    await exited;
     expect(closed).not.toHaveBeenCalled();
+    expect(proc.kill).not.toHaveBeenCalled();
   });
 
-  it('does not kill a process that has already exited', () => {
+  it('disconnect resolves only once the process closes', async () => {
+    vi.useFakeTimers();
+    const { proc, result } = createDebugResult();
+    const session = new BuildSession(result, logger);
+
+    let resolved = false;
+    void session.disconnect().then(() => (resolved = true));
+    await vi.advanceTimersByTimeAsync(CLI_EXIT_TIMEOUT_MS - 1);
+    expect(resolved).toBe(false);
+
+    proc.emit('close', 130);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(resolved).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(CLI_EXIT_TIMEOUT_MS);
+    expect(proc.kill).not.toHaveBeenCalled();
+  });
+
+  it('disconnect force-kills a process that ignores SIGINT', async () => {
+    vi.useFakeTimers();
+    const { proc, result } = createDebugResult();
+    const session = new BuildSession(result, logger);
+
+    let resolved = false;
+    void session.disconnect().then(() => (resolved = true));
+    await vi.advanceTimersByTimeAsync(CLI_EXIT_TIMEOUT_MS);
+
+    expect(proc.kill).toHaveBeenCalledExactlyOnceWith('SIGKILL');
+    expect(resolved).toBe(true);
+  });
+
+  it.each([
+    ['exitCode', { exitCode: 0 }],
+    ['signalCode', { signalCode: 'SIGINT' as const }],
+  ])('disconnect resolves immediately when %s is already set', async (_label, state) => {
+    vi.useFakeTimers();
+    const { proc, result } = createDebugResult();
+    Object.assign(proc, state);
+    const session = new BuildSession(result, logger);
+
+    await session.disconnect();
+
+    await vi.advanceTimersByTimeAsync(CLI_EXIT_TIMEOUT_MS);
+    expect(proc.kill).not.toHaveBeenCalled();
+  });
+
+  it('repeated disconnects share one exit promise', async () => {
+    const { proc, result } = createDebugResult();
+    const session = new BuildSession(result, logger);
+
+    const first = session.disconnect();
+    const second = session.disconnect();
+
+    expect(second).toBe(first);
+    expect(utils.killProcess).toHaveBeenCalledOnce();
+    proc.emit('close', 0);
+    await expect(first).resolves.toBeUndefined();
+  });
+
+  it('does not kill a process that has already exited', async () => {
     const { proc, result } = createDebugResult();
     const session = new BuildSession(result, logger);
 
     proc.emit('close', 0);
-    session.disconnect();
 
+    await expect(session.disconnect()).resolves.toBeUndefined();
     expect(utils.killProcess).not.toHaveBeenCalled();
   });
 });

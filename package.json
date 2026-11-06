@@ -78,6 +78,11 @@
           "default": "ns",
           "description": "Path to the NativeScript CLI executable. Relative paths are resolved against the app root."
         },
+        "nativescript.tnsPath": {
+          "type": "string",
+          "description": "Path to the NativeScript CLI executable.",
+          "markdownDeprecationMessage": "Use `#nativescript.nsPath#` instead. Still honored when `nativescript.nsPath` is not set."
+        },
         "nativescript.iosTeamId": {
           "type": "string",
           "description": "The iOS development Team ID."

@@ -103,6 +103,24 @@ describe('AndroidProject', () => {
     expect(ready).toHaveBeenCalledExactlyOnceWith(40000);
   });
 
+  it('with --debug-brk, ignores a debugger-started message that precedes the debug port', async () => {
+    const { tnsOutputEventEmitter } = new AndroidProject(APP_ROOT, fake.cli).debug({
+      stopOnEntry: true,
+      watch: false,
+      launchTests: false,
+    });
+    tnsOutputEventEmitter.on('readyForConnection', ready);
+
+    await writeLine(fake.stdout, '# NativeScript Debugger started #');
+    await vi.advanceTimersByTimeAsync(READY_DELAY_MS * 2);
+    expect(ready).not.toHaveBeenCalled();
+
+    await writeLine(fake.stdout, 'device: emulator-5554 debug port: 40000');
+    await writeLine(fake.stdout, '# NativeScript Debugger started #');
+    await vi.advanceTimersByTimeAsync(READY_DELAY_MS);
+    expect(ready).toHaveBeenCalledExactlyOnceWith(40000);
+  });
+
   it('emits tsCompilationError on TypeScript failures', async () => {
     const { tnsOutputEventEmitter } = new AndroidProject(APP_ROOT, fake.cli).attach();
     const compilationError = vi.fn();

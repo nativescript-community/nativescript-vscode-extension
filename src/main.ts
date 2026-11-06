@@ -60,7 +60,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
 async function checkCli(): Promise<void> {
   try {
-    const cliVersion = await services.createCli().getSupportedVersion(services.minCliVersion);
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const cliVersion = await services.createCli(workspaceRoot).getSupportedVersion(services.minCliVersion);
     services.logger.log(`NativeScript CLI: ${cliVersion}`);
     services.analyticsService.initialize(cliVersion);
   } catch (e) {

@@ -24,7 +24,31 @@ vi.mock('../debug-adapter/sourceMaps', () => ({
 class FakeBuildSession extends EventEmitter {
   public resolvePort!: (port: number | undefined) => void;
   public readonly initialPort = new Promise<number | undefined>((resolve) => (this.resolvePort = resolve));
-  public readonly disconnect = vi.fn(() => this.resolvePort(undefined));
+  public exited: Promise<void> = Promise.resolve();
+  public readonly disconnect = vi.fn(() => {
+    this.resolvePort(undefined);
+    return this.exited;
+  });
+}
+
+type FakeChild = MockDebugSession & { customRequest: Mock<(command: string, args?: unknown) => Promise<unknown>> };
+
+/** Mirrors js-debug: a DAP disconnect ends the child session. */
+function createChild(id: string, config: Record<string, unknown>): FakeChild {
+  const child: FakeChild = {
+    id,
+    type: 'pwa-node',
+    name: String(config.name),
+    configuration: config,
+    customRequest: vi.fn(async (command: string) => {
+      if (command === 'disconnect') testing.fireDidTerminateDebugSession(child);
+    }),
+  };
+  return child;
+}
+
+function expectDetached(child: FakeChild): void {
+  expect(child.customRequest).toHaveBeenCalledExactlyOnceWith('disconnect', { terminateDebuggee: false });
 }
 
 type StartBuild = (args: BuildArgs, isCancelled: () => boolean) => Promise<BuildSession | null>;
@@ -67,7 +91,7 @@ describe('DebugManager', () => {
   let build: FakeBuildSession;
   let parent: MockDebugSession;
   let onTerminated: ReturnType<typeof vi.fn<() => void>>;
-  let children: MockDebugSession[];
+  let children: FakeChild[];
 
   const activeSessionCount = () => (manager as unknown as { activeSessions: Map<string, unknown> }).activeSessions.size;
 
@@ -80,10 +104,7 @@ describe('DebugManager', () => {
 
   const lastChildConfig = () => debug.startDebugging.mock.lastCall![1];
 
-  async function startWithChild(
-    config: Partial<NativeScriptDebugConfiguration>,
-    port = 40000,
-  ): Promise<MockDebugSession> {
+  async function startWithChild(config: Partial<NativeScriptDebugConfiguration>, port = 40000): Promise<FakeChild> {
     const started = start(config);
     build.resolvePort(port);
     await expect(started).resolves.toBe(true);
@@ -101,18 +122,10 @@ describe('DebugManager', () => {
 
     children = [];
     debug.startDebugging.mockImplementation(async (_folder, config) => {
-      const child: MockDebugSession = {
-        id: `child-${children.length + 1}`,
-        type: 'pwa-node',
-        name: String(config.name),
-        configuration: config,
-      };
+      const child = createChild(`child-${children.length + 1}`, config);
       children.push(child);
       testing.fireDidStartDebugSession(child);
       return true;
-    });
-    debug.stopDebugging.mockImplementation(async (session) => {
-      if (session) testing.fireDidTerminateDebugSession(session);
     });
 
     parent = createParent();
@@ -123,6 +136,8 @@ describe('DebugManager', () => {
   afterEach(() => {
     manager.dispose();
     vi.useRealTimers();
+    // lifecycleManagedByParent routes stopDebugging(child) to the parent, ending the whole session.
+    expect(debug.stopDebugging).not.toHaveBeenCalled();
   });
 
   describe('startup', () => {
@@ -172,7 +187,7 @@ describe('DebugManager', () => {
       await startWithChild({ platform: 'ios', request: 'launch' }, 41000);
       expect(lastChildConfig().websocketAddress).toBe('ws://localhost:41000');
 
-      manager.stopDebugging(parent.id);
+      void manager.stopDebugging(parent.id);
       build = new FakeBuildSession();
       parent = createParent('parent-2');
       children = [];
@@ -266,7 +281,7 @@ describe('DebugManager', () => {
       const started = start({ platform: 'android', request: 'launch' });
       build.resolvePort(40000);
       await vi.advanceTimersByTimeAsync(0);
-      manager.stopDebugging(parent.id);
+      void manager.stopDebugging(parent.id);
       await vi.advanceTimersByTimeAsync(CHILD_RETRY_DELAY_MS * 3);
 
       await expect(started).resolves.toBe(false);
@@ -278,7 +293,7 @@ describe('DebugManager', () => {
       const childStart = deferred<boolean>();
       debug.startDebugging.mockImplementation(async (_folder, config) => {
         const result = await childStart.promise;
-        const child: MockDebugSession = { id: 'late-child', type: 'pwa-node', name: 'late', configuration: config };
+        const child = createChild('late-child', config);
         children.push(child);
         testing.fireDidStartDebugSession(child);
         return result;
@@ -287,11 +302,11 @@ describe('DebugManager', () => {
       const started = start({ platform: 'android', request: 'launch' });
       build.resolvePort(40000);
       await vi.advanceTimersByTimeAsync(0);
-      manager.stopDebugging(parent.id);
+      void manager.stopDebugging(parent.id);
       childStart.resolve(true);
 
       await expect(started).resolves.toBe(false);
-      expect(debug.stopDebugging).toHaveBeenCalledWith(children[0]);
+      expectDetached(children[0]);
     });
 
     it('returns false without starting a child when no port is announced', async () => {
@@ -315,7 +330,7 @@ describe('DebugManager', () => {
       const isCancelled = startBuild.mock.calls[0][1];
       expect(isCancelled()).toBe(false);
 
-      manager.stopDebugging(parent.id);
+      void manager.stopDebugging(parent.id);
       expect(isCancelled()).toBe(true);
 
       pending.resolve(null);
@@ -329,7 +344,7 @@ describe('DebugManager', () => {
       startBuild.mockImplementation(() => pending.promise);
 
       const started = start({ platform: 'android', request: 'launch' });
-      manager.stopDebugging(parent.id);
+      void manager.stopDebugging(parent.id);
       pending.resolve(build as unknown as BuildSession);
 
       await expect(started).resolves.toBe(false);
@@ -342,7 +357,7 @@ describe('DebugManager', () => {
       const started = start({ platform: 'android', request: 'launch' });
       await vi.advanceTimersByTimeAsync(0);
 
-      manager.stopDebugging(parent.id);
+      void manager.stopDebugging(parent.id);
       expect(build.disconnect).toHaveBeenCalledOnce();
 
       await expect(started).resolves.toBe(false);
@@ -367,7 +382,7 @@ describe('DebugManager', () => {
       build.emit('newPort', 41000);
       await vi.advanceTimersByTimeAsync(CHILD_STOP_SETTLE_MS);
 
-      expect(debug.stopDebugging).toHaveBeenCalledWith(first);
+      expectDetached(first);
       expect(debug.startDebugging).toHaveBeenCalledTimes(2);
       expect(lastChildConfig().websocketAddress).toBe('ws://127.0.0.1:41000');
 
@@ -378,7 +393,7 @@ describe('DebugManager', () => {
 
     it('ignores a late termination event for the replaced child', async () => {
       const first = await startWithChild({ platform: 'android', request: 'launch', watch: false });
-      debug.stopDebugging.mockImplementation(async () => undefined);
+      first.customRequest.mockImplementation(async () => undefined);
 
       build.emit('newPort', 41000);
       await vi.advanceTimersByTimeAsync(CHILD_STOP_SETTLE_MS);
@@ -421,7 +436,9 @@ describe('DebugManager', () => {
         'ws://127.0.0.1:41000',
         'ws://127.0.0.1:42000',
       ]);
-      expect(debug.stopDebugging.mock.calls.map(([session]) => session?.id)).toEqual(['child-1', 'child-2']);
+      expectDetached(children[0]);
+      expectDetached(children[1]);
+      expect(children[2].customRequest).not.toHaveBeenCalled();
       expect(onTerminated).not.toHaveBeenCalled();
     });
   });
@@ -437,7 +454,7 @@ describe('DebugManager', () => {
       build.emit('newPort', 41000);
       await vi.advanceTimersByTimeAsync(0);
 
-      expect(debug.stopDebugging).not.toHaveBeenCalled();
+      expect(first.customRequest).not.toHaveBeenCalled();
       expect(children).toHaveLength(2);
       expect(lastChildConfig().websocketAddress).toBe('ws://127.0.0.1:41000');
 
@@ -464,6 +481,7 @@ describe('DebugManager', () => {
       const first = await startWithChild({ platform: 'android', request: 'launch', watch: false });
 
       testing.fireDidTerminateDebugSession(first);
+      await vi.advanceTimersByTimeAsync(0);
 
       expect(onTerminated).toHaveBeenCalledOnce();
       expect(build.disconnect).toHaveBeenCalledOnce();
@@ -485,14 +503,30 @@ describe('DebugManager', () => {
     });
   });
 
+  it('reports termination only after the ns process has exited', async () => {
+    const exit = deferred<void>();
+    build.exited = exit.promise;
+    const first = await startWithChild({ platform: 'android', request: 'launch', watch: false });
+
+    testing.fireDidTerminateDebugSession(first);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(build.disconnect).toHaveBeenCalledOnce();
+    expect(onTerminated).not.toHaveBeenCalled();
+
+    exit.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(onTerminated).toHaveBeenCalledOnce();
+  });
+
   it('terminates when the ns process closes', async () => {
     const child = await startWithChild({ platform: 'android', request: 'launch', watch: true });
 
     build.emit('closed', 0);
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(onTerminated).toHaveBeenCalledOnce();
     expect(build.disconnect).toHaveBeenCalledOnce();
-    expect(debug.stopDebugging).toHaveBeenCalledWith(child);
+    expectDetached(child);
   });
 
   it('terminates when the ns process closes before announcing a port', async () => {
@@ -500,6 +534,7 @@ describe('DebugManager', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     build.emit('closed', 1);
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(onTerminated).toHaveBeenCalledOnce();
     await expect(started).resolves.toBe(false);
@@ -512,7 +547,7 @@ describe('DebugManager', () => {
     testing.fireDidTerminateDebugSession(parent);
 
     expect(build.disconnect).toHaveBeenCalledOnce();
-    expect(debug.stopDebugging).toHaveBeenCalledWith(child);
+    expectDetached(child);
     expect(onTerminated).not.toHaveBeenCalled();
     expect(activeSessionCount()).toBe(0);
 
@@ -524,11 +559,57 @@ describe('DebugManager', () => {
   it('stopDebugging disconnects the build, stops the child and does not call onTerminated', async () => {
     const child = await startWithChild({ platform: 'android', request: 'launch', watch: true });
 
-    manager.stopDebugging(parent.id);
-    manager.stopDebugging(parent.id);
+    await manager.stopDebugging(parent.id);
+    await manager.stopDebugging(parent.id);
 
     expect(build.disconnect).toHaveBeenCalledOnce();
-    expect(debug.stopDebugging).toHaveBeenCalledExactlyOnceWith(child);
+    expectDetached(child);
+    expect(onTerminated).not.toHaveBeenCalled();
+  });
+
+  it('stopDebugging resolves only after the ns process has exited', async () => {
+    await startWithChild({ platform: 'android', request: 'launch', watch: true });
+    const exit = deferred<void>();
+    build.exited = exit.promise;
+
+    let stopped = false;
+    const stopping = manager.stopDebugging(parent.id).then(() => (stopped = true));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(build.disconnect).toHaveBeenCalledOnce();
+    expect(stopped).toBe(false);
+
+    exit.resolve();
+    await stopping;
+    expect(stopped).toBe(true);
+  });
+
+  it('stopDebugging resolves for an unknown session', async () => {
+    await expect(manager.stopDebugging('unknown')).resolves.toBeUndefined();
+  });
+
+  it('logs a failed child disconnect and still finishes cleanup', async () => {
+    const child = await startWithChild({ platform: 'android', request: 'launch', watch: true });
+    child.customRequest.mockRejectedValue(new Error('session already gone'));
+
+    await manager.stopDebugging(parent.id);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expectDetached(child);
+    expect(build.disconnect).toHaveBeenCalledOnce();
+    expect(activeSessionCount()).toBe(0);
+    expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('session already gone'));
+  });
+
+  it('still starts the replacement child when detaching the old one fails', async () => {
+    const first = await startWithChild({ platform: 'android', request: 'launch', watch: true });
+    first.customRequest.mockRejectedValue(new Error('detach failed'));
+
+    build.emit('newPort', 41000);
+    await vi.advanceTimersByTimeAsync(CHILD_STOP_SETTLE_MS);
+
+    expect(children).toHaveLength(2);
+    expect(lastChildConfig().websocketAddress).toBe('ws://127.0.0.1:41000');
+    expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('detach failed'));
     expect(onTerminated).not.toHaveBeenCalled();
   });
 

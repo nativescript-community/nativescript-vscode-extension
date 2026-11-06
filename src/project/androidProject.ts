@@ -67,6 +67,7 @@ export class AndroidProject extends Project {
     );
     if (waitForRestartMessage) {
       new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', () => {
+        if (debugPort === null) return;
         // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
         setTimeout(() => {
           eventEmitter.emit('readyForConnection', debugPort);

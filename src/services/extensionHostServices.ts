@@ -36,7 +36,7 @@ export class ExtensionHostServices {
   }
 
   public get workspaceConfigService(): WorkspaceConfigService {
-    return (this._workspaceConfigService ??= new WorkspaceConfigService());
+    return (this._workspaceConfigService ??= new WorkspaceConfigService(this.logger));
   }
 
   public get iOSTeamService(): iOSTeamService {

@@ -32,6 +32,7 @@ export class iOSTeamService {
           })
           .then((val: vscode.QuickPickItem | undefined) => {
             if (!val) {
+              resolve();
               return;
             }
             vscode.workspace.getConfiguration().update('nativescript.iosTeamId', val.description);

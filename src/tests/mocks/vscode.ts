@@ -30,6 +30,7 @@ export interface MockDebugSession {
   configuration: Record<string, unknown>;
   workspaceFolder?: unknown;
   parentSession?: MockDebugSession;
+  customRequest?: (command: string, args?: unknown) => Promise<unknown>;
 }
 
 const didStart = new EventEmitter<MockDebugSession>();
@@ -57,6 +58,8 @@ export const workspace = {
   getConfiguration: vi.fn(() => ({
     get: <T>(key: string, defaultValue?: T) =>
       key in testing.configuration ? testing.configuration[key] : defaultValue,
+    // Values in testing.configuration count as user-set (global) values.
+    inspect: (key: string) => ({ key, globalValue: testing.configuration[key] }),
     update: vi.fn(async () => undefined),
   })),
 };
@@ -64,7 +67,7 @@ export const workspace = {
 export const window = {
   showErrorMessage: vi.fn(async (_message: string, ..._items: unknown[]): Promise<unknown> => undefined),
   showInformationMessage: vi.fn(async () => undefined),
-  showQuickPick: vi.fn(async () => undefined),
+  showQuickPick: vi.fn(async (_items: unknown, _options?: unknown): Promise<unknown> => undefined),
 };
 
 export const env = { isTelemetryEnabled: true };

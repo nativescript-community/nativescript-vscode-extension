@@ -23,6 +23,9 @@ export interface BuildArgs {
 /** Ignore repeated port announcements closer together than this; the CLI can print the same port twice. */
 const DUPLICATE_PORT_WINDOW_MS = 2000;
 
+/** How long the CLI gets to clean up after SIGINT before it is killed. */
+export const CLI_EXIT_TIMEOUT_MS = 5000;
+
 /**
  * One running `ns debug`/`ns test` process.
  *
@@ -36,6 +39,7 @@ export class BuildSession extends EventEmitter {
   private resolveInitialPort?: (port: number | undefined) => void;
   private lastPortTimestamp = 0;
   private process: ChildProcess | null;
+  private exited: Promise<void> = Promise.resolve();
 
   constructor(
     command: IDebugResult,
@@ -62,17 +66,36 @@ export class BuildSession extends EventEmitter {
     );
   }
 
-  public disconnect(): void {
+  /** Stops the CLI and resolves once it has exited (or was force-killed after CLI_EXIT_TIMEOUT_MS). */
+  public disconnect(): Promise<void> {
     const child = this.process;
-    if (!child) return;
+    if (!child) return this.exited;
 
     this.process = null;
     child.stdout?.removeAllListeners();
     child.stderr?.removeAllListeners();
     child.removeAllListeners();
-    utils.killProcess(child, this.logger);
     this.resolveInitialPort?.(undefined);
     this.resolveInitialPort = undefined;
+
+    this.exited = new Promise<void>((resolve) => {
+      if (child.exitCode !== null || child.signalCode !== null) {
+        resolve();
+        return;
+      }
+      const timer = setTimeout(() => {
+        this.logger.log('[NativeScript] The ns command did not exit in time, killing it\n');
+        child.kill('SIGKILL');
+        resolve();
+      }, CLI_EXIT_TIMEOUT_MS);
+      child.once('close', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+
+    utils.killProcess(child, this.logger);
+    return this.exited;
   }
 
   private onPort(port: number): void {
