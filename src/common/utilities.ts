@@ -1,10 +1,9 @@
 import { ChildProcess, execSync } from 'child_process';
 import * as os from 'os';
-import * as path from 'path';
 import { ILogger, LogLevel } from '../common/logger';
 
 export function killProcess(childProcess: ChildProcess, logger?: ILogger): void {
-  logger && logger.log(`Stopping process: ${childProcess.pid}`);
+  logger?.log(`Stopping process: ${childProcess.pid}`);
 
   try {
     switch (process.platform) {
@@ -18,7 +17,7 @@ export function killProcess(childProcess: ChildProcess, logger?: ILogger): void 
         break;
     }
   } catch (error) {
-    logger && logger.log(error as string, LogLevel.Error);
+    logger?.log(String(error), LogLevel.Error);
   }
 }
 

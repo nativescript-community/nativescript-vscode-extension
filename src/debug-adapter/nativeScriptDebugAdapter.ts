@@ -1,6 +1,6 @@
 import { DebugSession, InitializedEvent, TerminatedEvent, OutputEvent } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { DebugManager } from './debugManager';
+import { DebugManager, NativeScriptDebugConfiguration } from './debugManager';
 import * as vscode from 'vscode';
 
 export class NativeScriptDebugAdapter extends DebugSession {
@@ -16,43 +16,43 @@ export class NativeScriptDebugAdapter extends DebugSession {
     this.parentSession = session;
   }
 
-  protected initializeRequest(
+  protected override initializeRequest(
     response: DebugProtocol.InitializeResponse,
     _args: DebugProtocol.InitializeRequestArguments,
   ): void {
+    // No supportsRestartRequest: VS Code then restarts by terminating and relaunching the session.
     response.body = {
       supportsTerminateRequest: true,
-      supportsRestartRequest: true,
     };
 
     this.sendResponse(response);
     this.sendEvent(new InitializedEvent());
   }
 
-  protected async launchRequest(
+  protected override launchRequest(
     response: DebugProtocol.LaunchResponse,
     args: DebugProtocol.LaunchRequestArguments,
-  ): Promise<void> {
+  ): void {
     this.sendResponse(response);
-    await this.startDebugSession(args);
+    void this.startDebugSession(args);
   }
 
-  protected async attachRequest(
+  protected override attachRequest(
     response: DebugProtocol.AttachResponse,
     args: DebugProtocol.AttachRequestArguments,
-  ): Promise<void> {
+  ): void {
     this.sendResponse(response);
-    await this.startDebugSession(args);
+    void this.startDebugSession(args);
   }
 
-  protected configurationDoneRequest(
+  protected override configurationDoneRequest(
     response: DebugProtocol.ConfigurationDoneResponse,
     _args: DebugProtocol.ConfigurationDoneArguments,
   ): void {
     this.sendResponse(response);
   }
 
-  protected disconnectRequest(
+  protected override disconnectRequest(
     response: DebugProtocol.DisconnectResponse,
     _args: DebugProtocol.DisconnectArguments,
   ): void {
@@ -62,7 +62,10 @@ export class NativeScriptDebugAdapter extends DebugSession {
     this.sendResponse(response);
   }
 
-  protected terminateRequest(response: DebugProtocol.TerminateResponse, _args: DebugProtocol.TerminateArguments): void {
+  protected override terminateRequest(
+    response: DebugProtocol.TerminateResponse,
+    _args: DebugProtocol.TerminateArguments,
+  ): void {
     if (this.parentSession) {
       this.debugManager.stopDebugging(this.parentSession.id);
     }
@@ -70,7 +73,7 @@ export class NativeScriptDebugAdapter extends DebugSession {
     this.sendEvent(new TerminatedEvent());
   }
 
-  protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
+  protected override threadsRequest(response: DebugProtocol.ThreadsResponse): void {
     response.body = { threads: [] };
     this.sendResponse(response);
   }
@@ -85,7 +88,7 @@ export class NativeScriptDebugAdapter extends DebugSession {
     }
 
     try {
-      const config = { ...args } as vscode.DebugConfiguration;
+      const config = { ...args } as NativeScriptDebugConfiguration;
       const started = await this.debugManager.startDebugging(this.parentSession, config, () => {
         this.sendEvent(new TerminatedEvent());
       });

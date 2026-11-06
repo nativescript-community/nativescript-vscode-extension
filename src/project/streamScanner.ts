@@ -7,16 +7,16 @@ export class StreamScanner {
   constructor(stream: Readable, scanCallback: (data: string, stop: () => void) => void) {
     this._stream = stream;
     this._scanCallback = scanCallback;
-    this._stream.on('data', this.scan.bind(this));
+    this._stream.on('data', this.scan);
   }
 
-  public stop() {
+  public stop = (): void => {
     this._stream.removeListener('data', this.scan);
-  }
+  };
 
-  private scan(data: string | Buffer): void {
+  private scan = (data: string | Buffer): void => {
     this._scanCallback(data.toString(), this.stop);
-  }
+  };
 }
 
 export interface IMatchFound {
@@ -35,21 +35,21 @@ export class StringMatchingScanner extends StreamScanner {
   private metas: IMatchMeta[];
 
   constructor(stream: Readable) {
-    super(stream, (data: string, stop: () => void) => {
+    super(stream, (data: string) => {
       this.metas.forEach((meta, metaIndex) => {
         if (meta.test instanceof RegExp) {
-          const result: RegExpMatchArray | null = data.match(meta.test as RegExp);
+          const result: RegExpMatchArray | null = data.match(meta.test);
 
           if (result && result.length > 0) {
             this.matchFound(metaIndex, { chunk: data, matches: result });
           }
         } else if (typeof meta.test === 'string') {
           const result: number[] = []; // matches indices
-          let dataIndex = data.indexOf(meta.test as string, 0);
+          let dataIndex = data.indexOf(meta.test, 0);
 
           while (dataIndex > -1) {
             result.push(dataIndex);
-            dataIndex = data.indexOf(meta.test as string, dataIndex + 1);
+            dataIndex = data.indexOf(meta.test, dataIndex + 1);
           }
           if (result.length > 0) {
             this.matchFound(metaIndex, { chunk: data, matches: result });
@@ -66,10 +66,10 @@ export class StringMatchingScanner extends StreamScanner {
   public onEveryMatch(test: string | RegExp, handler: (result: IMatchFound) => void) {
     const handlerWrapper = (result: IMatchFound) => {
       handler(result);
-      this.nextMatch(test).then(handlerWrapper);
+      void this.nextMatch(test).then(handlerWrapper);
     };
 
-    this.nextMatch(test).then(handlerWrapper);
+    void this.nextMatch(test).then(handlerWrapper);
   }
 
   public nextMatch(test: string | RegExp): Promise<IMatchFound> {

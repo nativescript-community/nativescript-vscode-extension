@@ -9,11 +9,11 @@ The NativeScript extension for Visual Studio Code aids your [NativeScript](https
 
 To install [NativeScript](https://www.nativescript.org/) and all its dependencies, follow the instructions in our [getting started guide](https://docs.nativescript.org/setup/).
 
-> Note: The VS Code extension requires [nativescript node module](https://www.npmjs.com/package/nativescript) to be globally installed. If you are using [nvm](https://github.com/creationix/nvm) to manage your node versions, make sure that `nativescript` is installed in your default nodeJS version. To check which is your default node version execute 'nvm ls' on the command prompt and you should see something like 'default -> 5.5.0 (-> v5.5.0)' in the output.
+> Note: The VS Code extension requires [nativescript node module](https://www.npmjs.com/package/nativescript) to be globally installed. If you are using [nvm](https://github.com/nvm-sh/nvm) to manage your node versions, make sure that `nativescript` is installed in your default Node.js version (`nvm ls` shows it as `default`). If the CLI lives somewhere else, set the `nativescript.nsPath` setting to its path.
 
 ### Setup the extension
 
-Create NativeScript application by running `tns create MyApp` and open `MyApp` folder in Visual Studio Code. Open the Debug Panel, click the gear icon
+Create a NativeScript application by running `ns create MyApp` and open `MyApp` folder in Visual Studio Code. Open the Debug Panel, click the gear icon
 
 ![gear icon](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/screenshots/nativescript-gear-icon.jpg)
 
@@ -27,7 +27,15 @@ To start the application with attached debugger, choose one of the launch config
 
 ![Launch settings](https://raw.githubusercontent.com/NativeScript/nativescript-vscode-extension/master/images/screenshots/nativescript-launch-configurations.png)
 
-Your application will be launched and the VSCode debugger will attach. If you want to attach to already running NativeScript application, use one of the attach configurations. More information on what you can do with the Visual Studio Code Debugger you can find [here](https://code.visualstudio.com/docs/editor/debugging).
+Your application will be launched and the VS Code JavaScript debugger will attach. With `"watch": true`, the debugger reattaches automatically every time the app restarts after a file change. If you want to attach to already running NativeScript application, use one of the attach configurations. More information on what you can do with the Visual Studio Code Debugger you can find [here](https://code.visualstudio.com/docs/editor/debugging).
+
+Besides the NativeScript-specific attributes (`platform`, `appRoot`, `watch`, `tnsArgs`, ...), launch configurations accept the common JavaScript debugger options `sourceMapPathOverrides`, `resolveSourceMapLocations`, `skipFiles`, `smartStep` and `trace`.
+
+Source maps work whether they are inlined in the bundle or written as separate `.map` files: newer NativeScript runtimes serve map files from the device (`nsruntime://` URLs), and for older runtimes the extension falls back to the copy of the build under `platforms/`.
+
+#### Vite projects
+
+Projects using the Vite bundler (`bundler: 'vite'` in `nativescript.config.ts`) are debugged with `--no-hmr`, because hot module replacement serves app code without source maps. File changes still rebuild and restart the app, and the debugger reattaches. Pass `--hmr` in `tnsArgs` to keep HMR on (breakpoints in app code won't bind). Debugging unit tests that use the Vitest runner is not supported yet.
 
 ### NativeScript commands
 
@@ -37,7 +45,7 @@ Type `NativeScript` in the Command Palette and you will see all available comman
 
 There's only a couple of them but the list will grow in the future.
 
-The `Run` command triggers `tns run` on emulator or device. You can run your app both on iOS and Android.
+The `Run` command triggers `ns run` on emulator or device. You can run your app both on iOS and Android.
 
 If your version of NativeScript is incompatible with the extension you will see a warning the first time you run a command.
 
@@ -60,19 +68,21 @@ If your version of NativeScript is incompatible with the extension you will see 
 3. To install the extension drag and drop the `nativescript-*.*.*.vsix` package in the VS Code.
 
 ### Contribute
-To test the extension run the following commands in the root repository folder:
 
 ```
 npm install
-npm run build:watch
-launch manually `Extension + Server` in VSCode from the debug section
+npm run lint        # ESLint
+npm run typecheck   # TypeScript
+npm test            # Vitest unit tests
 ```
 
-You must choose a project to debug, launch the phases that involve testing the extension in the application, modify any code of the extension, stop the debug and launch it again (F5)
+Open the repository in VS Code and press F5 (`Run Extension`) to start an Extension Development Host with the extension loaded. Open a NativeScript app there and start one of its NativeScript launch configurations. After changing the extension's code, restart the Extension Development Host.
+
+Release builds send analytics only when `GA_MEASUREMENT_ID` and `GA_API_SECRET` are set in the environment while packaging (`vscode:prepublish` writes them to `out/ga-config.json`). Never commit the API secret.
 
 
 ### How to disable the analytics
-The anonymous usage data collected by Progress from the NativeScript extension for Visual Studio Code is used strictly to improve the product and its services, and enhance the overall user experience.
+The anonymous usage data collected from the NativeScript extension for Visual Studio Code is used strictly to improve the extension. Nothing is sent unless you opted in, and nothing is sent while VS Code's own telemetry is turned off (`telemetry.telemetryLevel`).
 
 If you have previously enabled the analytics option, you can disable it by following the steps outlined below:
 
@@ -87,6 +97,6 @@ If you have previously enabled the analytics option, you can disable it by follo
 > Note: This option will disable only the analytics for the Visual Studio Code extension. To disable the analytics for the NativeScript CLI, open a command prompt or terminal and run the following commands:
 
 ```
-tns usage-reporting disable
-tns error-reporting disable
+ns usage-reporting disable
+ns error-reporting disable
 ```

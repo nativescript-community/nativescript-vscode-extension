@@ -53,7 +53,7 @@ export class IosProject extends Project {
     return { tnsProcess: debugProcess, tnsOutputEventEmitter };
   }
 
-  protected configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
+  protected override configureReadyEvent(readableStream: stream.Readable, eventEmitter: EventEmitter): void {
     super.configureReadyEvent(readableStream, eventEmitter);
 
     const streamScanner = new scanner.StringMatchingScanner(readableStream);

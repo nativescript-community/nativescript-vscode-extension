@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 export const ACCURACY = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -18,7 +18,7 @@ export const ACCURACY = vscode.languages.registerHoverProvider('html', {
 });
 
 export const ANDROID_ACTION_BAR_VISIBILITY = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -37,7 +37,7 @@ export const ANDROID_ACTION_BAR_VISIBILITY = vscode.languages.registerHoverProvi
 });
 
 export const ANDROID_ACTION_BAR_POSITION = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -56,7 +56,7 @@ export const ANDROID_ACTION_BAR_POSITION = vscode.languages.registerHoverProvide
 });
 
 export const ANIMATION_CURVE = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -75,7 +75,7 @@ export const ANIMATION_CURVE = vscode.languages.registerHoverProvider('html', {
 });
 
 export const AUTOCAPITALIZATION = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -94,7 +94,7 @@ export const AUTOCAPITALIZATION = vscode.languages.registerHoverProvider('html',
 });
 
 export const BACKGROUND_REPEAT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -113,7 +113,7 @@ export const BACKGROUND_REPEAT = vscode.languages.registerHoverProvider('html', 
 });
 
 export const DOCK = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -130,7 +130,7 @@ export const DOCK = vscode.languages.registerHoverProvider('html', {
 });
 
 export const FONT_ATTRIBUTES = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -149,7 +149,7 @@ export const FONT_ATTRIBUTES = vscode.languages.registerHoverProvider('html', {
 });
 
 export const FONT_STYLE = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -166,7 +166,7 @@ export const FONT_STYLE = vscode.languages.registerHoverProvider('html', {
 });
 
 export const FONT_WEIGHT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -185,7 +185,7 @@ export const FONT_WEIGHT = vscode.languages.registerHoverProvider('html', {
 });
 
 export const HORIZONTAL_ALIGNMENT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -206,7 +206,7 @@ export const HORIZONTAL_ALIGNMENT = vscode.languages.registerHoverProvider('html
 });
 
 export const IOS_ACTION_ITEM_POSITION = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -225,7 +225,7 @@ export const IOS_ACTION_ITEM_POSITION = vscode.languages.registerHoverProvider('
 });
 
 export const IMAGE_FORMAT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -244,7 +244,7 @@ export const IMAGE_FORMAT = vscode.languages.registerHoverProvider('html', {
 });
 
 export const KEYBOARD_TYPE = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -263,7 +263,7 @@ export const KEYBOARD_TYPE = vscode.languages.registerHoverProvider('html', {
 });
 
 export const NAVIGATION_BAR_VISIBILITY = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -282,7 +282,7 @@ export const NAVIGATION_BAR_VISIBILITY = vscode.languages.registerHoverProvider(
 });
 
 export const ORIENTATION = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -301,7 +301,7 @@ export const ORIENTATION = vscode.languages.registerHoverProvider('html', {
 });
 
 export const RETURN_KEY_TYPE = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -320,7 +320,7 @@ export const RETURN_KEY_TYPE = vscode.languages.registerHoverProvider('html', {
 });
 
 export const STRETCH = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -337,7 +337,7 @@ export const STRETCH = vscode.languages.registerHoverProvider('html', {
 });
 
 export const TEXT_ALIGNMENT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -356,7 +356,7 @@ export const TEXT_ALIGNMENT = vscode.languages.registerHoverProvider('html', {
 });
 
 export const TEXT_DECORATION = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -375,7 +375,7 @@ export const TEXT_DECORATION = vscode.languages.registerHoverProvider('html', {
 });
 
 export const TEXT_TRANSFORM = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -394,7 +394,7 @@ export const TEXT_TRANSFORM = vscode.languages.registerHoverProvider('html', {
 });
 
 export const VERTICAL_ALIGNMENT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -415,7 +415,7 @@ export const VERTICAL_ALIGNMENT = vscode.languages.registerHoverProvider('html',
 });
 
 export const VISIBILITY = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -434,7 +434,7 @@ export const VISIBILITY = vscode.languages.registerHoverProvider('html', {
 });
 
 export const WHITE_SPACE = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 

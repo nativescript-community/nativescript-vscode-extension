@@ -1,11 +1,17 @@
 **/*.ts
 **/*.map
 .vscode/**
+.github/**
 node_modules/.bin/**
 src/**
+scripts/**
 out/tests/**
 images/screenshots/**
 *.vsix
 .gitignore
+.prettierrc
+.prettierignore
+eslint.config.mjs
+vitest.config.mts
 CONTRIBUTING.md
 npm-debug.log

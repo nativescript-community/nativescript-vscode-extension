@@ -1,115 +1,154 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import * as vscode from 'vscode';
+import { ILogger } from '../common/logger';
 import { BuildSession } from '../services/buildService';
 import { services } from '../services/extensionHostServices';
-import { ILogger } from '../common/logger';
+import { computeSourceMapOptions, SourceMapOptions } from './sourceMaps';
 
 export type SessionTerminatedCallback = () => void;
 
-interface ActiveSession {
-  buildSession: BuildSession;
-  childSession: vscode.DebugSession | null;
-  config: vscode.DebugConfiguration;
-  folder: vscode.WorkspaceFolder | undefined;
-  onTerminated: SessionTerminatedCallback;
-  stopping: boolean;
-  restartPending: boolean;
+/** The launch.json attributes declared in package.json (contributes.debuggers[0].configurationAttributes). */
+export interface NativeScriptDebugConfiguration extends vscode.DebugConfiguration {
+  platform: string;
+  appRoot?: string;
+  webRoot?: string;
+  watch?: boolean;
+  stopOnEntry?: boolean;
+  launchTests?: boolean;
+  tnsArgs?: string[];
+  address?: string;
+  sourceMaps?: boolean;
+  sourceMapPathOverrides?: Record<string, string>;
+  resolveSourceMapLocations?: string[] | null;
+  skipFiles?: string[];
+  smartStep?: boolean;
+  trace?: boolean | Record<string, unknown>;
+  diagnosticLogging?: boolean;
 }
 
-export class DebugManager {
+/** Stamped on child configs so onDidStartDebugSession can tell which parent a js-debug session belongs to. */
+export const PARENT_SESSION_KEY = '__nativescriptParentSessionId';
+
+/** How long to wait for the app to come back with a new debug port after its socket drops in watch mode. */
+export const RECONNECT_TIMEOUT_MS = 60_000;
+
+const CHILD_START_ATTEMPTS = 3;
+const CHILD_RETRY_DELAY_MS = 1000;
+const CHILD_STOP_SETTLE_MS = 500;
+
+interface ActiveSession {
+  parentSession: vscode.DebugSession;
+  config: NativeScriptDebugConfiguration;
+  appRoot: string;
+  folder: vscode.WorkspaceFolder | undefined;
+  onTerminated: SessionTerminatedCallback;
+  buildSession: BuildSession | null;
+  sourceMapOptions: Promise<SourceMapOptions> | null;
+  childSession: vscode.DebugSession | null;
+  /** Child sessions we stopped on purpose; their termination must not end the parent. */
+  replacedChildIds: Set<string>;
+  /** Serializes child (re)starts so two quick port announcements can't race. */
+  childQueue: Promise<void>;
+  reconnectTimer: NodeJS.Timeout | null;
+  stopping: boolean;
+}
+
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+export class DebugManager implements vscode.Disposable {
   private activeSessions = new Map<string, ActiveSession>();
-  private logger: ILogger;
   private disposables: vscode.Disposable[] = [];
 
-  constructor(logger: ILogger) {
-    this.logger = logger;
-
+  constructor(private readonly logger: ILogger) {
     this.disposables.push(
-      vscode.debug.onDidTerminateDebugSession((session) => {
-        this.logger.log(`[NativeScript] Session terminated: ${session.name} (type=${session.type})\n`);
-
-        if (session.type === 'nativescript') {
-          this.onParentSessionTerminated(session);
-          return;
-        }
-
-        for (const [parentId, active] of this.activeSessions) {
-          if (active.childSession === session) {
-            active.childSession = null;
-
-            if (active.stopping) return;
-
-            if (!active.restartPending) {
-              this.logger.log('[NativeScript] Child session ended, stopping parent\n');
-              active.onTerminated();
-              this.cleanup(parentId);
-            } else {
-              this.logger.log('[NativeScript] Child session ended, restart pending\n');
-            }
-          }
-        }
-      }),
+      vscode.debug.onDidStartDebugSession((session) => this.onSessionStarted(session)),
+      vscode.debug.onDidTerminateDebugSession((session) => this.onSessionTerminated(session)),
     );
   }
 
   public async startDebugging(
     parentSession: vscode.DebugSession,
-    config: vscode.DebugConfiguration,
+    config: NativeScriptDebugConfiguration,
     onTerminated: SessionTerminatedCallback,
   ): Promise<boolean> {
-    const folder = vscode.workspace.workspaceFolders?.[0];
-    const appRoot = config.appRoot || config.webRoot || folder?.uri.fsPath || '';
+    const fallbackFolder = parentSession.workspaceFolder ?? vscode.workspace.workspaceFolders?.[0];
+    const appRoot = config.appRoot || config.webRoot || fallbackFolder?.uri.fsPath || '';
+    const folder = (appRoot && vscode.workspace.getWorkspaceFolder(vscode.Uri.file(appRoot))) || fallbackFolder;
 
     this.logger.log(`[NativeScript] appRoot: ${appRoot}\n`);
 
-    const buildSession = await services.buildService.startBuild({
-      appRoot,
-      platform: config.platform,
-      request: config.request,
-      watch: config.watch,
-      stopOnEntry: config.stopOnEntry,
-      launchTests: config.launchTests,
-      tnsArgs: config.tnsArgs,
-    });
-
     const active: ActiveSession = {
-      buildSession,
-      childSession: null,
+      parentSession,
       config,
+      appRoot,
       folder,
       onTerminated,
+      buildSession: null,
+      sourceMapOptions: null,
+      childSession: null,
+      replacedChildIds: new Set(),
+      childQueue: Promise.resolve(),
+      reconnectTimer: null,
       stopping: false,
-      restartPending: false,
     };
 
+    // Registered before any await so a stop during the build (or the iOS team picker) is honored.
     this.activeSessions.set(parentSession.id, active);
 
-    buildSession.portEmitter.on('newPort', (port: number) => {
+    let buildSession: BuildSession | null;
+    try {
+      buildSession = await services.buildService.startBuild(
+        {
+          appRoot,
+          platform: config.platform,
+          request: config.request,
+          watch: config.watch,
+          stopOnEntry: config.stopOnEntry,
+          launchTests: config.launchTests,
+          tnsArgs: config.tnsArgs,
+        },
+        () => active.stopping,
+      );
+    } catch (e) {
+      this.cleanup(parentSession.id);
+      void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
+      throw e;
+    }
+
+    if (!buildSession || active.stopping) {
+      buildSession?.disconnect();
+      this.cleanup(parentSession.id);
+      return false;
+    }
+
+    active.buildSession = buildSession;
+
+    buildSession.on('newPort', (port: number) => {
       if (active.stopping) return;
-      this.logger.log(`[NativeScript] LiveSync restart detected, new port: ${port}\n`);
-      active.restartPending = true;
-      this.startChildSession(parentSession, active, port);
+      this.logger.log(`[NativeScript] App restarted, new debug port: ${port}\n`);
+      this.clearReconnectTimer(active);
+      void this.queueChildStart(active, port);
     });
 
-    buildSession.portEmitter.on('closed', () => {
+    buildSession.on('closed', () => {
       this.logger.log('[NativeScript] ns process closed\n');
-      if (!active.stopping) {
-        active.onTerminated();
-        this.cleanup(parentSession.id);
-      }
+      this.terminate(active);
     });
 
     const port = await buildSession.initialPort;
 
-    if (!port) {
+    if (!port || active.stopping) {
       this.logger.log('[NativeScript] No debug port received, terminating\n');
       this.cleanup(parentSession.id);
       return false;
     }
 
-    await this.startChildSession(parentSession, active, port);
-    return true;
+    const attached = await this.queueChildStart(active, port);
+    if (!attached && !active.stopping) {
+      this.cleanup(parentSession.id);
+      void vscode.window.showErrorMessage(`Could not attach the debugger to the app on port ${port}.`);
+      return false;
+    }
+    return !active.stopping;
   }
 
   public stopDebugging(parentSessionId: string): void {
@@ -117,73 +156,147 @@ export class DebugManager {
   }
 
   public dispose(): void {
-    for (const [id] of this.activeSessions) {
+    for (const id of [...this.activeSessions.keys()]) {
       this.cleanup(id);
     }
-    this.disposables.forEach((d) => d.dispose());
+    for (const disposable of this.disposables) {
+      disposable.dispose();
+    }
+    this.disposables = [];
   }
 
-  private async startChildSession(
-    parentSession: vscode.DebugSession,
-    active: ActiveSession,
-    port: number,
-  ): Promise<void> {
-    if (active.stopping) return;
+  /** Resolves with whether a child session was started. */
+  private queueChildStart(active: ActiveSession, port: number): Promise<boolean> {
+    const result = active.childQueue
+      .then(() => this.startChildSession(active, port))
+      .catch((e: unknown) => {
+        this.logger.log(`[NativeScript] Failed to start child debug session: ${String(e)}\n`);
+        return false;
+      });
+    active.childQueue = result.then(() => undefined);
+    return result;
+  }
 
-    if (active.childSession) {
-      await vscode.debug.stopDebugging(active.childSession);
+  private async startChildSession(active: ActiveSession, port: number): Promise<boolean> {
+    if (active.stopping) return false;
+
+    const previous = active.childSession;
+    if (previous) {
+      active.replacedChildIds.add(previous.id);
       active.childSession = null;
-      await new Promise((r) => setTimeout(r, 500));
+      await vscode.debug.stopDebugging(previous);
+      await delay(CHILD_STOP_SETTLE_MS);
     }
 
-    if (active.stopping) return;
+    if (active.stopping) return false;
 
     const config = active.config;
-    const address = this.getNormalizedAddress(config.address, config.platform);
-    const sourceMapPathOverrides = this.computeSourceMapPathOverrides(config);
+    const address = getNormalizedAddress(config.address, config.platform);
+    // Computed on first attach: platforms/ (used for device map fallbacks) only exists once the build finished.
+    active.sourceMapOptions ??= computeSourceMapOptions(
+      active.appRoot,
+      {
+        platform: config.platform,
+        sourceMapPathOverrides: config.sourceMapPathOverrides,
+        resolveSourceMapLocations: config.resolveSourceMapLocations,
+      },
+      this.logger,
+    );
+    const sourceMapOptions = await active.sourceMapOptions;
 
     const childConfig: vscode.DebugConfiguration = {
       type: 'pwa-node',
       request: 'attach',
       name: config.name,
       websocketAddress: `ws://${address}:${port}`,
-      sourceMapPathOverrides,
+      ...sourceMapOptions,
+      sourceMaps: config.sourceMaps,
       skipFiles: config.skipFiles,
       smartStep: config.smartStep,
-      trace: config.diagnosticLogging ? true : config.trace,
-      stopOnEntry: config.stopOnEntry,
+      trace: config.trace ?? (config.diagnosticLogging || undefined),
+      [PARENT_SESSION_KEY]: active.parentSession.id,
     };
 
     this.logger.log(`[NativeScript] Starting child debug session on ws://${address}:${port}\n`);
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (active.stopping) return;
+    for (let attempt = 1; attempt <= CHILD_START_ATTEMPTS; attempt++) {
+      if (active.stopping) return false;
 
       const started = await vscode.debug.startDebugging(active.folder, childConfig, {
-        parentSession,
+        parentSession: active.parentSession,
         lifecycleManagedByParent: true,
         compact: true,
       });
 
-      if (started) {
-        const childSession = vscode.debug.activeDebugSession;
-        if (childSession && childSession.parentSession === parentSession) {
-          active.childSession = childSession;
-        }
-        active.restartPending = false;
-        return;
-      }
+      if (started) return true;
 
-      this.logger.log(`[NativeScript] Child session attempt ${attempt + 1} failed, retrying...\n`);
-      await new Promise((r) => setTimeout(r, 1000));
+      this.logger.log(`[NativeScript] Child session attempt ${attempt} failed\n`);
+      await delay(CHILD_RETRY_DELAY_MS);
     }
 
-    active.restartPending = false;
-    this.logger.log('[NativeScript] Failed to start child debug session after 3 attempts\n');
+    this.logger.log(`[NativeScript] Failed to start child debug session after ${CHILD_START_ATTEMPTS} attempts\n`);
+    return false;
   }
 
-  private onParentSessionTerminated(session: vscode.DebugSession): void {
-    this.cleanup(session.id);
+  private onSessionStarted(session: vscode.DebugSession): void {
+    const parentId: unknown = session.configuration[PARENT_SESSION_KEY];
+    if (typeof parentId !== 'string') return;
+
+    const active = this.activeSessions.get(parentId);
+    if (!active) {
+      // The parent was stopped while this child's startDebugging was still in flight.
+      void vscode.debug.stopDebugging(session);
+      return;
+    }
+
+    active.childSession = session;
+    this.clearReconnectTimer(active);
+  }
+
+  private onSessionTerminated(session: vscode.DebugSession): void {
+    this.logger.log(`[NativeScript] Session terminated: ${session.name} (type=${session.type})\n`);
+
+    if (this.activeSessions.has(session.id)) {
+      this.cleanup(session.id);
+      return;
+    }
+
+    const parentId: unknown = session.configuration[PARENT_SESSION_KEY];
+    const active = typeof parentId === 'string' ? this.activeSessions.get(parentId) : undefined;
+    if (!active) return;
+
+    if (active.childSession?.id === session.id) {
+      active.childSession = null;
+    }
+
+    if (active.replacedChildIds.delete(session.id) || active.stopping) return;
+
+    if (active.config.watch && active.buildSession) {
+      // A LiveSync restart drops the socket before the CLI announces the new port.
+      this.logger.log('[NativeScript] Debugger disconnected, waiting for the app to restart\n');
+      this.clearReconnectTimer(active);
+      active.reconnectTimer = setTimeout(() => {
+        this.logger.log('[NativeScript] App did not reconnect in time, stopping\n');
+        this.terminate(active);
+      }, RECONNECT_TIMEOUT_MS);
+      return;
+    }
+
+    this.logger.log('[NativeScript] Child session ended, stopping parent\n');
+    this.terminate(active);
+  }
+
+  private terminate(active: ActiveSession): void {
+    if (active.stopping) return;
+    this.cleanup(active.parentSession.id);
+    active.onTerminated();
+  }
+
+  private clearReconnectTimer(active: ActiveSession): void {
+    if (active.reconnectTimer) {
+      clearTimeout(active.reconnectTimer);
+      active.reconnectTimer = null;
+    }
   }
 
   private cleanup(parentSessionId: string): void {
@@ -191,123 +304,22 @@ export class DebugManager {
     if (!active) return;
 
     active.stopping = true;
-    active.buildSession.portEmitter.removeAllListeners();
-    active.buildSession.disconnect();
+    this.activeSessions.delete(parentSessionId);
+    this.clearReconnectTimer(active);
+
+    if (active.buildSession) {
+      active.buildSession.removeAllListeners();
+      active.buildSession.disconnect();
+    }
 
     if (active.childSession) {
-      vscode.debug.stopDebugging(active.childSession);
-    }
-
-    this.activeSessions.delete(parentSessionId);
-  }
-
-  private getNormalizedAddress(address: string | undefined, platform: string): string {
-    if (address) return address;
-    return platform?.toLowerCase() === 'ios' ? 'localhost' : '127.0.0.1';
-  }
-
-  private computeSourceMapPathOverrides(config: vscode.DebugConfiguration): Record<string, string> {
-    const overrides: Record<string, string> = config.sourceMapPathOverrides ? { ...config.sourceMapPathOverrides } : {};
-    const webRoot = config.appRoot || config.webRoot || '';
-    const appDirPath = this.getAppDirPath(webRoot);
-    const fullAppDirPath = appDirPath
-      ? path.join(webRoot, appDirPath)
-      : path.join(webRoot, this.isAngularProject(webRoot) ? 'src' : 'app');
-
-    if (!overrides['webpack:///*']) {
-      overrides['webpack:///*'] = `${fullAppDirPath}/*`;
-    }
-
-    const packageFilePath = path.join(webRoot, 'package.json');
-    if (fs.existsSync(packageFilePath)) {
-      try {
-        const packageFile = JSON.parse(fs.readFileSync(packageFilePath, 'utf8')) as { name?: string };
-        const extensions = ['js', 'ts', 'vue', 'svelte', 'jsx', 'tsx'];
-
-        const webpackConfig = this.getWebpackConfig(webRoot, config.platform?.toLowerCase());
-        let sourceMap = packageFile.name ?? '';
-        if (webpackConfig?.output?.devtoolNamespace) {
-          sourceMap = webpackConfig.output.devtoolNamespace;
-        }
-
-        for (const ext of extensions) {
-          overrides[`webpack://${sourceMap}/*.${ext}`] = `${webRoot}/*.${ext}`;
-        }
-
-        if (webpackConfig?.output?.library) {
-          const key = `webpack://${webpackConfig.output.library}/*`;
-          overrides[key] = overrides[key] || `${fullAppDirPath}/*`;
-        }
-      } catch {
-        this.logger.log(`[NativeScript] Warning: could not read ${packageFilePath}\n`);
-      }
-    }
-
-    return overrides;
-  }
-
-  private getAppDirPath(webRoot: string): string | undefined {
-    const pathToNsconfig = path.join(webRoot, 'nsconfig.json');
-    const pathToNativeScriptConfig = path.join(webRoot, 'nativescript.config.ts');
-
-    if (fs.existsSync(pathToNsconfig)) {
-      try {
-        const content = fs.readFileSync(pathToNsconfig, 'utf8');
-        const jsonContent = JSON.parse(content);
-        return jsonContent.appPath;
-      } catch {
-        // ignore
-      }
-    } else if (fs.existsSync(pathToNativeScriptConfig)) {
-      try {
-        const configContent = fs.readFileSync(pathToNativeScriptConfig, 'utf8');
-        if (configContent.indexOf(`appPath: 'src'`) === -1) {
-          const appPath = configContent.split(/appPath:\s*["'`](\w+)["'`]/im)[1];
-          return appPath;
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    return undefined;
-  }
-
-  private isAngularProject(webRoot: string): boolean {
-    if (fs.existsSync(path.join(webRoot, 'angular.json'))) {
-      return true;
-    }
-
-    const packageJsonPath = path.join(webRoot, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
-      try {
-        const content = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-        return !!content?.dependencies?.['@angular/core'];
-      } catch {
-        // ignore
-      }
-    }
-
-    return false;
-  }
-
-  private getWebpackConfig(
-    webRoot: string,
-    platform?: string,
-  ): { output?: { library?: string; devtoolNamespace?: string } } | null {
-    const webpackConfigFile = path.join(webRoot, 'webpack.config.js');
-    if (!fs.existsSync(webpackConfigFile) || !platform) return null;
-
-    const savedCwd = process.cwd();
-    try {
-      process.chdir(webRoot);
-      const webpackConfig = require(webpackConfigFile);
-      const result = webpackConfig({ [platform]: platform });
-      process.chdir(savedCwd);
-      return result;
-    } catch {
-      process.chdir(savedCwd);
-      return null;
+      void vscode.debug.stopDebugging(active.childSession);
+      active.childSession = null;
     }
   }
+}
+
+export function getNormalizedAddress(address: string | undefined, platform: string | undefined): string {
+  if (address) return address;
+  return platform?.toLowerCase() === 'ios' ? 'localhost' : '127.0.0.1';
 }

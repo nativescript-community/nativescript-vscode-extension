@@ -2,10 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-// tslint:disable-next-line:class-name
 export class iOSTeamService {
   public selectTeam(): Promise<{ id: string; name: string } | void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const workspaceTeamId = vscode.workspace.getConfiguration().get<string>('nativescript.iosTeamId');
 
       if (workspaceTeamId) {
@@ -51,7 +50,7 @@ export class iOSTeamService {
     try {
       const dir = path.join(process.env.HOME!, 'Library/MobileDevice/Provisioning Profiles/');
       const files = fs.readdirSync(dir);
-      const teamIds: any = {};
+      const teamIds: Record<string, string> = {};
 
       for (const file of files) {
         const filePath = path.join(dir, file);
@@ -60,7 +59,7 @@ export class iOSTeamService {
         const teamName = this.getProvisioningProfileValue('TeamName', data);
 
         if (teamId) {
-          teamIds[teamId] = teamName;
+          teamIds[teamId] = teamName ?? '';
         }
       }
 
@@ -71,7 +70,7 @@ export class iOSTeamService {
       }
 
       return teamIdsArray;
-    } catch (e) {
+    } catch {
       // no matter what happens, don't break
       return new Array<{ id: string; name: string }>();
     }

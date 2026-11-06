@@ -1,73 +1,78 @@
-import { ChildProcess, execSync, spawn } from 'child_process';
+import { ChildProcess, exec, spawn } from 'child_process';
+import * as semver from 'semver';
 import { ILogger } from '../common/logger';
 import * as utils from '../common/utilities';
+
+const ANALYTICS_CLIENT_ARGS = ['--analyticsClient', 'VSCode'];
 
 export class NativeScriptCli {
   private static CLI_OUTPUT_VERSION_REGEXP = /^(?:\d+\.){2}\d+.*?$/m;
 
   private _path: string;
-  private _shellPath: string;
+  private _shellPath: string | undefined;
   private _logger: ILogger;
 
   constructor(cliPath: string, logger: ILogger) {
     this._path = cliPath;
     this._logger = logger;
 
-    this._shellPath = process.env.SHELL as string;
-
-    // always default to cmd on Windows
-    // workaround for issue #121 https://github.com/NativeScript/nativescript-vscode-extension/issues/121
-    if (utils.getPlatform() === utils.Platform.Windows) {
-      this._shellPath = 'cmd.exe';
-    }
+    // cmd.exe avoids https://github.com/NativeScript/nativescript-vscode-extension/issues/121
+    this._shellPath = utils.getPlatform() === utils.Platform.Windows ? 'cmd.exe' : process.env.SHELL;
   }
 
   public get path(): string {
     return this._path;
   }
 
-  public executeGetVersion(): string {
-    try {
-      const versionOutput = this.executeSync(['--version']);
-
-      return this.getVersionFromCLIOutput(versionOutput)!;
-    } catch (e) {
-      this._logger.log(e as string);
-
-      const errorMessage = `NativeScript CLI not found. Use 'nativescript.nsPath' workspace setting
-                                  to explicitly set the absolute path to the NativeScript CLI.`;
-
-      throw new Error(errorMessage);
-    }
-  }
-
-  public executeSync(args: string[], cwd?: string): string {
-    args.unshift('--analyticsClient', 'VSCode');
-    const command: string = `${this._path} ${args.join(' ')}`;
-
+  public getVersion(): Promise<string> {
+    const command = [this._path, ...ANALYTICS_CLIENT_ARGS, '--version'].join(' ');
     this._logger.log(`[NativeScriptCli] execute: ${command}`);
 
-    return execSync(command, { encoding: 'utf8', cwd, shell: this._shellPath }).toString().trim();
+    return new Promise((resolve, reject) => {
+      exec(command, { encoding: 'utf8', shell: this._shellPath, timeout: 60_000 }, (error, stdout) => {
+        if (error) {
+          this._logger.log(String(error));
+          reject(
+            new Error(
+              `NativeScript CLI not found at '${this._path}'. Use the 'nativescript.nsPath' setting to set the absolute path to the NativeScript CLI.`,
+            ),
+          );
+          return;
+        }
+
+        const version = stdout.match(NativeScriptCli.CLI_OUTPUT_VERSION_REGEXP)?.[0];
+        if (version) {
+          resolve(version);
+        } else {
+          reject(new Error(`Could not read the NativeScript CLI version from its output: ${stdout.trim()}`));
+        }
+      });
+    });
+  }
+
+  /** Resolves with the CLI version, or rejects with a user-facing message if it is missing or too old. */
+  public async getSupportedVersion(minVersion: string): Promise<string> {
+    const version = await this.getVersion();
+    const parsed = semver.coerce(version);
+
+    if (parsed && semver.lt(parsed, minVersion)) {
+      throw new Error(
+        `The NativeScript extension requires NativeScript CLI v${minVersion} or greater, but v${version} is installed. Update it with 'npm install -g nativescript'.`,
+      );
+    }
+
+    return version;
   }
 
   public execute(args: string[], cwd: string): ChildProcess {
-    args.unshift('--analyticsClient', 'VSCode');
-    const command: string = `${this._path} ${args.join(' ')}`;
+    const fullArgs = [...ANALYTICS_CLIENT_ARGS, ...args];
+    this._logger.log(`[NativeScriptCli] execute: ${[this._path, ...fullArgs].join(' ')}`);
 
-    this._logger.log(`[NativeScriptCli] execute: ${command}`);
+    const child = spawn(this._path, fullArgs, { cwd, shell: this._shellPath });
 
-    const options = { cwd, shell: this._shellPath };
-    const child: ChildProcess = spawn(this._path, args, options);
-
-    child.stdout!.setEncoding('utf8');
-    child.stderr!.setEncoding('utf8');
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
 
     return child;
-  }
-
-  private getVersionFromCLIOutput(commandOutput: string): string | null {
-    const matches = commandOutput.match(NativeScriptCli.CLI_OUTPUT_VERSION_REGEXP);
-
-    return matches && matches[0];
   }
 }

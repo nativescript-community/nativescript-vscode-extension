@@ -1,3 +1,23 @@
+Unreleased
+====
+## What's new
+ - The debugger now runs on VS Code's built-in JavaScript debugger (js-debug) instead of vscode-chrome-debug-core, and reattaches automatically when the app restarts after a file change.
+ - Source maps load from inline `data:` URLs, from the device through the runtime's `nsruntime://` scheme, or from the local `platforms/` copy for runtimes that report `file://` device paths.
+ - Vite projects are supported (debug sessions run with `--no-hmr`).
+ - New launch attributes: `address`, `resolveSourceMapLocations`, `skipFiles`, `smartStep`, `trace`.
+ - Analytics use the GA4 Measurement Protocol and respect VS Code's telemetry setting.
+
+## Breaking changes
+ - The `nativescript.tnsPath` setting is now `nativescript.nsPath` (default `ns`).
+ - Requires VS Code 1.109+ and NativeScript CLI 8.0+.
+ - Removed the unused `tnsOutput` and `noDebug` launch attributes; `diagnosticLogging` is deprecated in favor of `trace`.
+
+## Bug Fixes
+ - Missing or outdated CLI no longer breaks activation; the error is shown and the debugger reports it on launch.
+ - Stopping a session while it builds (or while the iOS team picker is open) no longer leaves the `ns` process running.
+ - The Run command no longer kills an active debug session's `ns` process.
+ - Restart from the debug toolbar now relaunches the session.
+
 0.11.0
 ====
 ## What's new

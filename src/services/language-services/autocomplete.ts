@@ -73,10 +73,10 @@ HORIZONTAL_ALIGNMENT.documentation = new vscode.MarkdownString(GENERIC_AUTOCOMPL
 
 export const COMPLETION_PROVIDER = vscode.languages.registerCompletionItemProvider('html', {
   provideCompletionItems(
-    document: vscode.TextDocument,
-    position: vscode.Position,
-    token: vscode.CancellationToken,
-    context: vscode.CompletionContext,
+    _document: vscode.TextDocument,
+    _position: vscode.Position,
+    _token: vscode.CancellationToken,
+    _context: vscode.CompletionContext,
   ) {
     return [
       AUTOCAPITALIZATION,

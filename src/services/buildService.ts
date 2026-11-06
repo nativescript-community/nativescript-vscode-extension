@@ -3,184 +3,196 @@ import * as path from 'path';
 import { ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { ILogger } from '../common/logger';
+import * as utils from '../common/utilities';
+import { getBundler, isVitestProject } from '../project/projectInfo';
 import { AndroidProject } from '../project/androidProject';
 import { IosProject } from '../project/iosProject';
-import { NativeScriptCli } from '../project/nativeScriptCli';
 import { IDebugResult } from '../project/project';
-import * as utils from '../common/utilities';
 import { services } from './extensionHostServices';
 
-export interface BuildSession {
-  initialPort: Promise<number | undefined>;
-  portEmitter: EventEmitter;
-  disconnect(): void;
+export interface BuildArgs {
+  appRoot: string;
+  platform: string;
+  request: string;
+  watch?: boolean;
+  stopOnEntry?: boolean;
+  launchTests?: boolean;
+  tnsArgs?: string[];
 }
 
-export class BuildService {
-  private _tnsProcess: ChildProcess | null = null;
-  private _logger: ILogger;
+/** Ignore repeated port announcements closer together than this; the CLI can print the same port twice. */
+const DUPLICATE_PORT_WINDOW_MS = 2000;
 
-  constructor(logger: ILogger) {
-    this._logger = logger;
-  }
+/**
+ * One running `ns debug`/`ns test` process.
+ *
+ * Events: `newPort` (port: number) when the app restarted and opened a new debug port,
+ * `closed` (code: number | null) when the CLI process exited.
+ */
+export class BuildSession extends EventEmitter {
+  /** Resolves with the first debug port, or `undefined` if the process exits or is stopped first. */
+  public readonly initialPort: Promise<number | undefined>;
 
-  public async startBuild(args: {
-    appRoot: string;
-    platform: string;
-    request: string;
-    watch?: boolean;
-    stopOnEntry?: boolean;
-    launchTests?: boolean;
-    tnsArgs?: string[];
-  }): Promise<BuildSession> {
-    const nsPath = services.workspaceConfigService.nsPath;
+  private resolveInitialPort?: (port: number | undefined) => void;
+  private lastPortTimestamp = 0;
+  private process: ChildProcess | null;
 
-    this._logger.log(`[NativeScript] Using ns CLI on path '${nsPath}'\n`);
-    const nsPathResolved = nsPath !== 'ns' && !path.isAbsolute(nsPath) ? path.join(args.appRoot, nsPath) : nsPath;
-    const cli = new NativeScriptCli(nsPathResolved, this._logger);
+  constructor(
+    command: IDebugResult,
+    private readonly logger: ILogger,
+  ) {
+    super();
+    this.process = command.tnsProcess;
+    this.initialPort = new Promise((resolve) => (this.resolveInitialPort = resolve));
 
-    const project = args.platform === 'ios' ? new IosProject(args.appRoot, cli) : new AndroidProject(args.appRoot, cli);
+    command.tnsProcess.stdout!.on('data', (data: Buffer | string) => this.logger.log(data.toString()));
+    command.tnsProcess.stderr!.on('data', (data: Buffer | string) => this.logger.log(data.toString()));
 
-    services.analyticsService.launchDebugger(args.request, args.platform);
-
-    const version = project.cli.executeGetVersion();
-    this._logger.log(`[NativeScript] Using ns CLI v${version} on path '${project.cli.path}'\n`);
-    this._logger.log('[NativeScript] Running ns command...\n');
-
-    let cliCommand: IDebugResult;
-
-    if (args.request === 'launch') {
-      let tnsArgs = args.tnsArgs;
-
-      if (args.platform?.toLowerCase() === 'ios') {
-        const teamId = this.getTeamId(path.join(args.appRoot, 'app'), tnsArgs);
-
-        if (!teamId) {
-          const selectedTeam = await services.iOSTeamService.selectTeam();
-
-          if (selectedTeam) {
-            tnsArgs = (tnsArgs ?? []).concat(['--teamId', selectedTeam.id]);
-            this._logger.log(`[NativeScript] Using iOS Team ID '${selectedTeam.id}'\n`);
-          }
-        }
-      }
-
-      cliCommand = project.debug(
-        {
-          stopOnEntry: args.stopOnEntry ?? false,
-          watch: args.watch ?? false,
-          launchTests: args.launchTests ?? false,
-        },
-        tnsArgs,
-      );
-    } else {
-      cliCommand = project.attach(args.tnsArgs);
-    }
-
-    const portEmitter = new EventEmitter();
-    let firstPortResolve: ((port: number | undefined) => void) | null = null;
-    let lastPortTimestamp = 0;
-
-    const initialPort = new Promise<number | undefined>((resolve) => {
-      firstPortResolve = resolve;
+    command.tnsProcess.on('error', (error) => {
+      this.logger.log(`[NativeScript] Failed to start the ns command: ${error.message}\n`);
+      this.finish(null);
+    });
+    command.tnsProcess.on('close', (code) => {
+      this.logger.log(`[NativeScript] The ns command finished with code ${code}.\n`);
+      this.finish(code);
     });
 
-    if (cliCommand.tnsProcess) {
-      this._tnsProcess = cliCommand.tnsProcess;
-      cliCommand.tnsProcess.stdout!.on('data', (data: Buffer) => {
-        this._logger.log(data.toString());
-      });
-      cliCommand.tnsProcess.stderr!.on('data', (data: Buffer) => {
-        this._logger.log(data.toString());
-      });
-
-      cliCommand.tnsProcess.on('close', (code) => {
-        this._logger.log(`[NativeScript] The ns command finished with code ${code}.\n`);
-        if (firstPortResolve) {
-          firstPortResolve(undefined);
-          firstPortResolve = null;
-        }
-        portEmitter.emit('closed', code);
-      });
-    }
-
-    this._logger.log('[NativeScript] Watching ns CLI output for connection token\n');
-
-    cliCommand.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) => {
-      const port = typeof connectionToken === 'string' ? parseInt(connectionToken, 10) : connectionToken;
-      const now = Date.now();
-      this._logger.log(`[NativeScript] Ready to attach on port ${port}\n`);
-
-      if (firstPortResolve) {
-        firstPortResolve(port);
-        firstPortResolve = null;
-        lastPortTimestamp = now;
-      } else if (now - lastPortTimestamp > 2000) {
-        lastPortTimestamp = now;
-        portEmitter.emit('newPort', port);
-      } else {
-        this._logger.log(`[NativeScript] Ignoring duplicate port notification\n`);
-      }
-    });
-
-    return {
-      initialPort,
-      portEmitter,
-      disconnect: () => this.disconnect(),
-    };
+    command.tnsOutputEventEmitter.on('readyForConnection', (connectionToken: string | number) =>
+      this.onPort(typeof connectionToken === 'string' ? parseInt(connectionToken, 10) : connectionToken),
+    );
   }
 
   public disconnect(): void {
-    if (this._tnsProcess) {
-      this._tnsProcess.stdout?.removeAllListeners();
-      this._tnsProcess.stderr?.removeAllListeners();
-      this._tnsProcess.removeAllListeners();
-      utils.killProcess(this._tnsProcess);
-      this._tnsProcess = null;
+    const child = this.process;
+    if (!child) return;
+
+    this.process = null;
+    child.stdout?.removeAllListeners();
+    child.stderr?.removeAllListeners();
+    child.removeAllListeners();
+    utils.killProcess(child, this.logger);
+    this.resolveInitialPort?.(undefined);
+    this.resolveInitialPort = undefined;
+  }
+
+  private onPort(port: number): void {
+    const now = Date.now();
+    this.logger.log(`[NativeScript] Ready to attach on port ${port}\n`);
+
+    if (this.resolveInitialPort) {
+      this.resolveInitialPort(port);
+      this.resolveInitialPort = undefined;
+      this.lastPortTimestamp = now;
+    } else if (now - this.lastPortTimestamp > DUPLICATE_PORT_WINDOW_MS) {
+      this.lastPortTimestamp = now;
+      this.emit('newPort', port);
+    } else {
+      this.logger.log('[NativeScript] Ignoring duplicate port notification\n');
     }
   }
 
-  private getTeamId(appRoot: string, tnsArgs?: string[]): string | null {
-    if (tnsArgs) {
-      const teamIdArgIndex = tnsArgs.indexOf('--teamId');
-      if (teamIdArgIndex > 0 && teamIdArgIndex + 1 < tnsArgs.length) {
-        return tnsArgs[teamIdArgIndex + 1];
+  private finish(code: number | null): void {
+    if (!this.process) return;
+
+    this.process = null;
+    this.resolveInitialPort?.(undefined);
+    this.resolveInitialPort = undefined;
+    this.emit('closed', code);
+  }
+}
+
+export class BuildService {
+  constructor(private readonly logger: ILogger) {}
+
+  /**
+   * @param isCancelled checked after each await so a session stopped mid-startup never spawns the CLI.
+   */
+  public async startBuild(args: BuildArgs, isCancelled: () => boolean = () => false): Promise<BuildSession | null> {
+    const cli = services.createCli(args.appRoot);
+    const platform = args.platform?.toLowerCase();
+
+    this.logger.log(`[NativeScript] Using ns CLI on path '${cli.path}'\n`);
+    const version = await cli.getSupportedVersion(services.minCliVersion);
+    this.logger.log(`[NativeScript] Using ns CLI v${version}\n`);
+
+    if (args.launchTests && isVitestProject(args.appRoot)) {
+      throw new Error(
+        "Debugging unit tests is not supported for projects using the Vitest test runner. Run 'ns test' from a terminal instead.",
+      );
+    }
+
+    const project = platform === 'ios' ? new IosProject(args.appRoot, cli) : new AndroidProject(args.appRoot, cli);
+    void services.analyticsService.trackDebug(args.request, platform);
+
+    let tnsArgs = [...(args.tnsArgs ?? [])];
+
+    if (getBundler(args.appRoot) === 'vite' && !tnsArgs.some((arg) => /^--(no-)?hmr$/.test(arg))) {
+      // Vite HMR serves app code over HTTP without source maps, so breakpoints can't bind.
+      tnsArgs.push('--no-hmr');
+    }
+
+    if (args.request === 'launch' && platform === 'ios' && !this.getTeamId(args.appRoot, tnsArgs)) {
+      const selectedTeam = await services.iOSTeamService.selectTeam();
+
+      if (selectedTeam) {
+        tnsArgs = tnsArgs.concat(['--teamId', selectedTeam.id]);
+        this.logger.log(`[NativeScript] Using iOS Team ID '${selectedTeam.id}'\n`);
       }
     }
 
-    return this.readTeamId(appRoot);
+    if (isCancelled()) return null;
+
+    this.logger.log('[NativeScript] Running ns command...\n');
+
+    const command =
+      args.request === 'launch'
+        ? project.debug(
+            {
+              stopOnEntry: args.stopOnEntry ?? false,
+              watch: args.watch ?? false,
+              launchTests: args.launchTests ?? false,
+            },
+            tnsArgs,
+          )
+        : project.attach(tnsArgs);
+
+    this.logger.log('[NativeScript] Watching ns CLI output for connection token\n');
+
+    return new BuildSession(command, this.logger);
   }
 
-  private readXCConfig(appRoot: string, flag: string): string | null {
-    const xcconfigFile = path.join(appRoot, 'App_Resources/iOS/build.xcconfig');
+  private getTeamId(appRoot: string, tnsArgs: string[]): string | null {
+    const teamIdArgIndex = tnsArgs.indexOf('--teamId');
+    if (teamIdArgIndex >= 0 && teamIdArgIndex + 1 < tnsArgs.length) {
+      return tnsArgs[teamIdArgIndex + 1];
+    }
+
+    return this.readTeamId(path.join(appRoot, 'app')) ?? this.readTeamId(appRoot);
+  }
+
+  private readTeamId(appDir: string): string | null {
+    const xcconfigFile = path.join(appDir, 'App_Resources/iOS/build.xcconfig');
 
     if (fs.existsSync(xcconfigFile)) {
-      const text = fs.readFileSync(xcconfigFile, { encoding: 'utf8' });
       let teamId: string | undefined;
 
-      text.split(/\r?\n/).forEach((line) => {
-        line = line.replace(/\/(\/)[^\n]*$/, '');
-        if (line.indexOf(flag) >= 0) {
-          teamId = line.split('=')[1]?.trim();
-          if (teamId && teamId[teamId.length - 1] === ';') {
-            teamId = teamId.slice(0, -1);
-          }
+      for (let line of fs.readFileSync(xcconfigFile, { encoding: 'utf8' }).split(/\r?\n/)) {
+        line = line.replace(/\/\/[^\n]*$/, '');
+        if (line.includes('DEVELOPMENT_TEAM')) {
+          teamId = line.split('=')[1]?.trim().replace(/;$/, '');
         }
-      });
+      }
+
       if (teamId) {
         return teamId;
       }
     }
 
-    const fileName = path.join(appRoot, 'teamid');
+    const fileName = path.join(appDir, 'teamid');
     if (fs.existsSync(fileName)) {
-      return fs.readFileSync(fileName, { encoding: 'utf8' });
+      return fs.readFileSync(fileName, { encoding: 'utf8' }).trim();
     }
 
     return null;
-  }
-
-  private readTeamId(appRoot: string): string | null {
-    return this.readXCConfig(appRoot, 'DEVELOPMENT_TEAM');
   }
 }

@@ -1,20 +1,31 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { AnalyticsService } from '../analytics/analyticsService';
+import { ILogger } from '../common/logger';
 import { WorkspaceConfigService } from '../common/workspaceConfigService';
+import { NativeScriptCli } from '../project/nativeScriptCli';
 import { BuildService } from './buildService';
 import { iOSTeamService } from './iOSTeamService';
-import { Services as BaseServices } from './services';
 
-export class ExtensionHostServices extends BaseServices {
-  public cliVersion!: string;
-  public extensionVersion!: string;
+export class ExtensionHostServices {
+  public extensionVersion = '';
+  public minCliVersion = '0.0.0';
 
+  private _logger!: ILogger;
   private _globalState!: vscode.Memento;
 
-  private _workspaceConfigService!: WorkspaceConfigService;
-  private _iOSTeamService!: iOSTeamService;
-  private _analyticsService!: AnalyticsService;
-  private _buildService!: BuildService;
+  private _workspaceConfigService?: WorkspaceConfigService;
+  private _iOSTeamService?: iOSTeamService;
+  private _analyticsService?: AnalyticsService;
+  private _buildService?: BuildService;
+
+  public get logger(): ILogger {
+    return this._logger;
+  }
+
+  public set logger(logger: ILogger) {
+    this._logger = logger;
+  }
 
   public get globalState(): vscode.Memento {
     return this._globalState;
@@ -25,30 +36,37 @@ export class ExtensionHostServices extends BaseServices {
   }
 
   public get workspaceConfigService(): WorkspaceConfigService {
-    this._workspaceConfigService = this._workspaceConfigService || new WorkspaceConfigService();
-
-    return this._workspaceConfigService;
+    return (this._workspaceConfigService ??= new WorkspaceConfigService());
   }
 
   public get iOSTeamService(): iOSTeamService {
-    this._iOSTeamService = this._iOSTeamService || new iOSTeamService();
-
-    return this._iOSTeamService;
+    return (this._iOSTeamService ??= new iOSTeamService());
   }
 
   public get analyticsService(): AnalyticsService {
-    this._analyticsService =
-      this._analyticsService ||
-      new AnalyticsService(this.globalState, this.cliVersion, this.extensionVersion, this._logger);
-
-    return this._analyticsService;
+    return (this._analyticsService ??= new AnalyticsService(
+      this.globalState,
+      this.workspaceConfigService,
+      this.logger,
+      this.extensionVersion,
+    ));
   }
 
   public get buildService(): BuildService {
-    this._buildService = this._buildService || new BuildService(this._logger);
+    return (this._buildService ??= new BuildService(this.logger));
+  }
 
-    return this._buildService;
+  /**
+   * Bare command names (e.g. `ns`) are looked up on PATH; path-like relative values
+   * (e.g. `./node_modules/.bin/ns`) are resolved against the app root.
+   */
+  public createCli(appRoot?: string): NativeScriptCli {
+    const nsPath = this.workspaceConfigService.nsPath;
+    const isRelativePath = !path.isAbsolute(nsPath) && /[\\/]/.test(nsPath);
+    const resolved = isRelativePath && appRoot ? path.join(appRoot, nsPath) : nsPath;
+
+    return new NativeScriptCli(resolved, this.logger);
   }
 }
 
-export let services = new ExtensionHostServices();
+export const services = new ExtensionHostServices();

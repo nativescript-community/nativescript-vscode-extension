@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 export const ACTIVITY_INDICATOR = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -24,7 +24,7 @@ export const ACTIVITY_INDICATOR = vscode.languages.registerHoverProvider('html',
 });
 
 export const BUTTON = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -43,7 +43,7 @@ export const BUTTON = vscode.languages.registerHoverProvider('html', {
 });
 
 export const LABEL = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -62,7 +62,7 @@ export const LABEL = vscode.languages.registerHoverProvider('html', {
 });
 
 export const TEXT_FIELD = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -83,7 +83,7 @@ export const TEXT_FIELD = vscode.languages.registerHoverProvider('html', {
 });
 
 export const TEXT_VIEW = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -103,7 +103,7 @@ export const TEXT_VIEW = vscode.languages.registerHoverProvider('html', {
 });
 
 export const LIST_VIEW = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -122,7 +122,7 @@ export const LIST_VIEW = vscode.languages.registerHoverProvider('html', {
 });
 
 export const IMAGE = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -141,7 +141,7 @@ export const IMAGE = vscode.languages.registerHoverProvider('html', {
 });
 
 export const PROGRESS = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -160,7 +160,7 @@ export const PROGRESS = vscode.languages.registerHoverProvider('html', {
 });
 
 export const SCROLL_VIEW = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -181,7 +181,7 @@ export const SCROLL_VIEW = vscode.languages.registerHoverProvider('html', {
 });
 
 export const SEARCH_BAR = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -202,7 +202,7 @@ export const SEARCH_BAR = vscode.languages.registerHoverProvider('html', {
 });
 
 export const SLIDER = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -221,7 +221,7 @@ export const SLIDER = vscode.languages.registerHoverProvider('html', {
 });
 
 export const SWITCH = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -240,7 +240,7 @@ export const SWITCH = vscode.languages.registerHoverProvider('html', {
 });
 
 export const TAB_VIEW = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -259,7 +259,7 @@ export const TAB_VIEW = vscode.languages.registerHoverProvider('html', {
 });
 
 export const TAB_VIEW_ITEM = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -280,7 +280,7 @@ export const TAB_VIEW_ITEM = vscode.languages.registerHoverProvider('html', {
 });
 
 export const WEB_VIEW = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -299,7 +299,7 @@ export const WEB_VIEW = vscode.languages.registerHoverProvider('html', {
 });
 
 export const HTML_VIEW = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -320,7 +320,7 @@ export const HTML_VIEW = vscode.languages.registerHoverProvider('html', {
 });
 
 export const LIST_PICKER = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -341,7 +341,7 @@ export const LIST_PICKER = vscode.languages.registerHoverProvider('html', {
 });
 
 export const DATE_PICKER = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -362,7 +362,7 @@ export const DATE_PICKER = vscode.languages.registerHoverProvider('html', {
 });
 
 export const TIME_PICKER = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -383,7 +383,7 @@ export const TIME_PICKER = vscode.languages.registerHoverProvider('html', {
 });
 
 export const PLACEHOLDER = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 

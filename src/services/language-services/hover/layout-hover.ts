@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 export const STACK_LAYOUT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -25,7 +25,7 @@ export const STACK_LAYOUT = vscode.languages.registerHoverProvider('html', {
 });
 
 export const GRID_LAYOUT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -47,7 +47,7 @@ export const GRID_LAYOUT = vscode.languages.registerHoverProvider('html', {
 });
 
 export const ABSOLUTE_LAYOUT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -69,7 +69,7 @@ export const ABSOLUTE_LAYOUT = vscode.languages.registerHoverProvider('html', {
 });
 
 export const DOCK_LAYOUT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -93,7 +93,7 @@ export const DOCK_LAYOUT = vscode.languages.registerHoverProvider('html', {
 });
 
 export const FLEXBOX_LAYOUT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
@@ -115,7 +115,7 @@ export const FLEXBOX_LAYOUT = vscode.languages.registerHoverProvider('html', {
 });
 
 export const WRAP_LAYOUT = vscode.languages.registerHoverProvider('html', {
-  provideHover(document, position, token) {
+  provideHover(document, position, _token) {
     const range = document.getWordRangeAtPosition(position);
     const word = document.getText(range);
 
