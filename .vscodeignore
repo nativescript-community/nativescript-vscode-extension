@@ -15,3 +15,9 @@ eslint.config.mjs
 vitest.config.mts
 CONTRIBUTING.md
 npm-debug.log
+RELEASING.md
+release-please-config.json
+.release-please-manifest.json
+*.local.*
+.env
+.env.*

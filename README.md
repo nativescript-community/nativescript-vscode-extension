@@ -78,7 +78,7 @@ npm test            # Vitest unit tests
 
 Open the repository in VS Code and press F5 (`Run Extension`) to start an Extension Development Host with the extension loaded. Open a NativeScript app there and start one of its NativeScript launch configurations. After changing the extension's code, restart the Extension Development Host.
 
-Release builds send analytics only when `GA_MEASUREMENT_ID` and `GA_API_SECRET` are set in the environment while packaging (`vscode:prepublish` writes them to `out/ga-config.json`). Never commit the API secret.
+Releases are automated; see [RELEASING.md](RELEASING.md). Release builds send analytics only when `GA_MEASUREMENT_ID` and `GA_API_SECRET` are set in the environment while packaging (`vscode:prepublish` writes them to `out/ga-config.json`). Never commit the API secret.
 
 
 ### How to disable the analytics
