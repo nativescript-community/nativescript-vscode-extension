@@ -1,216 +1,75 @@
-import * as fs from 'fs';
-import * as _ from 'lodash';
-import { join } from 'path';
-import * as proxyquire from 'proxyquire';
+import * as assert from 'assert';
 import * as sinon from 'sinon';
-import { ChromeDebugAdapter } from 'vscode-chrome-debug-core';
-import { Event } from '@vscode/debugadapter';
-import * as extProtocol from '../common/extensionProtocol';
-const appRoot = 'appRootMock';
-const webpackConfigFunctionStub = sinon.stub();
+import { NativeScriptDebugAdapter } from '../debug-adapter/nativeScriptDebugAdapter';
+import { DebugManager } from '../debug-adapter/debugManager';
 
-proxyquire.noCallThru();
-const nativeScriptDebugAdapterLib = proxyquire('../debug-adapter/nativeScriptDebugAdapter', {
-    [join(appRoot, 'webpack.config.js')]: webpackConfigFunctionStub,
+const createMockDebugManager = () => ({
+  startDebugging: sinon.stub().resolves(),
+  stopDebugging: sinon.stub(),
+  dispose: sinon.stub(),
 });
 
-const examplePort = 456;
-
-const customMessagesResponses = {
-    buildService: {
-        processRequest: examplePort,
-    },
-    workspaceConfigService: {
-        tnsPath: 'tnsPathMock',
-    },
-};
-
-const defaultArgsMock: any = {
-    appRoot,
-    diagnosticLogging: true,
-    platform: 'android',
-    request: 'attach',
-    stopOnEntry: true,
-    tnsArgs: ['mockArgs'],
-    watch: true,
-};
-
-const mockConstructor = (mockObject: any): any => {
-    return function () {
-        return mockObject;
-    };
-};
+const createMockSession = (id = 'test-session-id') => ({
+  id,
+  type: 'nativescript',
+  name: 'Test',
+});
 
 describe('NativeScriptDebugAdapter', () => {
-    let nativeScriptDebugAdapter: any;
-    let chromeSessionMock: any;
-    let chromeConnectionMock: any;
-    let pathTransformerMock: any;
-    let sourceMapTransformer: any;
+  let adapter: NativeScriptDebugAdapter;
+  let debugManager: ReturnType<typeof createMockDebugManager>;
+  let mockSession: ReturnType<typeof createMockSession>;
 
-    beforeEach(() => {
-        chromeSessionMock = {
-            sendEvent: (e: Event) => {
-                const request = (e as any).body as extProtocol.IRequest;
+  beforeEach(() => {
+    debugManager = createMockDebugManager();
+    adapter = new NativeScriptDebugAdapter(debugManager as unknown as DebugManager);
+    mockSession = createMockSession();
+    adapter.setParentSession(mockSession as any);
+  });
 
-                if (e.event === extProtocol.NS_DEBUG_ADAPTER_MESSAGE) {
-                    const result = customMessagesResponses[request.service] && customMessagesResponses[request.service][request.method];
+  it('should create adapter with debug manager', () => {
+    assert.ok(adapter);
+  });
 
-                    (nativeScriptDebugAdapter as any).onExtensionResponse({ requestId: request.id, result });
-                }
-            },
-        };
+  it('should set parent session', () => {
+    const session = createMockSession('custom-id');
+    adapter.setParentSession(session as any);
+    assert.ok(adapter);
+  });
 
-        chromeConnectionMock = {
-            attach: () => Promise.resolve({}),
-        };
+  it('should call debugManager.stopDebugging on disconnect with parent session id', () => {
+    (adapter as any).disconnectRequest(
+      { body: {}, success: true, command: 'disconnect', type: 'response', request_seq: 1, seq: 0 },
+      {},
+    );
+    assert.ok(debugManager.stopDebugging.calledOnce);
+    assert.ok(debugManager.stopDebugging.calledWith(mockSession.id));
+  });
 
-        pathTransformerMock = {
-            attach: () => ({}),
-            clearTargetContext: () => ({}),
-            setTransformOptions: () => ({}),
-        };
+  it('should call debugManager.stopDebugging on terminate with parent session id', () => {
+    (adapter as any).terminateRequest(
+      { body: {}, success: true, command: 'terminate', type: 'response', request_seq: 1, seq: 0 },
+      {},
+    );
+    assert.ok(debugManager.stopDebugging.calledOnce);
+    assert.ok(debugManager.stopDebugging.calledWith(mockSession.id));
+  });
 
-        sourceMapTransformer = {
-            clearTargetContext: () => undefined,
-            setTransformOptions: () => undefined,
-        };
+  it('should return empty threads', () => {
+    const response: any = { body: {}, success: true, command: 'threads', type: 'response', request_seq: 1, seq: 0 };
+    (adapter as any).threadsRequest(response);
+    assert.deepStrictEqual(response.body.threads, []);
+  });
 
-        nativeScriptDebugAdapter = new nativeScriptDebugAdapterLib.NativeScriptDebugAdapter({
-            chromeConnection: mockConstructor(chromeConnectionMock),
-            pathTransformer: mockConstructor(pathTransformerMock),
-            sourceMapTransformer: mockConstructor(sourceMapTransformer),
-        },
-            chromeSessionMock,
-        );
+  it('should call debugManager.startDebugging on launch', async () => {
+    const response: any = { body: {}, success: true, command: 'launch', type: 'response', request_seq: 1, seq: 0 };
+    await (adapter as any).launchRequest(response, { platform: 'ios', appRoot: '/test' });
+    assert.ok(debugManager.startDebugging.calledOnce);
+  });
 
-        ChromeDebugAdapter.prototype.attach = () => Promise.resolve();
-    });
-
-    const platforms = ['android', 'ios'];
-    const launchMethods = ['launch', 'attach'];
-
-    platforms.forEach((platform) => {
-        launchMethods.forEach((method) => {
-            let argsMock: any;
-
-            beforeEach(() => {
-                argsMock = _.merge({}, defaultArgsMock, { platform, request: method });
-            });
-
-            it(`${method} for ${platform} should raise debug start event`, async () => {
-                const spy = sinon.spy(chromeSessionMock, 'sendEvent');
-
-                await nativeScriptDebugAdapter[method](argsMock);
-
-                sinon.assert.calledWith(spy, sinon.match({ event: extProtocol.BEFORE_DEBUG_START }));
-            });
-
-            it(`${method} for ${platform} should call project setTransformOptions`, async () => {
-                const spy = sinon.spy(pathTransformerMock, 'setTransformOptions');
-
-                await nativeScriptDebugAdapter[method](argsMock);
-
-                sinon.assert.calledWith(spy, argsMock.platform);
-            });
-
-            it(`${method} for ${platform} should set debug port`, async () => {
-                const debugPort = 1234;
-                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
-
-                customMessagesResponses.buildService.processRequest = debugPort;
-
-                await nativeScriptDebugAdapter[method](argsMock);
-
-                sinon.assert.calledWith(spy, sinon.match({
-                    port: debugPort,
-                }));
-            });
-
-            it(`${method} for ${platform} should set debug address`, async () => {
-                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
-
-                await nativeScriptDebugAdapter[method](argsMock);
-
-                sinon.assert.calledWith(spy, sinon.match({
-                    address: platform === "ios" ? "localhost" : undefined,
-                }));
-            });
-
-            it(`${method} for ${platform} should translate args to chrome debug args`, async () => {
-                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
-
-                await nativeScriptDebugAdapter[method](argsMock);
-
-                sinon.assert.calledWith(spy, sinon.match({
-                    trace: true,
-                    webRoot: appRoot,
-                }));
-            });
-
-            it(`${method} for ${platform} should add sourceMapPathOverrides data`, async () => {
-                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
-                const existsSyncStub = sinon.stub(fs, 'existsSync');
-                // Need to also stub isAngularProject to return false or it will always return true bc it utilizes
-                // `fs.existsSync` which is also stubbed and made to return true in this test.
-                const isAngularProjectStub = sinon.stub(nativeScriptDebugAdapter, 'isAngularProject');
-
-                process.chdir = () => null;
-                existsSyncStub.returns(true);
-                isAngularProjectStub.returns(false);
-                webpackConfigFunctionStub
-                    .withArgs({ [platform]: platform })
-                    .returns({ output: { library: 'myLib' } });
-
-                await nativeScriptDebugAdapter[method](argsMock);
-
-                existsSyncStub.restore();
-                sinon.assert.calledWith(spy, sinon.match({
-                    sourceMapPathOverrides: {
-                        'webpack:///*': `${join(appRoot, 'app')}/*`,
-                        'webpack://myLib/*': `${join(appRoot, 'app')}/*`,
-                    },
-                    trace: true,
-                    webRoot: appRoot,
-                }));
-            });
-
-            it(`${method} for ${platform} should not fail when unable to require webpack.config.js`, async () => {
-                const spy = sinon.spy(ChromeDebugAdapter.prototype, 'attach');
-                const existsSyncStub = sinon.stub(fs, 'existsSync');
-                // Need to also stub isAngularProject to return false or it will always return true bc it utilizes
-                // `fs.existsSync` which is also stubbed and made to return true in this test.
-                const isAngularProjectStub = sinon.stub(nativeScriptDebugAdapter, 'isAngularProject');
-
-                existsSyncStub.returns(true);
-                isAngularProjectStub.returns(false);
-                webpackConfigFunctionStub
-                    .withArgs({ [platform]: platform })
-                    .throws(new Error('test'));
-
-                await nativeScriptDebugAdapter[method](argsMock);
-
-                existsSyncStub.restore();
-                sinon.assert.calledWith(spy, sinon.match({
-                    sourceMapPathOverrides: {
-                        'webpack:///*': `${join(appRoot, 'app')}/*`,
-                    },
-                    trace: true,
-                    webRoot: appRoot,
-                }));
-            });
-
-            it(`${method} for ${platform} - after process exit should send Terminate event`, async () => {
-                const spy = sinon.spy(chromeSessionMock, 'sendEvent');
-
-                customMessagesResponses.buildService.processRequest = undefined;
-
-                await nativeScriptDebugAdapter.attach(argsMock);
-
-                sinon.assert.calledWith(spy, sinon.match({
-                    event: 'terminated',
-                }));
-            });
-        });
-    });
+  it('should call debugManager.startDebugging on attach', async () => {
+    const response: any = { body: {}, success: true, command: 'attach', type: 'response', request_seq: 1, seq: 0 };
+    await (adapter as any).attachRequest(response, { platform: 'android', appRoot: '/test' });
+    assert.ok(debugManager.startDebugging.calledOnce);
+  });
 });

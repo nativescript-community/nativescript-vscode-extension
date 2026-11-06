@@ -1,21 +1,17 @@
 {
     "compilerOptions": {
-        "target": "es6",
+        "target": "es2022",
         "module": "commonjs",
         "moduleResolution": "node",
         "sourceMap": true,
-        "noImplicitAny": false,
-        "removeComments": false,
-        "preserveConstEnums": true,
+        "strict": true,
         "outDir": "../out",
-        "allowJs": true
+        "skipLibCheck": true
     },
     "exclude": [
-        "node_modules",
+        "node_modules"
     ],
     "include": [
-        "./tests/**/*.ts",
-        "./debug-adapter/nativeScriptDebug.ts",
-        "./main.ts"
+        "./**/*.ts"
     ]
 }

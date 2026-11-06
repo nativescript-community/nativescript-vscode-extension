@@ -1,13 +1,13 @@
 export enum OperatingSystem {
-    Windows,
-    Linux,
-    OSX,
-    Other,
+  Windows,
+  Linux,
+  OSX,
+  Other,
 }
 
 export interface IAnalyticsBaseInfo {
-    operatingSystem: OperatingSystem;
-    cliVersion: string;
-    extensionVersion: string;
-    clientId: string;
+  operatingSystem: OperatingSystem;
+  cliVersion: string;
+  extensionVersion: string;
+  clientId: string;
 }

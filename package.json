@@ -16,7 +16,7 @@
   "publisher": "NativeScript",
   "bugs": "https://github.com/nativescript-community/nativescript-vscode-extension/issues",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.109.0"
   },
   "homepage": "https://www.nativescript.org/",
   "categories": [
@@ -25,30 +25,31 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
+    "@vscode/debugadapter": "^1.68.0",
     "lodash": "4.17.21",
     "semver": "7.5.4",
     "strip-json-comments": "~3.1.1",
     "universal-analytics": "0.4.23",
-    "uuid": "9.0.1",
-    "vscode-chrome-debug-core": "^6.8.11",
-    "@vscode/debugadapter": "^1.64.0"
+    "uuid": "9.0.1"
   },
   "devDependencies": {
     "@types/lodash": "4.14.121",
     "@types/mocha": "5.2.6",
-    "@types/node": "18.x",
+    "@types/node": "^22.19.19",
     "@types/proxyquire": "1.3.31",
     "@types/semver": "7.5.6",
     "@types/sinon": "7.0.13",
     "@types/universal-analytics": "0.4.1",
-    "@types/vscode": "^1.85.0",
+    "@types/uuid": "^10.0.0",
+    "@types/vscode": "^1.120.0",
+    "@vscode/debugprotocol": "^1.68.0",
+    "@vscode/vsce": "^2.22.0",
     "cpx": "1.5.0",
     "mocha": "5.2.0",
+    "prettier": "^3.8.3",
     "proxyquire": "2.1.3",
     "sinon": "7.4.2",
-    "typescript": "^5.3.3",
-    "@vscode/vsce": "^2.22.0",
-    "@vscode/debugprotocol": "^1.64.0"
+    "typescript": "^5.3.3"
   },
   "scripts": {
     "clean": "git clean -fdx",
@@ -56,7 +57,6 @@
     "build:watch": "tsc -w -p ./src && cpx src/common/*.sh out/common",
     "package": "vsce package",
     "full-build": "npm run clean && npm install && npm run build && npm run package",
-    "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",
     "test": "mocha --opts ./src/tests/config/mocha.opts",
     "tslint": "tslint -p ./src/tsconfig.json -c tslint.json"
   },
@@ -77,9 +77,9 @@
           "default": false,
           "description": "Enables the extension tracking."
         },
-        "nativescript.tnsPath": {
+        "nativescript.nsPath": {
           "type": "string",
-          "default": "tns",
+          "default": "ns",
           "description": "Path to the NativeScript CLI executable."
         },
         "nativescript.iosTeamId": {
@@ -136,8 +136,6 @@
             "typescript"
           ]
         },
-        "program": "./out/debug-adapter/nativeScriptDebug.js",
-        "runtime": "node",
         "initialConfigurations": [
           {
             "name": "Launch on iOS",

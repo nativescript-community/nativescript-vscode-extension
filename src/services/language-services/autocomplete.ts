@@ -72,25 +72,27 @@ HORIZONTAL_ALIGNMENT.commitCharacters = ['='];
 HORIZONTAL_ALIGNMENT.documentation = new vscode.MarkdownString(GENERIC_AUTOCOMPLETE_DESCRIPTION);
 
 export const COMPLETION_PROVIDER = vscode.languages.registerCompletionItemProvider('html', {
-
-    provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext) {
-
-        return [
-            AUTOCAPITALIZATION,
-            KEYBOARD_TYPE,
-            RETURN_KEY_TYPE,
-            TAB_BACKGROUND_COLOR,
-            SELECTED_TAB_TEXT_COLOR,
-            TAB_TEXT_COLOR,
-            ORIENTATION,
-            FONT_STYLE,
-            TEXT_ALIGNMENT,
-            TEXT_DECORATION,
-            TEXT_TRANSFORM,
-            VISIBILITY,
-            VERTICAL_ALIGNMENT,
-            HORIZONTAL_ALIGNMENT,
-        ];
-
-    },
+  provideCompletionItems(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    token: vscode.CancellationToken,
+    context: vscode.CompletionContext,
+  ) {
+    return [
+      AUTOCAPITALIZATION,
+      KEYBOARD_TYPE,
+      RETURN_KEY_TYPE,
+      TAB_BACKGROUND_COLOR,
+      SELECTED_TAB_TEXT_COLOR,
+      TAB_TEXT_COLOR,
+      ORIENTATION,
+      FONT_STYLE,
+      TEXT_ALIGNMENT,
+      TEXT_DECORATION,
+      TEXT_TRANSFORM,
+      VISIBILITY,
+      VERTICAL_ALIGNMENT,
+      HORIZONTAL_ALIGNMENT,
+    ];
+  },
 });
