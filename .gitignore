@@ -5,3 +5,5 @@ npm-debug.log
 nativescript-*.vsix
 /.vscode/
 nativescript.vsix
+.env
+.env.*
