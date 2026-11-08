@@ -7,7 +7,8 @@ import * as utils from '../common/utilities';
 import { getBundler, isVitestProject } from '../project/projectInfo';
 import { AndroidProject } from '../project/androidProject';
 import { IosProject } from '../project/iosProject';
-import { IDebugResult } from '../project/project';
+import { NativeScriptCli } from '../project/nativeScriptCli';
+import { IDebugResult, Project, ProjectOptions } from '../project/project';
 import { services } from './extensionHostServices';
 
 export interface BuildArgs {
@@ -18,6 +19,13 @@ export interface BuildArgs {
   stopOnEntry?: boolean;
   launchTests?: boolean;
   tnsArgs?: string[];
+  /** Replaces the ns CLI; the command then runs exactly as given, with no flags added. */
+  runtimeExecutable?: string;
+  runtimeArgs?: string[];
+  /** Working directory for the command; relative paths resolve against workspaceRoot. Defaults to appRoot. */
+  cwd?: string;
+  env?: utils.EnvOverrides;
+  workspaceRoot?: string;
 }
 
 /** Ignore repeated port announcements closer together than this; the CLI can print the same port twice. */
@@ -85,7 +93,7 @@ export class BuildSession extends EventEmitter {
       }
       const timer = setTimeout(() => {
         this.logger.log('[NativeScript] The ns command did not exit in time, killing it\n');
-        child.kill('SIGKILL');
+        utils.killProcess(child, this.logger, 'SIGKILL');
         resolve();
       }, CLI_EXIT_TIMEOUT_MS);
       child.once('close', () => {
@@ -133,6 +141,16 @@ export class BuildService {
   public async startBuild(args: BuildArgs, isCancelled: () => boolean = () => false): Promise<BuildSession | null> {
     const cli = services.createCli(args.appRoot);
     const platform = args.platform?.toLowerCase();
+    const projectOptions: ProjectOptions = { cwd: this.resolveCwd(args), env: args.env };
+
+    if (args.runtimeExecutable) {
+      return this.startCustomCommand(
+        args,
+        platform,
+        this.createProject(platform, args.appRoot, cli, projectOptions),
+        isCancelled,
+      );
+    }
 
     this.logger.log(`[NativeScript] Using ns CLI on path '${cli.path}'\n`);
     const version = await cli.getSupportedVersion(services.minCliVersion);
@@ -144,7 +162,7 @@ export class BuildService {
       );
     }
 
-    const project = platform === 'ios' ? new IosProject(args.appRoot, cli) : new AndroidProject(args.appRoot, cli);
+    const project = this.createProject(platform, args.appRoot, cli, projectOptions);
     void services.analyticsService.trackDebug(args.request, platform);
 
     let tnsArgs = [...(args.tnsArgs ?? [])];
@@ -182,6 +200,40 @@ export class BuildService {
     this.logger.log('[NativeScript] Watching ns CLI output for connection token\n');
 
     return new BuildSession(command, this.logger);
+  }
+
+  private startCustomCommand(
+    args: BuildArgs,
+    platform: string,
+    project: Project,
+    isCancelled: () => boolean,
+  ): BuildSession | null {
+    const runtimeArgs = args.runtimeArgs ?? [];
+    if (args.tnsArgs?.length) {
+      this.logger.log("[NativeScript] 'tnsArgs' is ignored when 'runtimeExecutable' is set; use 'runtimeArgs'\n");
+    }
+
+    void services.analyticsService.trackDebug(args.request, platform);
+
+    if (isCancelled()) return null;
+
+    // Each runtimeArgs entry is one argument, as in js-debug launch configs.
+    const commandLine = [args.runtimeExecutable!, ...runtimeArgs].map((arg) => utils.quoteShellArg(arg)).join(' ');
+    const cwd = this.resolveCwd(args);
+    this.logger.log(`[NativeScript] Running: ${commandLine} (in ${cwd})\n`);
+    const child = utils.spawnInShell(commandLine, { cwd, env: args.env });
+
+    this.logger.log('[NativeScript] Watching command output for the debug port\n');
+    return new BuildSession(project.monitor(child, runtimeArgs), this.logger);
+  }
+
+  private createProject(platform: string, appRoot: string, cli: NativeScriptCli, options: ProjectOptions): Project {
+    return platform === 'ios' ? new IosProject(appRoot, cli, options) : new AndroidProject(appRoot, cli, options);
+  }
+
+  private resolveCwd(args: BuildArgs): string {
+    if (!args.cwd) return args.appRoot;
+    return path.resolve(args.workspaceRoot ?? args.appRoot, args.cwd);
   }
 
   private getTeamId(appRoot: string, tnsArgs: string[]): string | null {

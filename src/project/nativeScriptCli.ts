@@ -1,4 +1,4 @@
-import { ChildProcess, exec, spawn } from 'child_process';
+import { ChildProcess, exec } from 'child_process';
 import * as semver from 'semver';
 import { ILogger } from '../common/logger';
 import * as utils from '../common/utilities';
@@ -16,8 +16,7 @@ export class NativeScriptCli {
     this._path = cliPath;
     this._logger = logger;
 
-    // cmd.exe avoids https://github.com/NativeScript/nativescript-vscode-extension/issues/121
-    this._shellPath = utils.getPlatform() === utils.Platform.Windows ? 'cmd.exe' : process.env.SHELL;
+    this._shellPath = utils.getShell();
   }
 
   public get path(): string {
@@ -34,7 +33,7 @@ export class NativeScriptCli {
           this._logger.log(String(error));
           reject(
             new Error(
-              `NativeScript CLI not found at '${this._path}'. Use the 'nativescript.nsPath' setting to set the absolute path to the NativeScript CLI.`,
+              `NativeScript CLI not found at '${this._path}'. Install it in the project ('npm install -D nativescript') or globally ('npm install -g nativescript'), or set 'nativescript.nsPath' to its path.`,
             ),
           );
           return;
@@ -64,15 +63,14 @@ export class NativeScriptCli {
     return version;
   }
 
-  public execute(args: string[], cwd: string): ChildProcess {
-    const fullArgs = [...ANALYTICS_CLIENT_ARGS, ...args];
-    this._logger.log(`[NativeScriptCli] execute: ${[this._path, ...fullArgs].join(' ')}`);
+  /**
+   * Arguments are joined unquoted, so nsPath values like `npx ns` and tnsArgs written with shell quoting keep
+   * working.
+   */
+  public execute(args: string[], options: utils.ShellSpawnOptions): ChildProcess {
+    const commandLine = [this._path, ...ANALYTICS_CLIENT_ARGS, ...args].join(' ');
+    this._logger.log(`[NativeScriptCli] execute: ${commandLine}`);
 
-    const child = spawn(this._path, fullArgs, { cwd, shell: this._shellPath });
-
-    child.stdout.setEncoding('utf8');
-    child.stderr.setEncoding('utf8');
-
-    return child;
+    return utils.spawnInShell(commandLine, options);
   }
 }

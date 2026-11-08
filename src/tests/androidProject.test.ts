@@ -3,15 +3,17 @@ import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AndroidProject } from '../project/androidProject';
+import { ShellSpawnOptions } from '../common/utilities';
 import { NativeScriptCli } from '../project/nativeScriptCli';
 
 const READY_DELAY_MS = 1000;
 const APP_ROOT = '/projects/demo';
+const DEFAULT_OPTIONS: ShellSpawnOptions = { cwd: APP_ROOT, env: undefined };
 
 function createCli() {
   const stdout = new PassThrough();
   const proc = Object.assign(new EventEmitter(), { stdout, stderr: new PassThrough() });
-  const execute = vi.fn((_args: string[], _cwd: string) => proc as unknown as ChildProcess);
+  const execute = vi.fn((_args: string[], _options: ShellSpawnOptions) => proc as unknown as ChildProcess);
   return { cli: { execute } as unknown as NativeScriptCli, execute, stdout, proc };
 }
 
@@ -39,20 +41,20 @@ describe('AndroidProject', () => {
 
     const result = project.debug({ stopOnEntry: false, watch: true, launchTests: false }, ['--device', 'emu']);
 
-    expect(fake.execute).toHaveBeenCalledWith(['debug', 'android', '--watch', '--device', 'emu'], APP_ROOT);
+    expect(fake.execute).toHaveBeenCalledWith(['debug', 'android', '--watch', '--device', 'emu'], DEFAULT_OPTIONS);
     expect(result.tnsProcess).toBe(fake.proc);
   });
 
   it('uses ns test for launchTests and --debug-brk for stopOnEntry', () => {
     new AndroidProject(APP_ROOT, fake.cli).debug({ stopOnEntry: true, watch: false, launchTests: true });
 
-    expect(fake.execute).toHaveBeenCalledWith(['test', 'android', '--no-watch', '--debug-brk'], APP_ROOT);
+    expect(fake.execute).toHaveBeenCalledWith(['test', 'android', '--no-watch', '--debug-brk'], DEFAULT_OPTIONS);
   });
 
   it('builds the attach command line', () => {
     new AndroidProject(APP_ROOT, fake.cli).attach(['--env.foo']);
 
-    expect(fake.execute).toHaveBeenCalledWith(['debug', 'android', '--start', '--env.foo'], APP_ROOT);
+    expect(fake.execute).toHaveBeenCalledWith(['debug', 'android', '--start', '--env.foo'], DEFAULT_OPTIONS);
   });
 
   it('announces the debug port one second after the CLI prints it', async () => {
@@ -116,6 +118,44 @@ describe('AndroidProject', () => {
     expect(ready).not.toHaveBeenCalled();
 
     await writeLine(fake.stdout, 'device: emulator-5554 debug port: 40000');
+    await writeLine(fake.stdout, '# NativeScript Debugger started #');
+    await vi.advanceTimersByTimeAsync(READY_DELAY_MS);
+    expect(ready).toHaveBeenCalledExactlyOnceWith(40000);
+  });
+
+  it('runs commands in the configured cwd with the configured env', () => {
+    const env = { ANDROID_HOME: '/sdk', NODE_OPTIONS: null };
+    const project = new AndroidProject(APP_ROOT, fake.cli, { cwd: '/repo', env });
+
+    project.debug({ stopOnEntry: false, watch: true, launchTests: false });
+    project.attach();
+    project.run(['--release']);
+
+    expect(fake.execute.mock.calls.map(([args, options]) => [args[0], options])).toEqual([
+      ['debug', { cwd: '/repo', env }],
+      ['debug', { cwd: '/repo', env }],
+      ['run', { cwd: '/repo', env }],
+    ]);
+    expect(fake.execute.mock.calls[2][0]).toEqual(['run', 'android', '--release']);
+  });
+
+  it.each([
+    ['announces the port directly', ['nx', 'run', 'mobile:debug'], false],
+    ['detects --debug-brk embedded in a wrapper flag', ['nx', 'run', 'mobile:debug', '--flags=--debug-brk'], true],
+  ])('monitor %s', async (_label, args, waits) => {
+    const { tnsOutputEventEmitter, tnsProcess } = new AndroidProject(APP_ROOT, fake.cli).monitor(
+      fake.proc as unknown as ChildProcess,
+      args,
+    );
+    tnsOutputEventEmitter.on('readyForConnection', ready);
+
+    expect(tnsProcess).toBe(fake.proc);
+    expect(fake.execute).not.toHaveBeenCalled();
+
+    await writeLine(fake.stdout, 'device: emulator-5554 debug port: 40000');
+    await vi.advanceTimersByTimeAsync(READY_DELAY_MS);
+    expect(ready).toHaveBeenCalledTimes(waits ? 0 : 1);
+
     await writeLine(fake.stdout, '# NativeScript Debugger started #');
     await vi.advanceTimersByTimeAsync(READY_DELAY_MS);
     expect(ready).toHaveBeenCalledExactlyOnceWith(40000);

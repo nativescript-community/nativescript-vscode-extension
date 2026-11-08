@@ -57,6 +57,24 @@ export function getBundler(appRoot: string): Bundler {
   return bundler === 'vite' || bundler === 'rspack' ? bundler : 'webpack';
 }
 
+/**
+ * Finds a locally installed CLI (`node_modules/.bin/ns`) in appRoot or any parent directory, like npx does, so
+ * monorepos that install it at the workspace root are covered.
+ */
+export function findLocalCli(appRoot: string, platform: NodeJS.Platform = process.platform): string | undefined {
+  const binName = platform === 'win32' ? 'ns.cmd' : 'ns';
+  let dir = path.resolve(appRoot);
+
+  while (true) {
+    const candidate = path.join(dir, 'node_modules', '.bin', binName);
+    if (fs.existsSync(candidate)) return candidate;
+
+    const parent = path.dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
+}
+
 export function isVitestProject(appRoot: string): boolean {
   return ['ts', 'mts', 'js', 'mjs'].some((ext) => fs.existsSync(path.join(appRoot, `vitest.config.${ext}`)));
 }

@@ -15,6 +15,10 @@ export interface NativeScriptDebugConfiguration extends vscode.DebugConfiguratio
   stopOnEntry?: boolean;
   launchTests?: boolean;
   tnsArgs?: string[];
+  runtimeExecutable?: string;
+  runtimeArgs?: string[];
+  cwd?: string;
+  env?: Record<string, string | null>;
   address?: string;
   sourceMaps?: boolean;
   sourceMapPathOverrides?: Record<string, string>;
@@ -105,6 +109,11 @@ export class DebugManager implements vscode.Disposable {
           stopOnEntry: config.stopOnEntry,
           launchTests: config.launchTests,
           tnsArgs: config.tnsArgs,
+          runtimeExecutable: config.runtimeExecutable,
+          runtimeArgs: config.runtimeArgs,
+          cwd: config.cwd,
+          env: config.env,
+          workspaceRoot: folder?.uri.fsPath,
         },
         () => active.stopping,
       );

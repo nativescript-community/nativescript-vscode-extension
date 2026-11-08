@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { getAppDirectory, getBundler, isVitestProject, readPackageJson } from '../project/projectInfo';
+import { findLocalCli, getAppDirectory, getBundler, isVitestProject, readPackageJson } from '../project/projectInfo';
 
 describe('projectInfo', () => {
   let appRoot: string;
@@ -98,6 +98,47 @@ describe('projectInfo', () => {
     it.each(['ts', 'mts', 'js', 'mjs'])('detects vitest.config.%s', (ext) => {
       writeAppFile(`vitest.config.${ext}`, 'export default {};\n');
       expect(isVitestProject(appRoot)).toBe(true);
+    });
+  });
+
+  describe('findLocalCli', () => {
+    const installCli = (dir: string, bin = 'ns') => {
+      const file = path.join(appRoot, dir, 'node_modules', '.bin', bin);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, '');
+      return file;
+    };
+
+    it('finds the CLI installed in the app root', () => {
+      const cli = installCli('.');
+      expect(findLocalCli(appRoot, 'darwin')).toBe(cli);
+    });
+
+    it('walks up to a parent directory', () => {
+      const cli = installCli('.');
+      const nested = path.join(appRoot, 'apps', 'mobile');
+      fs.mkdirSync(nested, { recursive: true });
+
+      expect(findLocalCli(nested, 'linux')).toBe(cli);
+    });
+
+    it('prefers the nearest install', () => {
+      installCli('.');
+      const nearest = installCli('apps/mobile');
+
+      expect(findLocalCli(path.join(appRoot, 'apps', 'mobile'), 'linux')).toBe(nearest);
+    });
+
+    it('looks for ns.cmd on Windows', () => {
+      installCli('.');
+      expect(findLocalCli(appRoot, 'win32')).toBeUndefined();
+
+      const cmd = installCli('.', 'ns.cmd');
+      expect(findLocalCli(appRoot, 'win32')).toBe(cmd);
+    });
+
+    it('returns undefined when no ancestor has the CLI', () => {
+      expect(findLocalCli(appRoot, 'darwin')).toBeUndefined();
     });
   });
 

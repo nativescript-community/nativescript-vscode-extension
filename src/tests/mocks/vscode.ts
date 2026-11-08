@@ -54,7 +54,7 @@ export const debug = {
 
 export const workspace = {
   workspaceFolders: undefined as unknown[] | undefined,
-  getWorkspaceFolder: vi.fn(() => undefined),
+  getWorkspaceFolder: vi.fn((_uri: unknown): unknown => undefined),
   getConfiguration: vi.fn(() => ({
     get: <T>(key: string, defaultValue?: T) =>
       key in testing.configuration ? testing.configuration[key] : defaultValue,

@@ -75,8 +75,7 @@
         },
         "nativescript.nsPath": {
           "type": "string",
-          "default": "ns",
-          "description": "Path to the NativeScript CLI executable. Relative paths are resolved against the app root."
+          "description": "Path to the NativeScript CLI executable. Relative paths are resolved against the app root. When not set, a CLI installed in the project (node_modules/.bin/ns, also searched in parent folders) is used, falling back to the global 'ns'."
         },
         "nativescript.tnsPath": {
           "type": "string",
@@ -249,6 +248,26 @@
               "sourceMaps": true,
               "watch": false
             }
+          },
+          {
+            "label": "NativeScript: Launch with a custom command (e.g. Nx)",
+            "description": "Runs your own command (for example an Nx debug target) and attaches the debugger to it",
+            "body": {
+              "name": "Launch on iOS (Nx)",
+              "type": "nativescript",
+              "request": "launch",
+              "platform": "ios",
+              "appRoot": "^\"\\${workspaceFolder}/apps/${1:my-app}\"",
+              "cwd": "^\"\\${workspaceFolder}\"",
+              "runtimeExecutable": "npx",
+              "runtimeArgs": [
+                "nx",
+                "debug",
+                "${1:my-app}",
+                "--platform=ios"
+              ],
+              "watch": true
+            }
           }
         ],
         "configurationAttributes": {
@@ -277,6 +296,33 @@
                   "type": "string"
                 },
                 "default": []
+              },
+              "runtimeExecutable": {
+                "type": "string",
+                "description": "Command to run instead of the NativeScript CLI, e.g. 'npx'. When set, the command runs exactly as given by runtimeExecutable and runtimeArgs: the extension adds no flags (watch, stopOnEntry, tnsArgs, ...), so pass them in runtimeArgs. The command's output must include the CLI's debug port lines."
+              },
+              "runtimeArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Arguments for runtimeExecutable. Each entry is passed as a single argument.",
+                "default": []
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Working directory for the command. Relative paths resolve against the workspace folder. Defaults to appRoot."
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": "Environment variables for the command. A null value removes the variable.",
+                "default": {}
               },
               "watch": {
                 "type": "boolean",
@@ -372,6 +418,33 @@
                   "type": "string"
                 },
                 "default": []
+              },
+              "runtimeExecutable": {
+                "type": "string",
+                "description": "Command to run instead of the NativeScript CLI, e.g. 'npx'. When set, the command runs exactly as given by runtimeExecutable and runtimeArgs: the extension adds no flags (watch, stopOnEntry, tnsArgs, ...), so pass them in runtimeArgs. The command's output must include the CLI's debug port lines."
+              },
+              "runtimeArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Arguments for runtimeExecutable. Each entry is passed as a single argument.",
+                "default": []
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Working directory for the command. Relative paths resolve against the workspace folder. Defaults to appRoot."
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": "Environment variables for the command. A null value removes the variable.",
+                "default": {}
               },
               "watch": {
                 "type": "boolean",

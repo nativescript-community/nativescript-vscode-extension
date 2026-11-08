@@ -9,26 +9,28 @@ import { ILogger } from '../common/logger';
 import { AnalyticsService } from '../analytics/analyticsService';
 import * as utils from '../common/utilities';
 import { NativeScriptCli } from '../project/nativeScriptCli';
-import { IDebugResult } from '../project/project';
+import { IDebugResult, ProjectOptions } from '../project/project';
 import { BuildArgs, BuildService, BuildSession, CLI_EXIT_TIMEOUT_MS } from '../services/buildService';
 import { services } from '../services/extensionHostServices';
 import { iOSTeamService } from '../services/iOSTeamService';
 
 const projects = vi.hoisted(() => ({
-  created: [] as Array<{ platform: string; appRoot: string }>,
+  created: [] as Array<{ platform: string; appRoot: string; options?: ProjectOptions }>,
   debug:
     vi.fn<
       (options: { stopOnEntry: boolean; watch: boolean; launchTests: boolean }, tnsArgs?: string[]) => IDebugResult
     >(),
   attach: vi.fn<(tnsArgs?: string[]) => IDebugResult>(),
+  monitor: vi.fn<(child: ChildProcess, args: readonly string[]) => IDebugResult>(),
 }));
 
 vi.mock('../project/iosProject', () => ({
   IosProject: class {
     public debug = projects.debug;
     public attach = projects.attach;
-    constructor(appRoot: string) {
-      projects.created.push({ platform: 'ios', appRoot });
+    public monitor = projects.monitor;
+    constructor(appRoot: string, _cli: unknown, options?: ProjectOptions) {
+      projects.created.push({ platform: 'ios', appRoot, options });
     }
   },
 }));
@@ -37,8 +39,9 @@ vi.mock('../project/androidProject', () => ({
   AndroidProject: class {
     public debug = projects.debug;
     public attach = projects.attach;
-    constructor(appRoot: string) {
-      projects.created.push({ platform: 'android', appRoot });
+    public monitor = projects.monitor;
+    constructor(appRoot: string, _cli: unknown, options?: ProjectOptions) {
+      projects.created.push({ platform: 'android', appRoot, options });
     }
   },
 }));
@@ -46,6 +49,7 @@ vi.mock('../project/androidProject', () => ({
 vi.mock('../common/utilities', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../common/utilities')>()),
   killProcess: vi.fn(),
+  spawnInShell: vi.fn(),
 }));
 
 function createFakeProcess() {
@@ -55,7 +59,6 @@ function createFakeProcess() {
     pid: 4242,
     exitCode: null as number | null,
     signalCode: null as NodeJS.Signals | null,
-    kill: vi.fn((_signal?: NodeJS.Signals) => true),
   });
 }
 
@@ -171,7 +174,7 @@ describe('BuildSession', () => {
     proc.emit('close', 0);
     await exited;
     expect(closed).not.toHaveBeenCalled();
-    expect(proc.kill).not.toHaveBeenCalled();
+    expect(utils.killProcess).not.toHaveBeenCalledWith(proc, logger, 'SIGKILL');
   });
 
   it('disconnect resolves only once the process closes', async () => {
@@ -189,7 +192,7 @@ describe('BuildSession', () => {
     expect(resolved).toBe(true);
 
     await vi.advanceTimersByTimeAsync(CLI_EXIT_TIMEOUT_MS);
-    expect(proc.kill).not.toHaveBeenCalled();
+    expect(utils.killProcess).not.toHaveBeenCalledWith(proc, logger, 'SIGKILL');
   });
 
   it('disconnect force-kills a process that ignores SIGINT', async () => {
@@ -201,7 +204,10 @@ describe('BuildSession', () => {
     void session.disconnect().then(() => (resolved = true));
     await vi.advanceTimersByTimeAsync(CLI_EXIT_TIMEOUT_MS);
 
-    expect(proc.kill).toHaveBeenCalledExactlyOnceWith('SIGKILL');
+    expect(vi.mocked(utils.killProcess).mock.calls).toEqual([
+      [proc, logger],
+      [proc, logger, 'SIGKILL'],
+    ]);
     expect(resolved).toBe(true);
   });
 
@@ -217,7 +223,7 @@ describe('BuildSession', () => {
     await session.disconnect();
 
     await vi.advanceTimersByTimeAsync(CLI_EXIT_TIMEOUT_MS);
-    expect(proc.kill).not.toHaveBeenCalled();
+    expect(utils.killProcess).not.toHaveBeenCalledWith(proc, logger, 'SIGKILL');
   });
 
   it('repeated disconnects share one exit promise', async () => {
@@ -251,6 +257,7 @@ describe('BuildService.startBuild', () => {
   let trackDebug: ReturnType<typeof vi.fn>;
   let appRoot: string;
   let service: BuildService;
+  let customProcess: FakeProcess;
 
   const baseArgs = (overrides: Partial<BuildArgs> = {}): BuildArgs => ({
     appRoot,
@@ -273,6 +280,9 @@ describe('BuildService.startBuild', () => {
     projects.created.length = 0;
     projects.debug.mockImplementation(() => createDebugResult().result);
     projects.attach.mockImplementation(() => createDebugResult().result);
+    projects.monitor.mockImplementation((child) => ({ tnsProcess: child, tnsOutputEventEmitter: new EventEmitter() }));
+    customProcess = createFakeProcess();
+    vi.mocked(utils.spawnInShell).mockReturnValue(customProcess as unknown as ChildProcess);
 
     cli = { path: 'ns', getSupportedVersion: vi.fn(async () => '8.9.2') };
     vi.spyOn(services, 'createCli').mockReturnValue(cli as unknown as NativeScriptCli);
@@ -298,12 +308,30 @@ describe('BuildService.startBuild', () => {
     expect(session).toBeInstanceOf(BuildSession);
     expect(services.createCli).toHaveBeenCalledWith(appRoot);
     expect(cli.getSupportedVersion).toHaveBeenCalledWith(services.minCliVersion);
-    expect(projects.created).toEqual([{ platform: 'android', appRoot }]);
+    expect(projects.created).toEqual([{ platform: 'android', appRoot, options: { cwd: appRoot, env: undefined } }]);
     expect(projects.debug).toHaveBeenCalledExactlyOnceWith({ stopOnEntry: true, watch: true, launchTests: false }, [
       '--device',
       'emulator-5554',
     ]);
     expect(trackDebug).toHaveBeenCalledWith('launch', 'android');
+  });
+
+  it('passes cwd and env to the project, resolving a relative cwd against the workspace root', async () => {
+    const workspaceRoot = path.join(appRoot, 'workspace');
+
+    await service.startBuild(baseArgs({ cwd: 'apps/mobile', workspaceRoot, env: { FOO: 'bar', HOME: null } }));
+
+    expect(projects.created[0].options).toEqual({
+      cwd: path.join(workspaceRoot, 'apps/mobile'),
+      env: { FOO: 'bar', HOME: null },
+    });
+  });
+
+  it('resolves a relative cwd against the app root without a workspace root, and keeps an absolute one', async () => {
+    await service.startBuild(baseArgs({ cwd: '..' }));
+    await service.startBuild(baseArgs({ cwd: '/opt/monorepo', workspaceRoot: '/elsewhere' }));
+
+    expect(projects.created.map(({ options }) => options?.cwd)).toEqual([path.dirname(appRoot), '/opt/monorepo']);
   });
 
   it('uses attach for attach requests', async () => {
@@ -315,7 +343,7 @@ describe('BuildService.startBuild', () => {
 
   it('picks the iOS project case-insensitively', async () => {
     await service.startBuild(baseArgs({ platform: 'iOS', request: 'attach' }));
-    expect(projects.created).toEqual([{ platform: 'ios', appRoot }]);
+    expect(projects.created).toEqual([{ platform: 'ios', appRoot, options: { cwd: appRoot, env: undefined } }]);
   });
 
   describe('Vite projects', () => {
@@ -370,6 +398,76 @@ describe('BuildService.startBuild', () => {
     await expect(service.startBuild(baseArgs(), () => true)).resolves.toBeNull();
     expect(projects.debug).not.toHaveBeenCalled();
     expect(projects.attach).not.toHaveBeenCalled();
+  });
+
+  describe('with runtimeExecutable', () => {
+    const custom = (overrides: Partial<BuildArgs> = {}) =>
+      baseArgs({ runtimeExecutable: 'npx', runtimeArgs: ['nx', 'run', 'mobile:debug'], ...overrides });
+
+    it('spawns the command in the shell and monitors its output', async () => {
+      const session = await service.startBuild(custom({ env: { FOO: 'bar' } }));
+
+      expect(session).toBeInstanceOf(BuildSession);
+      expect(utils.spawnInShell).toHaveBeenCalledExactlyOnceWith('npx nx run mobile:debug', {
+        cwd: appRoot,
+        env: { FOO: 'bar' },
+      });
+      expect(projects.monitor).toHaveBeenCalledExactlyOnceWith(customProcess, ['nx', 'run', 'mobile:debug']);
+      expect(projects.debug).not.toHaveBeenCalled();
+      expect(projects.attach).not.toHaveBeenCalled();
+      expect(trackDebug).toHaveBeenCalledWith('launch', 'android');
+    });
+
+    it.skipIf(process.platform === 'win32')('quotes each argument for the shell', async () => {
+      await service.startBuild(
+        custom({ runtimeExecutable: '/opt/my tools/run', runtimeArgs: ['--name', "it's here", '--flags=--debug-brk'] }),
+      );
+
+      expect(vi.mocked(utils.spawnInShell).mock.lastCall![0]).toBe(
+        "'/opt/my tools/run' --name 'it'\\''s here' --flags=--debug-brk",
+      );
+    });
+
+    it('resolves a relative cwd against the workspace root for both the command and the project', async () => {
+      const workspaceRoot = path.join(appRoot, 'repo');
+
+      await service.startBuild(custom({ cwd: 'apps/mobile', workspaceRoot }));
+
+      const cwd = path.join(workspaceRoot, 'apps/mobile');
+      expect(utils.spawnInShell).toHaveBeenCalledWith(expect.any(String), { cwd, env: undefined });
+      expect(projects.created[0].options).toEqual({ cwd, env: undefined });
+    });
+
+    it('skips the CLI version check, Vitest check, --no-hmr and the team picker', async () => {
+      writeAppFile('nativescript.config.ts', "export default { bundler: 'vite' };\n");
+      writeAppFile('vitest.config.ts', 'export default {};\n');
+
+      await service.startBuild(custom({ platform: 'ios', launchTests: true }));
+
+      expect(cli.getSupportedVersion).not.toHaveBeenCalled();
+      expect(selectTeam).not.toHaveBeenCalled();
+      expect(utils.spawnInShell).toHaveBeenCalledWith('npx nx run mobile:debug', expect.anything());
+      expect(projects.created.map(({ platform }) => platform)).toEqual(['ios']);
+    });
+
+    it('ignores tnsArgs and says so', async () => {
+      await service.startBuild(custom({ tnsArgs: ['--env.foo'] }));
+
+      expect(utils.spawnInShell).toHaveBeenCalledWith('npx nx run mobile:debug', expect.anything());
+      expect(logger.log).toHaveBeenCalledWith(expect.stringContaining("'tnsArgs' is ignored"));
+    });
+
+    it('runs the executable alone without runtimeArgs', async () => {
+      await service.startBuild(custom({ runtimeExecutable: './debug.sh', runtimeArgs: undefined }));
+
+      expect(utils.spawnInShell).toHaveBeenCalledWith('./debug.sh', expect.anything());
+      expect(projects.monitor).toHaveBeenCalledWith(customProcess, []);
+    });
+
+    it('returns null without spawning when cancelled', async () => {
+      await expect(service.startBuild(custom(), () => true)).resolves.toBeNull();
+      expect(utils.spawnInShell).not.toHaveBeenCalled();
+    });
   });
 
   describe('iOS team selection', () => {

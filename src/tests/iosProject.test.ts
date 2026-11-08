@@ -3,15 +3,17 @@ import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IosProject } from '../project/iosProject';
+import { ShellSpawnOptions } from '../common/utilities';
 import { NativeScriptCli } from '../project/nativeScriptCli';
 
 const READY_DELAY_MS = 1000;
 const APP_ROOT = '/projects/demo';
+const DEFAULT_OPTIONS: ShellSpawnOptions = { cwd: APP_ROOT, env: undefined };
 
 function createCli() {
   const stdout = new PassThrough();
   const proc = Object.assign(new EventEmitter(), { stdout, stderr: new PassThrough() });
-  const execute = vi.fn((_args: string[], _cwd: string) => proc as unknown as ChildProcess);
+  const execute = vi.fn((_args: string[], _options: ShellSpawnOptions) => proc as unknown as ChildProcess);
   return { cli: { execute } as unknown as NativeScriptCli, execute, stdout, proc };
 }
 
@@ -50,9 +52,29 @@ describe('IosProject', () => {
     project.attach(['--env.foo']);
 
     expect(fake.execute.mock.calls).toEqual([
-      [['debug', 'ios', '--watch', '--debug-brk', '--teamId', 'ABC'], APP_ROOT],
-      [['debug', 'ios', '--start', '--env.foo'], APP_ROOT],
+      [['debug', 'ios', '--watch', '--debug-brk', '--teamId', 'ABC'], DEFAULT_OPTIONS],
+      [['debug', 'ios', '--start', '--env.foo'], DEFAULT_OPTIONS],
     ]);
+  });
+
+  it('runs commands in the configured cwd with the configured env', () => {
+    new IosProject(APP_ROOT, fake.cli, { cwd: '/repo', env: { FOO: 'bar' } }).attach();
+
+    expect(fake.execute).toHaveBeenCalledWith(['debug', 'ios', '--start'], { cwd: '/repo', env: { FOO: 'bar' } });
+  });
+
+  it('monitor watches an externally started process', async () => {
+    const { tnsOutputEventEmitter } = new IosProject(APP_ROOT, fake.cli).monitor(
+      fake.proc as unknown as ChildProcess,
+      [],
+    );
+    tnsOutputEventEmitter.on('readyForConnection', ready);
+
+    await writeLine(fake.stdout, 'Opened localhost 41000');
+    await vi.advanceTimersByTimeAsync(READY_DELAY_MS);
+
+    expect(ready).toHaveBeenCalledExactlyOnceWith(41000);
+    expect(fake.execute).not.toHaveBeenCalled();
   });
 
   it('announces the port from "Opened localhost" one second later', async () => {

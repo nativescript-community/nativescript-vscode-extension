@@ -9,7 +9,7 @@ The NativeScript extension for Visual Studio Code aids your [NativeScript](https
 
 To install [NativeScript](https://www.nativescript.org/) and all its dependencies, follow the instructions in our [getting started guide](https://docs.nativescript.org/setup/).
 
-> Note: The VS Code extension requires [nativescript node module](https://www.npmjs.com/package/nativescript) to be globally installed. If you are using [nvm](https://github.com/nvm-sh/nvm) to manage your node versions, make sure that `nativescript` is installed in your default Node.js version (`nvm ls` shows it as `default`). If the CLI lives somewhere else, set the `nativescript.nsPath` setting to its path.
+> Note: The VS Code extension uses the [NativeScript CLI](https://www.npmjs.com/package/nativescript) installed in your project (`node_modules/.bin/ns`, also looked up in parent folders, e.g. a monorepo root) and falls back to a global installation. If you are using [nvm](https://github.com/nvm-sh/nvm) with a global CLI, make sure that `nativescript` is installed in your default Node.js version (`nvm ls` shows it as `default`). To use a CLI somewhere else, set the `nativescript.nsPath` setting to its path.
 
 ### Setup the extension
 
@@ -32,6 +32,26 @@ Your application will be launched and the VS Code JavaScript debugger will attac
 Besides the NativeScript-specific attributes (`platform`, `appRoot`, `watch`, `tnsArgs`, ...), launch configurations accept the common JavaScript debugger options `sourceMapPathOverrides`, `resolveSourceMapLocations`, `skipFiles`, `smartStep` and `trace`.
 
 Source maps work whether they are inlined in the bundle or written as separate `.map` files: newer NativeScript runtimes serve map files from the device (`nsruntime://` URLs), and for older runtimes the extension falls back to the copy of the build under `platforms/`.
+
+#### Custom commands (Nx and other wrappers)
+
+If your project is started through another tool, set `runtimeExecutable` and `runtimeArgs`. The command runs exactly as written, in `cwd` (defaults to `appRoot`) with any extra `env` variables, and the debugger attaches when its output shows the CLI's debug port. The extension adds no flags of its own in this mode (`watch`, `stopOnEntry`, `tnsArgs`, Vite's `--no-hmr`, the iOS team), so put everything the command needs in `runtimeArgs`. For example, with [Nx](https://github.com/NativeScript/nx):
+
+```json
+{
+  "name": "Launch on iOS (Nx)",
+  "type": "nativescript",
+  "request": "launch",
+  "platform": "ios",
+  "appRoot": "${workspaceFolder}/apps/my-app",
+  "cwd": "${workspaceFolder}",
+  "runtimeExecutable": "npx",
+  "runtimeArgs": ["nx", "debug", "my-app", "--platform=ios"],
+  "watch": true
+}
+```
+
+`watch` still matters here: it tells the extension to wait for the app to come back after a restart instead of ending the session.
 
 #### Vite projects
 

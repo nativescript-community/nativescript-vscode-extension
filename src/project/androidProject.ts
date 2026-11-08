@@ -1,77 +1,42 @@
-import { ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import * as stream from 'stream';
-import { IDebugResult, Project } from './project';
+import { Project } from './project';
 import * as scanner from './streamScanner';
+
+/** Delay before announcing a port, so adb can connect to the debug socket first. */
+const ADB_CONNECT_DELAY_MS = 1000;
 
 export class AndroidProject extends Project {
   public platformName(): string {
     return 'android';
   }
 
-  public attach(tnsArgs?: string[]): IDebugResult {
-    let args: string[] = ['--start'];
-
-    args = args.concat(tnsArgs ?? []);
-
-    const debugProcess: ChildProcess = super.executeDebugCommand(args);
-    const tnsOutputEventEmitter = new EventEmitter();
-
-    this.configureReadyEvent(debugProcess.stdout!, tnsOutputEventEmitter, false);
-
-    return { tnsProcess: debugProcess, tnsOutputEventEmitter };
-  }
-
-  public debug(
-    options: { stopOnEntry: boolean; watch: boolean; launchTests: boolean },
-    tnsArgs?: string[],
-  ): IDebugResult {
-    let args: string[] = [];
-
-    args.push(options.watch ? '--watch' : '--no-watch');
-    if (options.stopOnEntry) {
-      args.push('--debug-brk');
-    }
-    args = args.concat(tnsArgs ?? []);
-
-    const debugProcess: ChildProcess = options.launchTests
-      ? super.executeTestCommand(args)
-      : super.executeDebugCommand(args);
-    const tnsOutputEventEmitter: EventEmitter = new EventEmitter();
-    const waitForRestartMessage = args.includes('--debug-brk');
-
-    this.configureReadyEvent(debugProcess.stdout!, tnsOutputEventEmitter, waitForRestartMessage);
-
-    return { tnsProcess: debugProcess, tnsOutputEventEmitter };
-  }
-
   protected override configureReadyEvent(
     readableStream: stream.Readable,
     eventEmitter: EventEmitter,
-    waitForRestartMessage?: boolean,
+    args: readonly string[],
   ): void {
-    super.configureReadyEvent(readableStream, eventEmitter);
+    super.configureReadyEvent(readableStream, eventEmitter, args);
+
+    // With --debug-brk the app only starts once the debugger banner is printed. `includes` also matches the flag
+    // inside a wrapper option such as Nx's `--flags="--debug-brk"`.
+    const waitForDebuggerStarted = args.some((arg) => arg.includes('--debug-brk'));
     let debugPort: number | null = null;
 
     new scanner.StringMatchingScanner(readableStream).onEveryMatch(
       new RegExp('device: .* debug port: [0-9]+'),
       (match: scanner.IMatchFound) => {
-        // device: {device-name} debug port: {debug-port}
         debugPort = parseInt((match.matches[0] as string).match(/debug port: (\d+)/)![1], 10);
-        if (!waitForRestartMessage) {
-          setTimeout(() => {
-            eventEmitter.emit('readyForConnection', debugPort);
-          }, 1000);
+        if (!waitForDebuggerStarted) {
+          setTimeout(() => eventEmitter.emit('readyForConnection', debugPort), ADB_CONNECT_DELAY_MS);
         }
       },
     );
-    if (waitForRestartMessage) {
+
+    if (waitForDebuggerStarted) {
       new scanner.StringMatchingScanner(readableStream).onEveryMatch('# NativeScript Debugger started #', () => {
         if (debugPort === null) return;
-        // wait a little before trying to connect, this gives a chance for adb to be able to connect to the debug socket
-        setTimeout(() => {
-          eventEmitter.emit('readyForConnection', debugPort);
-        }, 1000);
+        setTimeout(() => eventEmitter.emit('readyForConnection', debugPort), ADB_CONNECT_DELAY_MS);
       });
     }
   }

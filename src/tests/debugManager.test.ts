@@ -12,7 +12,7 @@ import {
 import { computeSourceMapOptions, SourceMapConfig } from '../debug-adapter/sourceMaps';
 import { BuildArgs, BuildService, BuildSession } from '../services/buildService';
 import { services } from '../services/extensionHostServices';
-import { debug, MockDebugSession, testing, window } from './mocks/vscode';
+import { debug, MockDebugSession, testing, window, workspace } from './mocks/vscode';
 
 vi.mock('../debug-adapter/sourceMaps', () => ({
   computeSourceMapOptions: vi.fn(async (_appRoot: string, config: SourceMapConfig) => ({
@@ -163,6 +163,11 @@ describe('DebugManager', () => {
           stopOnEntry: false,
           launchTests: undefined,
           tnsArgs: ['--env.foo'],
+          runtimeExecutable: undefined,
+          runtimeArgs: undefined,
+          cwd: undefined,
+          env: undefined,
+          workspaceRoot: '/workspace/app',
         },
         expect.any(Function),
       );
@@ -193,6 +198,31 @@ describe('DebugManager', () => {
       children = [];
       await startWithChild({ platform: 'ios', request: 'attach', address: '192.168.1.5' }, 42000);
       expect(lastChildConfig().websocketAddress).toBe('ws://192.168.1.5:42000');
+    });
+
+    it('forwards custom command settings and the workspace root to startBuild', async () => {
+      const otherFolder = { uri: { fsPath: '/monorepo' }, name: 'monorepo', index: 1 };
+      workspace.getWorkspaceFolder.mockReturnValueOnce(otherFolder);
+
+      await startWithChild({
+        platform: 'android',
+        request: 'launch',
+        appRoot: '/monorepo/apps/mobile',
+        runtimeExecutable: 'npx',
+        runtimeArgs: ['nx', 'run', 'mobile:debug'],
+        cwd: '.',
+        env: { FOO: 'bar', HOME: null },
+      });
+
+      expect(startBuild.mock.calls[0][0]).toMatchObject({
+        appRoot: '/monorepo/apps/mobile',
+        runtimeExecutable: 'npx',
+        runtimeArgs: ['nx', 'run', 'mobile:debug'],
+        cwd: '.',
+        env: { FOO: 'bar', HOME: null },
+        workspaceRoot: '/monorepo',
+      });
+      expect(debug.startDebugging.mock.calls[0][0]).toBe(otherFolder);
     });
 
     it("falls back to the parent's workspace folder for appRoot", async () => {
