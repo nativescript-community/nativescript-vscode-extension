@@ -1,0 +1,186 @@
+name: Release
+
+# push to master   -> release-please updates the release PR; if that push merged the release PR it
+#                     publishes the stable version, otherwise it publishes a pre-release
+# workflow_dispatch -> pre-release from the selected ref
+#
+# Publishing only runs when the repo variable ENABLE_RELEASE is 'true'; until then the workflow
+# builds and tests only. See RELEASING.md for the required variables and secrets.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release PR
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+      # PRs opened with GITHUB_TOKEN don't trigger CI; an App token makes the release PR run ci.yml.
+      - name: Mint App token
+        id: app-token
+        if: ${{ vars.APP_CLIENT_ID != '' }}
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build:
+    name: Build
+    needs: release-please
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.release-please.result == 'success') }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      channel: ${{ steps.version.outputs.channel }}
+      vsix: ${{ steps.version.outputs.vsix }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          # Dependency caching is a cache-poisoning vector in jobs that feed a publish.
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Resolve version
+        id: version
+        env:
+          RELEASE_CREATED: ${{ needs.release-please.outputs.release_created }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if [ "$RELEASE_CREATED" = "true" ]; then
+            channel=stable
+            version=$(node -p "require('./package.json').version")
+          else
+            # The Marketplace only accepts X.Y.Z and serves the highest version, so pre-releases use
+            # patch numbers >= 1000 that stable releases (chosen by release-please) never reach.
+            channel=prerelease
+            version=$(node -p "const [major, minor] = require('./package.json').version.split('.'); major + '.' + minor + '.' + (1000 + Number(process.env.RUN_NUMBER))")
+            npm version "$version" --no-git-tag-version --allow-same-version
+          fi
+          {
+            echo "version=$version"
+            echo "channel=$channel"
+            echo "vsix=nativescript-$version.vsix"
+          } >> "$GITHUB_OUTPUT"
+      - name: Package
+        env:
+          GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
+          GA_API_SECRET: ${{ secrets.GA_API_SECRET }}
+          CHANNEL: ${{ steps.version.outputs.channel }}
+          VSIX: ${{ steps.version.outputs.vsix }}
+        run: |
+          if [ "$CHANNEL" = "prerelease" ]; then
+            npx vsce package --pre-release --out "$VSIX"
+          else
+            npx vsce package --out "$VSIX"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vsix
+          path: ${{ steps.version.outputs.vsix }}
+          if-no-files-found: error
+
+  publish-marketplace:
+    name: Publish to VS Code Marketplace
+    needs: build
+    if: ${{ vars.ENABLE_RELEASE == 'true' }}
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CHANNEL: ${{ needs.build.outputs.channel }}
+      VSIX: ${{ needs.build.outputs.vsix }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - run: npm ci
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: vsix
+      # Marketplace Trusted Publishing: the publisher's policy must name this repo, release.yml and the
+      # 'release' environment.
+      - name: Publish
+        run: |
+          if [ "$CHANNEL" = "prerelease" ]; then
+            npx vsce publish --oidc --skip-duplicate --pre-release --packagePath "$VSIX"
+          else
+            npx vsce publish --oidc --skip-duplicate --packagePath "$VSIX"
+          fi
+
+  github-release:
+    name: GitHub release
+    needs: [release-please, build, publish-marketplace]
+    # !cancelled() lets this run when release-please was skipped (manual pre-release runs).
+    if: ${{ !cancelled() && vars.ENABLE_RELEASE == 'true' && needs.build.result == 'success' && needs.publish-marketplace.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CHANNEL: ${{ needs.build.outputs.channel }}
+      VERSION: ${{ needs.build.outputs.version }}
+      VSIX: ${{ needs.build.outputs.vsix }}
+      STABLE_TAG: ${{ needs.release-please.outputs.tag_name }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: vsix
+      - name: Attach the .vsix
+        run: |
+          if [ "$CHANNEL" = "stable" ]; then
+            # release-please already created the release and its notes.
+            gh release upload "$STABLE_TAG" "$VSIX" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "v$VERSION" "$VSIX" --prerelease --generate-notes \
+              --target "$GITHUB_SHA" --title "v$VERSION" --repo "$GITHUB_REPOSITORY"
+          fi
