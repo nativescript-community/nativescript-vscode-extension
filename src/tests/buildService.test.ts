@@ -10,7 +10,13 @@ import { AnalyticsService } from '../analytics/analyticsService';
 import * as utils from '../common/utilities';
 import { NativeScriptCli } from '../project/nativeScriptCli';
 import { IDebugResult, ProjectOptions } from '../project/project';
-import { BuildArgs, BuildService, BuildSession, CLI_EXIT_TIMEOUT_MS } from '../services/buildService';
+import {
+  BuildArgs,
+  BuildService,
+  BuildSession,
+  CLI_EXIT_TIMEOUT_MS,
+  VITE_HMR_SOURCE_MAPS_VERSION,
+} from '../services/buildService';
 import { services } from '../services/extensionHostServices';
 import { iOSTeamService } from '../services/iOSTeamService';
 
@@ -347,11 +353,36 @@ describe('BuildService.startBuild', () => {
   });
 
   describe('Vite projects', () => {
+    const installVite = (version: string) =>
+      writeAppFile('node_modules/@nativescript/vite/package.json', JSON.stringify({ version }));
+
     beforeEach(() => {
       writeAppFile('nativescript.config.ts', "export default { id: 'org.demo', bundler: 'vite' };\n");
     });
 
-    it('appends --no-hmr', async () => {
+    it.each(['8.0.22', '8.0.23-alpha.0'])('appends --no-hmr for @nativescript/vite %s', async (version) => {
+      installVite(version);
+      await service.startBuild(baseArgs({ tnsArgs: ['--env.foo'] }));
+      expect(debugTnsArgs()).toEqual(['--env.foo', '--no-hmr']);
+    });
+
+    it('appends --no-hmr when the @nativescript/vite version is unknown', async () => {
+      await service.startBuild(baseArgs({ tnsArgs: ['--env.foo'] }));
+      expect(debugTnsArgs()).toEqual(['--env.foo', '--no-hmr']);
+    });
+
+    it.each([VITE_HMR_SOURCE_MAPS_VERSION, '8.1.0-alpha.0', '9.0.0'])(
+      'keeps HMR for @nativescript/vite %s',
+      async (version) => {
+        installVite(version);
+        await service.startBuild(baseArgs({ tnsArgs: ['--env.foo'] }));
+        expect(debugTnsArgs()).toEqual(['--env.foo']);
+      },
+    );
+
+    it('appends --no-hmr for Vue projects, whose single-file components have no HMR source maps', async () => {
+      installVite(VITE_HMR_SOURCE_MAPS_VERSION);
+      writeAppFile('package.json', JSON.stringify({ dependencies: { 'nativescript-vue': '^3.1.1' } }));
       await service.startBuild(baseArgs({ tnsArgs: ['--env.foo'] }));
       expect(debugTnsArgs()).toEqual(['--env.foo', '--no-hmr']);
     });

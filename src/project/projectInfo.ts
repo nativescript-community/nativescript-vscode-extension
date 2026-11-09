@@ -37,6 +37,14 @@ export function readPackageJson(appRoot: string): { name?: string; [key: string]
   }
 }
 
+export function hasDependency(appRoot: string, packageName: string): boolean {
+  const packageJson = readPackageJson(appRoot);
+  return ['dependencies', 'devDependencies'].some((field) => {
+    const deps = packageJson?.[field];
+    return typeof deps === 'object' && deps !== null && packageName in deps;
+  });
+}
+
 /** Mirrors the CLI's ProjectData.getAppDirectoryRelativePath. */
 export function getAppDirectory(appRoot: string): string {
   const legacyConfig = readFile(path.join(appRoot, 'nsconfig.json'));
@@ -58,20 +66,34 @@ export function getBundler(appRoot: string): Bundler {
 }
 
 /**
- * Finds a locally installed CLI (`node_modules/.bin/ns`) in appRoot or any parent directory, like npx does, so
- * monorepos that install it at the workspace root are covered.
+ * Finds `node_modules/<relativePath>` in appRoot or any parent directory, like Node resolution and npx do, so
+ * monorepos that install packages at the workspace root are covered.
  */
-export function findLocalCli(appRoot: string, platform: NodeJS.Platform = process.platform): string | undefined {
-  const binName = platform === 'win32' ? 'ns.cmd' : 'ns';
+function findInNodeModules(appRoot: string, relativePath: string): string | undefined {
   let dir = path.resolve(appRoot);
 
   while (true) {
-    const candidate = path.join(dir, 'node_modules', '.bin', binName);
+    const candidate = path.join(dir, 'node_modules', relativePath);
     if (fs.existsSync(candidate)) return candidate;
 
     const parent = path.dirname(dir);
     if (parent === dir) return undefined;
     dir = parent;
+  }
+}
+
+export function findLocalCli(appRoot: string, platform: NodeJS.Platform = process.platform): string | undefined {
+  return findInNodeModules(appRoot, path.join('.bin', platform === 'win32' ? 'ns.cmd' : 'ns'));
+}
+
+export function getInstalledPackageVersion(appRoot: string, packageName: string): string | undefined {
+  const packageJson = findInNodeModules(appRoot, path.join(packageName, 'package.json'));
+  if (!packageJson) return undefined;
+  try {
+    const version = (JSON.parse(fs.readFileSync(packageJson, 'utf8')) as { version?: unknown }).version;
+    return typeof version === 'string' ? version : undefined;
+  } catch {
+    return undefined;
   }
 }
 

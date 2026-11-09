@@ -55,7 +55,7 @@ If your project is started through another tool, set `runtimeExecutable` and `ru
 
 #### Vite projects
 
-Projects using the Vite bundler (`bundler: 'vite'` in `nativescript.config.ts`) are debugged with `--no-hmr`, because hot module replacement serves app code without source maps. File changes still rebuild and restart the app, and the debugger reattaches. Pass `--hmr` in `tnsArgs` to keep HMR on (breakpoints in app code won't bind). Debugging unit tests that use the Vitest runner is not supported yet.
+Projects using the Vite bundler (`bundler: 'vite'` in `nativescript.config.ts`) are debugged with hot module replacement when `@nativescript/vite` is 8.0.23 or later, which serves app modules with source maps. Breakpoints stay bound as you edit, because HMR updates replace modules in the running app without restarting it. With older versions, and for Vue projects (whose `.vue` components are still served without source maps), the extension adds `--no-hmr`. File changes then rebuild and restart the app, and the debugger reattaches. An explicit `--hmr` or `--no-hmr` in `tnsArgs` is always used as given. Debugging unit tests that use the Vitest runner is not supported yet.
 
 ### NativeScript commands
 
