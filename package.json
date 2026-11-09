@@ -133,7 +133,8 @@
           "javascriptreact",
           "typescriptreact",
           "vue",
-          "svelte"
+          "svelte",
+          "tsrx"
         ],
         "initialConfigurations": [
           {
@@ -531,6 +532,9 @@
       },
       {
         "language": "svelte"
+      },
+      {
+        "language": "tsrx"
       }
     ]
   }
