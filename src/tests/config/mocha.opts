@@ -1,7 +1,0 @@
---colors
---ui tdd
---timeout 60000
---reporter spec
---exit
-
-./out/tests/**/*.tests.js

@@ -1,27 +1,23 @@
 {
-    "version": "2.0.0",
-    "windows": {
-        "command": ".\\node_modules\\.bin\\tsc"
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "npm",
+      "script": "build",
+      "problemMatcher": "$tsc",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     },
-    "command": "./node_modules/.bin/tsc",
-    "args": [
-        "-p",
-        "./src"
-    ],
-    "problemMatcher": "$tsc",
-    "tasks": [
-        {
-            "label": "./node_modules/.bin/tsc",
-            "type": "shell",
-            "args": [
-                "-p",
-                "./src"
-            ],
-            "problemMatcher": "$tsc",
-            "group": {
-                "_id": "build",
-                "isDefault": false
-            }
-        }
-    ]
+    {
+      "label": "watch",
+      "type": "npm",
+      "script": "build:watch",
+      "problemMatcher": "$tsc-watch",
+      "isBackground": true,
+      "group": "build"
+    }
+  ]
 }

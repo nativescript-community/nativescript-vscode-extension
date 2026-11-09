@@ -1,21 +1,16 @@
 {
-    "compilerOptions": {
-        "target": "es6",
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "sourceMap": true,
-        "noImplicitAny": false,
-        "removeComments": false,
-        "preserveConstEnums": true,
-        "outDir": "../out",
-        "allowJs": true
-    },
-    "exclude": [
-        "node_modules",
-    ],
-    "include": [
-        "./tests/**/*.ts",
-        "./debug-adapter/nativeScriptDebug.ts",
-        "./main.ts"
-    ]
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2023"],
+    "module": "node16",
+    "types": ["node"],
+    "rootDir": ".",
+    "outDir": "../out",
+    "sourceMap": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true
+  },
+  "include": ["./**/*.ts"]
 }

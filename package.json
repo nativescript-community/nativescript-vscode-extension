@@ -1,7 +1,7 @@
 {
   "name": "nativescript",
   "version": "0.12.5",
-  "minNativescriptCliVersion": "2.5.0",
+  "minNativescriptCliVersion": "8.0.0",
   "icon": "images/icon.png",
   "displayName": "NativeScript",
   "description": "NativeScript support for Visual Studio Code",
@@ -16,7 +16,7 @@
   "publisher": "NativeScript",
   "bugs": "https://github.com/nativescript-community/nativescript-vscode-extension/issues",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.109.0"
   },
   "homepage": "https://www.nativescript.org/",
   "categories": [
@@ -25,47 +25,43 @@
   ],
   "license": "SEE LICENSE IN LICENSE.txt",
   "dependencies": {
-    "lodash": "4.17.21",
-    "semver": "7.5.4",
-    "strip-json-comments": "~3.1.1",
-    "universal-analytics": "0.4.23",
-    "uuid": "9.0.1",
-    "vscode-chrome-debug-core": "^6.8.11",
-    "@vscode/debugadapter": "^1.64.0"
+    "@vscode/debugadapter": "^1.68.0",
+    "semver": "^7.8.6"
   },
   "devDependencies": {
-    "@types/lodash": "4.14.121",
-    "@types/mocha": "5.2.6",
-    "@types/node": "18.x",
-    "@types/proxyquire": "1.3.31",
-    "@types/semver": "7.5.6",
-    "@types/sinon": "7.0.13",
-    "@types/universal-analytics": "0.4.1",
-    "@types/vscode": "^1.85.0",
-    "cpx": "1.5.0",
-    "mocha": "5.2.0",
-    "proxyquire": "2.1.3",
-    "sinon": "7.4.2",
-    "typescript": "^5.3.3",
-    "@vscode/vsce": "^2.22.0",
-    "@vscode/debugprotocol": "^1.64.0"
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "@types/semver": "^7.8.0",
+    "@types/vscode": "~1.109.0",
+    "@vscode/debugprotocol": "^1.68.0",
+    "@vscode/vsce": "^4.1.0",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.1.0"
   },
   "scripts": {
     "clean": "git clean -fdx",
-    "build": "tsc -p ./src && cpx src/common/*.sh out/common",
-    "build:watch": "tsc -w -p ./src && cpx src/common/*.sh out/common",
+    "build": "tsc -p ./src/tsconfig.build.json",
+    "build:watch": "tsc -w -p ./src/tsconfig.build.json",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p ./src --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "package": "vsce package",
     "full-build": "npm run clean && npm install && npm run build && npm run package",
-    "launch-as-server": "node --nolazy ./out/debug-adapter/nativeScriptDebug.js --server=4712",
-    "test": "mocha --opts ./src/tests/config/mocha.opts",
-    "tslint": "tslint -p ./src/tsconfig.json -c tslint.json"
+    "vscode:prepublish": "npm run clean:out && npm run build && node scripts/write-ga-config.mjs",
+    "clean:out": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\""
   },
   "main": "./out/main",
   "activationEvents": [
-    "onDebugResolve:nativescript",
-    "onCommand:nativescript.runIos",
-    "onCommand:nativescript.runAndroid",
-    "onCommand:nativescript.showOutputChannel"
+    "onDebugResolve:nativescript"
   ],
   "contributes": {
     "configuration": {
@@ -75,12 +71,16 @@
         "nativescript.analytics.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enables the extension tracking."
+          "description": "Send anonymous usage statistics to help improve the NativeScript extension."
+        },
+        "nativescript.nsPath": {
+          "type": "string",
+          "description": "Path to the NativeScript CLI executable. Relative paths are resolved against the app root. When not set, a CLI installed in the project (node_modules/.bin/ns, also searched in parent folders) is used, falling back to the global 'ns'."
         },
         "nativescript.tnsPath": {
           "type": "string",
-          "default": "tns",
-          "description": "Path to the NativeScript CLI executable."
+          "description": "Path to the NativeScript CLI executable.",
+          "markdownDeprecationMessage": "Use `#nativescript.nsPath#` instead. Still honored when `nativescript.nsPath` is not set."
         },
         "nativescript.iosTeamId": {
           "type": "string",
@@ -130,21 +130,13 @@
           "javascript",
           "typescript"
         ],
-        "enableBreakpointsFor": {
-          "languageIds": [
-            "javascript",
-            "typescript"
-          ]
-        },
-        "program": "./out/debug-adapter/nativeScriptDebug.js",
-        "runtime": "node",
         "initialConfigurations": [
           {
             "name": "Launch on iOS",
             "type": "nativescript",
             "request": "launch",
             "platform": "ios",
-            "appRoot": "${workspaceRoot}",
+            "appRoot": "${workspaceFolder}",
             "sourceMaps": true,
             "watch": true
           },
@@ -153,7 +145,7 @@
             "type": "nativescript",
             "request": "launch",
             "platform": "ios",
-            "appRoot": "${workspaceRoot}",
+            "appRoot": "${workspaceFolder}",
             "sourceMaps": true,
             "watch": false,
             "stopOnEntry": true,
@@ -167,7 +159,7 @@
             "type": "nativescript",
             "request": "attach",
             "platform": "ios",
-            "appRoot": "${workspaceRoot}",
+            "appRoot": "${workspaceFolder}",
             "sourceMaps": true,
             "watch": false
           },
@@ -176,7 +168,7 @@
             "type": "nativescript",
             "request": "launch",
             "platform": "android",
-            "appRoot": "${workspaceRoot}",
+            "appRoot": "${workspaceFolder}",
             "sourceMaps": true,
             "watch": true
           },
@@ -185,7 +177,7 @@
             "type": "nativescript",
             "request": "launch",
             "platform": "android",
-            "appRoot": "${workspaceRoot}",
+            "appRoot": "${workspaceFolder}",
             "sourceMaps": true,
             "watch": false,
             "stopOnEntry": true,
@@ -199,7 +191,7 @@
             "type": "nativescript",
             "request": "attach",
             "platform": "android",
-            "appRoot": "${workspaceRoot}",
+            "appRoot": "${workspaceFolder}",
             "sourceMaps": true,
             "watch": false
           }
@@ -213,7 +205,7 @@
               "type": "nativescript",
               "request": "launch",
               "platform": "ios",
-              "appRoot": "^\"\\${workspaceRoot}\"",
+              "appRoot": "^\"\\${workspaceFolder}\"",
               "sourceMaps": true,
               "watch": true
             }
@@ -226,7 +218,7 @@
               "type": "nativescript",
               "request": "launch",
               "platform": "android",
-              "appRoot": "^\"\\${workspaceRoot}\"",
+              "appRoot": "^\"\\${workspaceFolder}\"",
               "sourceMaps": true,
               "watch": true
             }
@@ -239,7 +231,7 @@
               "type": "nativescript",
               "request": "attach",
               "platform": "ios",
-              "appRoot": "^\"\\${workspaceRoot}\"",
+              "appRoot": "^\"\\${workspaceFolder}\"",
               "sourceMaps": true,
               "watch": false
             }
@@ -252,125 +244,276 @@
               "type": "nativescript",
               "request": "attach",
               "platform": "android",
-              "appRoot": "^\"\\${workspaceRoot}\"",
+              "appRoot": "^\"\\${workspaceFolder}\"",
               "sourceMaps": true,
               "watch": false
+            }
+          },
+          {
+            "label": "NativeScript: Launch with a custom command (e.g. Nx)",
+            "description": "Runs your own command (for example an Nx debug target) and attaches the debugger to it",
+            "body": {
+              "name": "Launch on iOS (Nx)",
+              "type": "nativescript",
+              "request": "launch",
+              "platform": "ios",
+              "appRoot": "^\"\\${workspaceFolder}/apps/${1:my-app}\"",
+              "cwd": "^\"\\${workspaceFolder}\"",
+              "runtimeExecutable": "npx",
+              "runtimeArgs": [
+                "nx",
+                "debug",
+                "${1:my-app}",
+                "--platform=ios"
+              ],
+              "watch": true
             }
           }
         ],
         "configurationAttributes": {
           "launch": {
-            "required": [],
+            "required": [
+              "platform"
+            ],
             "properties": {
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "ios",
+                  "android"
+                ],
+                "description": "Target platform."
+              },
+              "appRoot": {
+                "type": "string",
+                "description": "Absolute path to the root folder of the NativeScript app. Defaults to the first workspace folder.",
+                "default": "${workspaceFolder}"
+              },
               "tnsArgs": {
                 "type": "array",
-                "description": "Optional arguments passed to the NativeScript CLI executable.",
+                "description": "Extra arguments passed to the NativeScript CLI.",
                 "items": {
                   "type": "string"
                 },
                 "default": []
               },
-              "tnsOutput": {
+              "runtimeExecutable": {
                 "type": "string",
-                "description": "Path to file where the output of the CLI to redirected.",
-                "default": null
+                "description": "Command to run instead of the NativeScript CLI, e.g. 'npx'. When set, the command runs exactly as given by runtimeExecutable and runtimeArgs: the extension adds no flags (watch, stopOnEntry, tnsArgs, ...), so pass them in runtimeArgs. The command's output must include the CLI's debug port lines."
               },
-              "appRoot": {
+              "runtimeArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Arguments for runtimeExecutable. Each entry is passed as a single argument.",
+                "default": []
+              },
+              "cwd": {
                 "type": "string",
-                "description": "The path to the root folder of the application relative to the current working directory.",
-                "default": null
+                "description": "Working directory for the command. Relative paths resolve against the workspace folder. Defaults to appRoot."
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": "Environment variables for the command. A null value removes the variable.",
+                "default": {}
+              },
+              "watch": {
+                "type": "boolean",
+                "description": "Rebuild and reattach the debugger when files change.",
+                "default": true
+              },
+              "address": {
+                "type": "string",
+                "description": "Host the debugger connects to. Defaults to 'localhost' on iOS and '127.0.0.1' on Android."
               },
               "sourceMaps": {
                 "type": "boolean",
                 "description": "Use JavaScript source maps (if they exist).",
                 "default": true
               },
-              "diagnosticLogging": {
+              "sourceMapPathOverrides": {
+                "type": "object",
+                "description": "Mappings for rewriting source map locations to local paths. Merged over the defaults computed for the project.",
+                "default": {}
+              },
+              "resolveSourceMapLocations": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "Glob patterns for locations source maps may be loaded from. Defaults to null (any location), since maps on a device are not under the app root."
+              },
+              "skipFiles": {
+                "type": "array",
+                "description": "Glob patterns for files to skip when stepping.",
+                "items": {
+                  "type": "string"
+                },
+                "default": [
+                  "<node_internals>/**"
+                ]
+              },
+              "smartStep": {
                 "type": "boolean",
-                "description": "When true, the adapter logs its own diagnostic info to the console",
+                "description": "Automatically step through code that has no source mapping.",
+                "default": true
+              },
+              "trace": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "description": "Enable js-debug's diagnostic logging.",
                 "default": false
               },
-              "platform": {
-                "type": "string",
-                "description": "NativeScript platform",
-                "default": null
+              "diagnosticLogging": {
+                "type": "boolean",
+                "default": false,
+                "deprecationMessage": "Use 'trace' instead."
               },
               "stopOnEntry": {
                 "type": "boolean",
-                "description": "Automatically stop on the first line after lauch",
+                "description": "Pause on the first line after launch.",
                 "default": false
-              },
-              "noDebug": {
-                "type": "boolean",
-                "description": "If true the launch request will launch the program without enabling debugging",
-                "default": false
-              },
-              "watch": {
-                "type": "boolean",
-                "description": "Whether the watch and reconnect on file change.",
-                "default": true
-              },
-              "sourceMapPathOverrides": {
-                "type": "object",
-                "description": "A set of mappings for rewriting the locations of source files from what the sourcemap says, to their locations on the disk.",
-                "default": null
               },
               "launchTests": {
                 "type": "boolean",
-                "description": "If true, the launch request will run the unit tests instead of the app itself.",
+                "description": "Run the app's unit tests (ns test) instead of the app itself.",
                 "default": false
               }
             }
           },
           "attach": {
-            "required": [],
+            "required": [
+              "platform"
+            ],
             "properties": {
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "ios",
+                  "android"
+                ],
+                "description": "Target platform."
+              },
+              "appRoot": {
+                "type": "string",
+                "description": "Absolute path to the root folder of the NativeScript app. Defaults to the first workspace folder.",
+                "default": "${workspaceFolder}"
+              },
               "tnsArgs": {
                 "type": "array",
-                "description": "Optional arguments passed to the NativeScript CLI executable.",
+                "description": "Extra arguments passed to the NativeScript CLI.",
                 "items": {
                   "type": "string"
                 },
                 "default": []
               },
-              "tnsOutput": {
+              "runtimeExecutable": {
                 "type": "string",
-                "description": "Path to file where the output of the CLI to redirected.",
-                "default": null
+                "description": "Command to run instead of the NativeScript CLI, e.g. 'npx'. When set, the command runs exactly as given by runtimeExecutable and runtimeArgs: the extension adds no flags (watch, stopOnEntry, tnsArgs, ...), so pass them in runtimeArgs. The command's output must include the CLI's debug port lines."
               },
-              "appRoot": {
+              "runtimeArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Arguments for runtimeExecutable. Each entry is passed as a single argument.",
+                "default": []
+              },
+              "cwd": {
                 "type": "string",
-                "description": "The path to the root folder of the application relative to the current working directory.",
-                "default": null
+                "description": "Working directory for the command. Relative paths resolve against the workspace folder. Defaults to appRoot."
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": "Environment variables for the command. A null value removes the variable.",
+                "default": {}
+              },
+              "watch": {
+                "type": "boolean",
+                "description": "Rebuild and reattach the debugger when files change.",
+                "default": false
+              },
+              "address": {
+                "type": "string",
+                "description": "Host the debugger connects to. Defaults to 'localhost' on iOS and '127.0.0.1' on Android."
               },
               "sourceMaps": {
                 "type": "boolean",
                 "description": "Use JavaScript source maps (if they exist).",
                 "default": true
               },
-              "diagnosticLogging": {
-                "type": "boolean",
-                "description": "When true, the adapter logs its own diagnostic info to the console",
-                "default": false
-              },
-              "platform": {
-                "type": "string",
-                "description": "NativeScript platform",
-                "default": null
-              },
-              "watch": {
-                "type": "boolean",
-                "description": "Whether the watch and reconnect on file change.",
-                "default": true
-              },
               "sourceMapPathOverrides": {
                 "type": "object",
-                "description": "A set of mappings for rewriting the locations of source files from what the sourcemap says, to their locations on the disk.",
-                "default": null
+                "description": "Mappings for rewriting source map locations to local paths. Merged over the defaults computed for the project.",
+                "default": {}
+              },
+              "resolveSourceMapLocations": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "Glob patterns for locations source maps may be loaded from. Defaults to null (any location), since maps on a device are not under the app root."
+              },
+              "skipFiles": {
+                "type": "array",
+                "description": "Glob patterns for files to skip when stepping.",
+                "items": {
+                  "type": "string"
+                },
+                "default": [
+                  "<node_internals>/**"
+                ]
+              },
+              "smartStep": {
+                "type": "boolean",
+                "description": "Automatically step through code that has no source mapping.",
+                "default": true
+              },
+              "trace": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "description": "Enable js-debug's diagnostic logging.",
+                "default": false
+              },
+              "diagnosticLogging": {
+                "type": "boolean",
+                "default": false,
+                "deprecationMessage": "Use 'trace' instead."
               }
             }
           }
         }
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "javascript"
+      },
+      {
+        "language": "typescript"
       }
     ]
   }

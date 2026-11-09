@@ -1,45 +1,20 @@
 {
-    "version": "0.1.0",
-    "configurations": [
-        {
-            "name": "Launch as server",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceRoot}/out/debug-adapter/nativeScriptDebug.js",
-            "runtimeArgs": ["--nolazy"],
-            "args": [ "--server=4712" ],
-            "stopOnEntry": false,
-            "sourceMaps": true,
-            "outFiles": [ "${workspaceFolder}/out/**/*.js" ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "Launch in extension host",
-            "type": "extensionHost",
-            "request": "launch",
-            // Path to VSCode executablensDebugClient
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceRoot}"
-            ],
-            "stopOnEntry": false,
-            "sourceMaps": true,
-            "outFiles": [ "${workspaceFolder}/out/**/*.js" ]
-        },
-        {
-            "name": "Run tests",
-            "type": "node",
-            "request": "launch",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run", "test", "--"
-            ]
-        }
-    ],
-    "compounds": [
-        {
-            "name": "Extension + Server",
-            "configurations": [ "Launch in extension host", "Launch as server" ]
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      "preLaunchTask": "${defaultBuildTask}"
+    },
+    {
+      "name": "Run Tests",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test", "--"]
+    }
+  ]
 }
