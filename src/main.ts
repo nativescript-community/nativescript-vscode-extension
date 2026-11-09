@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as utils from './common/utilities';
+import { ConfigurationResolver, DynamicConfigurationProvider } from './debug-adapter/configurationProvider';
 import { DebugManager } from './debug-adapter/debugManager';
 import { NativeScriptDebugAdapter } from './debug-adapter/nativeScriptDebugAdapter';
 import { AndroidProject } from './project/androidProject';
@@ -39,6 +40,12 @@ export function activate(context: vscode.ExtensionContext): void {
         return new vscode.DebugAdapterInlineImplementation(adapter);
       },
     }),
+    vscode.debug.registerDebugConfigurationProvider('nativescript', new ConfigurationResolver()),
+    vscode.debug.registerDebugConfigurationProvider(
+      'nativescript',
+      new DynamicConfigurationProvider(),
+      vscode.DebugConfigurationProviderTriggerKind.Dynamic,
+    ),
   );
 
   context.subscriptions.push(

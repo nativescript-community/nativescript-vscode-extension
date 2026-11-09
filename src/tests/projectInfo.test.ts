@@ -2,7 +2,14 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { findLocalCli, getAppDirectory, getBundler, isVitestProject, readPackageJson } from '../project/projectInfo';
+import {
+  findLocalCli,
+  getAppDirectory,
+  getBundler,
+  isNativeScriptProject,
+  isVitestProject,
+  readPackageJson,
+} from '../project/projectInfo';
 
 describe('projectInfo', () => {
   let appRoot: string;
@@ -98,6 +105,23 @@ describe('projectInfo', () => {
     it.each(['ts', 'mts', 'js', 'mjs'])('detects vitest.config.%s', (ext) => {
       writeAppFile(`vitest.config.${ext}`, 'export default {};\n');
       expect(isVitestProject(appRoot)).toBe(true);
+    });
+  });
+
+  describe('isNativeScriptProject', () => {
+    it.each(['nativescript.config.ts', 'nativescript.config.js', 'nsconfig.json'])('detects %s', (file) => {
+      writeAppFile(file, '{}');
+      expect(isNativeScriptProject(appRoot)).toBe(true);
+    });
+
+    it('detects an @nativescript/core dependency', () => {
+      writeAppFile('package.json', JSON.stringify({ dependencies: { '@nativescript/core': '~9.1.0' } }));
+      expect(isNativeScriptProject(appRoot)).toBe(true);
+    });
+
+    it('is false for other projects', () => {
+      writeAppFile('package.json', JSON.stringify({ dependencies: { react: '19' } }));
+      expect(isNativeScriptProject(appRoot)).toBe(false);
     });
   });
 

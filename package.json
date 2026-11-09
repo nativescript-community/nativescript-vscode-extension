@@ -61,7 +61,8 @@
   },
   "main": "./out/main",
   "activationEvents": [
-    "onDebugResolve:nativescript"
+    "onDebugResolve:nativescript",
+    "onDebugDynamicConfigurations:nativescript"
   ],
   "contributes": {
     "configuration": {
@@ -128,7 +129,12 @@
         "label": "NativeScript",
         "languages": [
           "javascript",
-          "typescript"
+          "typescript",
+          "javascriptreact",
+          "typescriptreact",
+          "vue",
+          "svelte",
+          "tsrx"
         ],
         "initialConfigurations": [
           {
@@ -514,6 +520,21 @@
       },
       {
         "language": "typescript"
+      },
+      {
+        "language": "javascriptreact"
+      },
+      {
+        "language": "typescriptreact"
+      },
+      {
+        "language": "vue"
+      },
+      {
+        "language": "svelte"
+      },
+      {
+        "language": "tsrx"
       }
     ]
   }
