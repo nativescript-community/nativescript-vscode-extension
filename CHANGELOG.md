@@ -1,3 +1,31 @@
+# Changelog
+
+## [0.13.0](https://github.com/nativescript-community/nativescript-vscode-extension/compare/v0.12.5...v0.13.0) (2026-11-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* requires VS Code 1.109+ and NativeScript CLI 8.0+; the tnsOutput and noDebug launch attributes were removed.
+
+### Features
+
+* custom launch commands (runtimeExecutable, runtimeArgs, cwd, env) ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* load source maps from inline data:, the runtime's nsruntime:// scheme, or the local platforms/ copy ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* migrate debugger to js-debug and modernize tooling ([#301](https://github.com/nativescript-community/nativescript-vscode-extension/issues/301)) ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* nativescript.nsPath setting; tnsPath is deprecated ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* new launch attributes address, resolveSourceMapLocations, skipFiles, smartStep and trace ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* reattach the debugger automatically when the app restarts ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* support Vite projects (debug sessions run with --no-hmr) ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* use a project-local ns CLI before the global one ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+
+
+### Bug Fixes
+
+* no ns process is left running when a session stops during the build ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* Restart relaunches the session after the old CLI exits ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* show an error instead of failing to activate without the CLI ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+* the Run command no longer kills a debug session's ns process ([357e411](https://github.com/nativescript-community/nativescript-vscode-extension/commit/357e411ab42c8f364c0b0d869f00f48667bce9e0))
+
 0.11.0
 ====
 ## What's new
