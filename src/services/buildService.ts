@@ -1,10 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as semver from 'semver';
 import { ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { ILogger } from '../common/logger';
 import * as utils from '../common/utilities';
-import { getBundler, isVitestProject } from '../project/projectInfo';
+import { getBundler, getInstalledPackageVersion, hasDependency, isVitestProject } from '../project/projectInfo';
 import { AndroidProject } from '../project/androidProject';
 import { IosProject } from '../project/iosProject';
 import { NativeScriptCli } from '../project/nativeScriptCli';
@@ -30,6 +31,9 @@ export interface BuildArgs {
 
 /** Ignore repeated port announcements closer together than this; the CLI can print the same port twice. */
 const DUPLICATE_PORT_WINDOW_MS = 2000;
+
+/** First @nativescript/vite release whose HMR server attaches source maps to the app modules it serves. */
+export const VITE_HMR_SOURCE_MAPS_VERSION = '8.0.23';
 
 /** How long the CLI gets to clean up after SIGINT before it is killed. */
 export const CLI_EXIT_TIMEOUT_MS = 5000;
@@ -168,8 +172,11 @@ export class BuildService {
     let tnsArgs = [...(args.tnsArgs ?? [])];
 
     if (getBundler(args.appRoot) === 'vite' && !tnsArgs.some((arg) => /^--(no-)?hmr$/.test(arg))) {
-      // Vite HMR serves app code over HTTP without source maps, so breakpoints can't bind.
-      tnsArgs.push('--no-hmr');
+      const reason = this.getHmrDebuggingBlocker(args.appRoot);
+      if (reason) {
+        this.logger.log(`[NativeScript] ${reason}, so debugging with --no-hmr.\n`);
+        tnsArgs.push('--no-hmr');
+      }
     }
 
     if (args.request === 'launch' && platform === 'ios' && !this.getTeamId(args.appRoot, tnsArgs)) {
@@ -225,6 +232,21 @@ export class BuildService {
 
     this.logger.log('[NativeScript] Watching command output for the debug port\n');
     return new BuildSession(project.monitor(child, runtimeArgs), this.logger);
+  }
+
+  /** Why breakpoints in app code could not bind under Vite HMR, or undefined when they can. */
+  private getHmrDebuggingBlocker(appRoot: string): string | undefined {
+    const viteVersion = getInstalledPackageVersion(appRoot, '@nativescript/vite');
+    if (
+      !viteVersion ||
+      !semver.satisfies(viteVersion, `>=${VITE_HMR_SOURCE_MAPS_VERSION}`, { includePrerelease: true })
+    ) {
+      return `@nativescript/vite ${viteVersion ?? '(not found)'} serves HMR modules without source maps (fixed in ${VITE_HMR_SOURCE_MAPS_VERSION})`;
+    }
+    if (hasDependency(appRoot, 'nativescript-vue')) {
+      return 'Vue single-file components are served without source maps under HMR';
+    }
+    return undefined;
   }
 
   private createProject(platform: string, appRoot: string, cli: NativeScriptCli, options: ProjectOptions): Project {

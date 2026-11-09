@@ -2,7 +2,15 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { findLocalCli, getAppDirectory, getBundler, isVitestProject, readPackageJson } from '../project/projectInfo';
+import {
+  findLocalCli,
+  getAppDirectory,
+  getBundler,
+  getInstalledPackageVersion,
+  hasDependency,
+  isVitestProject,
+  readPackageJson,
+} from '../project/projectInfo';
 
 describe('projectInfo', () => {
   let appRoot: string;
@@ -98,6 +106,48 @@ describe('projectInfo', () => {
     it.each(['ts', 'mts', 'js', 'mjs'])('detects vitest.config.%s', (ext) => {
       writeAppFile(`vitest.config.${ext}`, 'export default {};\n');
       expect(isVitestProject(appRoot)).toBe(true);
+    });
+  });
+
+  describe('hasDependency', () => {
+    it('finds runtime and dev dependencies', () => {
+      writeAppFile('package.json', JSON.stringify({ dependencies: { a: '1' }, devDependencies: { b: '1' } }));
+
+      expect(hasDependency(appRoot, 'a')).toBe(true);
+      expect(hasDependency(appRoot, 'b')).toBe(true);
+      expect(hasDependency(appRoot, 'c')).toBe(false);
+    });
+
+    it('is false without a package.json', () => {
+      expect(hasDependency(appRoot, 'a')).toBe(false);
+    });
+  });
+
+  describe('getInstalledPackageVersion', () => {
+    const installPackage = (dir: string, content: string) =>
+      writeAppFile(path.join(dir, 'node_modules', '@nativescript', 'vite', 'package.json'), content);
+
+    it('reads the version from the nearest install', () => {
+      installPackage('.', JSON.stringify({ version: '8.0.22' }));
+      installPackage('apps/mobile', JSON.stringify({ version: '8.1.0' }));
+
+      expect(getInstalledPackageVersion(appRoot, '@nativescript/vite')).toBe('8.0.22');
+      expect(getInstalledPackageVersion(path.join(appRoot, 'apps', 'mobile'), '@nativescript/vite')).toBe('8.1.0');
+    });
+
+    it('walks up to a workspace root install', () => {
+      installPackage('.', JSON.stringify({ version: '8.0.23' }));
+      const nested = path.join(appRoot, 'apps', 'mobile');
+      fs.mkdirSync(nested, { recursive: true });
+
+      expect(getInstalledPackageVersion(nested, '@nativescript/vite')).toBe('8.0.23');
+    });
+
+    it('is undefined when the package is missing or its package.json is unreadable', () => {
+      expect(getInstalledPackageVersion(appRoot, '@nativescript/vite')).toBeUndefined();
+
+      installPackage('.', '{ not json');
+      expect(getInstalledPackageVersion(appRoot, '@nativescript/vite')).toBeUndefined();
     });
   });
 
