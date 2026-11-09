@@ -52,6 +52,15 @@ export function getAppDirectory(appRoot: string): string {
   return readConfigString(appRoot, 'appPath') ?? (fs.existsSync(path.join(appRoot, 'src')) ? 'src' : 'app');
 }
 
+export function isNativeScriptProject(appRoot: string): boolean {
+  if ([...CONFIG_FILES, 'nsconfig.json'].some((name) => fs.existsSync(path.join(appRoot, name)))) return true;
+  const packageJson = readPackageJson(appRoot);
+  return ['dependencies', 'devDependencies'].some((field) => {
+    const deps = packageJson?.[field];
+    return typeof deps === 'object' && deps !== null && '@nativescript/core' in deps;
+  });
+}
+
 export function getBundler(appRoot: string): Bundler {
   const bundler = readConfigString(appRoot, 'bundler');
   return bundler === 'vite' || bundler === 'rspack' ? bundler : 'webpack';
